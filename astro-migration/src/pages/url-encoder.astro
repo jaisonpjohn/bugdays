@@ -1,0 +1,96 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="URL Encoder & Decoder"
+  description="Encode and decode URL strings instantly. Free online URL encoding tool for query parameters, special characters, and Unicode. Perfect for web development and API testing."
+  keywords="URL encoder, URL decoder, encode URL, decode URL, URL escape, percent encoding, URI encoder, query string encoder"
+  breadcrumb={[{ name: "Encoding Tools", href: "/encoding-tools" }, { name: "URL Encoder/Decoder" }]}
+  toolId="url-encoder"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">URL Encoder / Decoder</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Input</label>
+        <textarea
+          id="input"
+          data-share-key="input"
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+          placeholder="Enter URL or text to encode/decode..."
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Output</label>
+        <textarea
+          id="output"
+          readonly
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none"
+          placeholder="Result will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="encode-btn" data-share-action="encode" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        URL Encode
+      </button>
+      <button id="decode-btn" data-share-action="decode" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        URL Decode
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Clear
+      </button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Copy Output
+      </button>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online URL Encoder/Decoder</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Encode special characters in URLs or decode percent-encoded URLs back to readable text.
+        URL encoding converts characters into a format that can be safely transmitted over the internet.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+
+  ShareManager.register({
+    tool: 'url-encoder',
+    actions: {
+      encode: () => document.getElementById('encode-btn')?.click(),
+      decode: () => document.getElementById('decode-btn')?.click(),
+    }
+  });
+
+  document.getElementById('encode-btn').addEventListener('click', () => {
+    output.value = encodeURIComponent(input.value);
+  });
+
+  document.getElementById('decode-btn').addEventListener('click', () => {
+    try {
+      output.value = decodeURIComponent(input.value);
+    } catch (e) {
+      output.value = 'Error: Invalid encoded string';
+    }
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    input.value = '';
+    output.value = '';
+  });
+
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(output.value);
+  });
+</script>

@@ -1,0 +1,293 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Protobuf Converter - JSON to Protocol Buffers"
+  description="Convert JSON to Protocol Buffers binary format and decode Protobuf back to JSON. Free online Protobuf converter with schema support for gRPC and API development."
+  keywords="Protobuf converter, JSON to Protobuf, Protocol Buffers decoder, Protobuf to JSON, gRPC converter, Protobuf encoder, binary to JSON"
+  breadcrumb={[{ name: "Converters", href: "/converter-tools" }, { name: "Protobuf Converter" }]}
+  toolId="protobuf-converter"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">JSON ↔ Protobuf Converter</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <!-- Proto Schema -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">.proto Schema</label>
+        <textarea
+          id="proto-input"
+          data-share-key="proto"
+          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+          placeholder="Paste your .proto schema here..."
+        ></textarea>
+        <button id="load-sample-proto" class="mt-2 px-3 py-1 text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-200 dark:bg-slate-600">
+          Load Sample Schema
+        </button>
+      </div>
+
+      <!-- JSON Input -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">JSON Data</label>
+        <textarea
+          id="json-input"
+          data-share-key="json"
+          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+          placeholder="Paste your JSON data here..."
+        ></textarea>
+        <button id="load-sample-json" class="mt-2 px-3 py-1 text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-200 dark:bg-slate-600">
+          Load Sample JSON
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mt-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 dark:text-slate-200">Message Type:</label>
+          <input
+            type="text"
+            id="message-type"
+            data-share-key="messageType"
+            class="p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm"
+            placeholder="e.g., Person"
+            value="Person"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div id="error-box" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="encode-btn" data-share-action="encode" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        JSON → Protobuf (Binary)
+      </button>
+      <button id="decode-btn" data-share-action="decode" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Protobuf → JSON
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Clear
+      </button>
+      <button id="copy-output-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Copy Output
+      </button>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mt-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Output</label>
+      <textarea
+        id="output"
+        readonly
+        class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none"
+        placeholder="Output will appear here..."
+      ></textarea>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online Protobuf Converter</h2>
+      <p class="text-gray-600 dark:text-slate-300 mb-4">
+        Convert between JSON and Protocol Buffers format. Provide a .proto schema definition and your data
+        to encode JSON to Protobuf binary (displayed as hex) or decode Protobuf binary back to JSON.
+        Uses the protobuf.js library.
+      </p>
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+        <strong>Note:</strong> This tool parses .proto files dynamically in the browser. Complex schemas with
+        imports or advanced features may not be fully supported.
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script src="https://cdn.jsdelivr.net/npm/protobufjs@7.2.6/dist/protobuf.min.js"></script>
+
+<script>
+  const protoInput = document.getElementById('proto-input') as HTMLTextAreaElement;
+  const jsonInput = document.getElementById('json-input') as HTMLTextAreaElement;
+  const messageType = document.getElementById('message-type') as HTMLInputElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const errorBox = document.getElementById('error-box');
+
+  const sampleProto = `syntax = "proto3";
+
+message Person {
+  string name = 1;
+  int32 age = 2;
+  string email = 3;
+  repeated string hobbies = 4;
+  Address address = 5;
+}
+
+message Address {
+  string street = 1;
+  string city = 2;
+  string country = 3;
+  string zip = 4;
+}`;
+
+  const sampleJson = `{
+  "name": "John Doe",
+  "age": 30,
+  "email": "john@example.com",
+  "hobbies": ["reading", "gaming", "hiking"],
+  "address": {
+    "street": "123 Main St",
+    "city": "New York",
+    "country": "USA",
+    "zip": "10001"
+  }
+}`;
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function bytesToHex(bytes: Uint8Array): string {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function hexToBytes(hex: string): Uint8Array {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    }
+    return bytes;
+  }
+
+  async function encode() {
+    const proto = protoInput.value.trim();
+    const json = jsonInput.value.trim();
+    const typeName = messageType.value.trim();
+
+    if (!proto) {
+      showError('Please provide a .proto schema');
+      return;
+    }
+    if (!json) {
+      showError('Please provide JSON data');
+      return;
+    }
+    if (!typeName) {
+      showError('Please specify a message type');
+      return;
+    }
+
+    try {
+      hideError();
+
+      const protobuf = (window as any).protobuf;
+      const root = protobuf.parse(proto).root;
+      const MessageType = root.lookupType(typeName);
+
+      const jsonObj = JSON.parse(json);
+      const errMsg = MessageType.verify(jsonObj);
+      if (errMsg) {
+        showError('Validation error: ' + errMsg);
+        return;
+      }
+
+      const message = MessageType.create(jsonObj);
+      const buffer = MessageType.encode(message).finish();
+
+      const hex = bytesToHex(buffer);
+      output.value = `Binary (Hex): ${hex}\n\nBase64: ${btoa(String.fromCharCode.apply(null, buffer))}\n\nSize: ${buffer.length} bytes`;
+    } catch (e) {
+      showError('Error: ' + (e as Error).message);
+    }
+  }
+
+  async function decode() {
+    const proto = protoInput.value.trim();
+    const hexInput = jsonInput.value.trim();
+    const typeName = messageType.value.trim();
+
+    if (!proto) {
+      showError('Please provide a .proto schema');
+      return;
+    }
+    if (!hexInput) {
+      showError('Please provide hex-encoded protobuf data in the JSON field');
+      return;
+    }
+    if (!typeName) {
+      showError('Please specify a message type');
+      return;
+    }
+
+    try {
+      hideError();
+
+      const protobuf = (window as any).protobuf;
+      const root = protobuf.parse(proto).root;
+      const MessageType = root.lookupType(typeName);
+
+      // Try to parse as hex or base64
+      let buffer: Uint8Array;
+      if (/^[0-9a-fA-F]+$/.test(hexInput)) {
+        buffer = hexToBytes(hexInput);
+      } else {
+        // Try base64
+        try {
+          const binaryStr = atob(hexInput);
+          buffer = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) {
+            buffer[i] = binaryStr.charCodeAt(i);
+          }
+        } catch {
+          showError('Invalid input: must be hex or base64 encoded');
+          return;
+        }
+      }
+
+      const message = MessageType.decode(buffer);
+      const obj = MessageType.toObject(message, {
+        longs: String,
+        enums: String,
+        bytes: String,
+        defaults: true
+      });
+
+      output.value = JSON.stringify(obj, null, 2);
+    } catch (e) {
+      showError('Error: ' + (e as Error).message);
+    }
+  }
+
+  document.getElementById('encode-btn').addEventListener('click', encode);
+  document.getElementById('decode-btn').addEventListener('click', decode);
+
+  document.getElementById('load-sample-proto').addEventListener('click', () => {
+    protoInput.value = sampleProto;
+    messageType.value = 'Person';
+  });
+
+  document.getElementById('load-sample-json').addEventListener('click', () => {
+    jsonInput.value = sampleJson;
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    protoInput.value = '';
+    jsonInput.value = '';
+    output.value = '';
+    hideError();
+  });
+
+  document.getElementById('copy-output-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(output.value);
+  });
+
+  import { ShareManager } from '../lib/share';
+  ShareManager.register({
+    tool: 'protobuf-converter',
+    actions: {
+      encode: () => document.getElementById('encode-btn')!.click(),
+      decode: () => document.getElementById('decode-btn')!.click()
+    }
+  });
+</script>

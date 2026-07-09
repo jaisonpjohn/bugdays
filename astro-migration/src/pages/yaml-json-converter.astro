@@ -1,0 +1,233 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="YAML to JSON Converter"
+  description="Convert YAML to JSON and JSON to YAML instantly. Free online bidirectional converter with syntax validation. Perfect for configuration files, Kubernetes, and Docker Compose."
+  keywords="YAML to JSON, JSON to YAML, YAML converter, convert YAML online, YAML JSON converter, Kubernetes YAML, Docker Compose converter"
+  breadcrumb={[{ name: "JSON Tools", href: "/json-tools" }, { name: "YAML ↔ JSON" }]}
+  toolId="yaml-json-converter"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">YAML ↔ JSON Converter</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Input</label>
+        <textarea
+          id="input"
+          data-share-key="input"
+          class="w-full h-80 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+          placeholder="Paste YAML or JSON here..."
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Output</label>
+        <textarea
+          id="output"
+          readonly
+          class="w-full h-80 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none"
+          placeholder="Converted output will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div id="error-box" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="yaml-to-json-btn" data-share-action="yamlToJson" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        YAML → JSON
+      </button>
+      <button id="json-to-yaml-btn" data-share-action="jsonToYaml" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        JSON → YAML
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Clear
+      </button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Copy Output
+      </button>
+      <button id="swap-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Swap ↔
+      </button>
+      <button id="sample-yaml-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Sample YAML
+      </button>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mt-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 dark:text-slate-200">JSON indent:</label>
+          <select id="json-indent" class="p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm">
+            <option value="2">2 spaces</option>
+            <option value="4">4 spaces</option>
+            <option value="tab">Tab</option>
+            <option value="0">Minified</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 dark:text-slate-200">YAML indent:</label>
+          <select id="yaml-indent" class="p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm">
+            <option value="2">2 spaces</option>
+            <option value="4">4 spaces</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online YAML to JSON Converter</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Convert between YAML and JSON formats instantly. Supports multi-document YAML files and configurable
+        indentation. All processing happens in your browser using the js-yaml library.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const jsonIndentSelect = document.getElementById('json-indent') as HTMLSelectElement;
+  const yamlIndentSelect = document.getElementById('yaml-indent') as HTMLSelectElement;
+  const errorBox = document.getElementById('error-box');
+
+  const sampleYaml = `# Sample YAML document
+server:
+  host: localhost
+  port: 8080
+  ssl: true
+
+database:
+  driver: postgresql
+  connection:
+    host: db.example.com
+    port: 5432
+    name: myapp
+
+users:
+  - name: Alice
+    role: admin
+    permissions:
+      - read
+      - write
+      - delete
+  - name: Bob
+    role: user
+    permissions:
+      - read
+
+features:
+  logging: true
+  cache:
+    enabled: true
+    ttl: 3600
+`;
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function getJsonIndent(): string | number {
+    const value = jsonIndentSelect.value;
+    if (value === 'tab') return '\t';
+    return parseInt(value, 10);
+  }
+
+  function getYamlIndent(): number {
+    return parseInt(yamlIndentSelect.value, 10);
+  }
+
+  document.getElementById('yaml-to-json-btn').addEventListener('click', () => {
+    const yaml = input.value.trim();
+    if (!yaml) {
+      showError('Please enter YAML to convert');
+      return;
+    }
+
+    try {
+      hideError();
+      // Use js-yaml library
+      const jsYaml = (window as any).jsyaml;
+
+      // Try to load all documents (multi-document YAML)
+      const docs: any[] = [];
+      jsYaml.loadAll(yaml, (doc: any) => {
+        docs.push(doc);
+      });
+
+      const indent = getJsonIndent();
+      if (docs.length === 1) {
+        output.value = JSON.stringify(docs[0], null, indent);
+      } else {
+        output.value = JSON.stringify(docs, null, indent);
+      }
+    } catch (e) {
+      showError('Error parsing YAML: ' + (e as Error).message);
+    }
+  });
+
+  document.getElementById('json-to-yaml-btn').addEventListener('click', () => {
+    const json = input.value.trim();
+    if (!json) {
+      showError('Please enter JSON to convert');
+      return;
+    }
+
+    try {
+      hideError();
+      const obj = JSON.parse(json);
+      const jsYaml = (window as any).jsyaml;
+      const yamlIndent = getYamlIndent();
+
+      output.value = jsYaml.dump(obj, {
+        indent: yamlIndent,
+        lineWidth: -1,
+        noRefs: true
+      });
+    } catch (e) {
+      showError('Error parsing JSON: ' + (e as Error).message);
+    }
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    input.value = '';
+    output.value = '';
+    hideError();
+  });
+
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(output.value);
+  });
+
+  document.getElementById('swap-btn').addEventListener('click', () => {
+    const temp = input.value;
+    input.value = output.value;
+    output.value = temp;
+  });
+
+  document.getElementById('sample-yaml-btn').addEventListener('click', () => {
+    input.value = sampleYaml;
+    hideError();
+  });
+
+  ShareManager.register({
+    tool: 'yaml-json-converter',
+    actions: {
+      yamlToJson: () => document.getElementById('yaml-to-json-btn')!.click(),
+      jsonToYaml: () => document.getElementById('json-to-yaml-btn')!.click()
+    }
+  });
+</script>

@@ -1,0 +1,278 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="TOML Converter - TOML to JSON, YAML & Back"
+  description="Free online TOML converter. Convert between TOML, JSON, and YAML formats instantly. Perfect for Cargo.toml, pyproject.toml, and config file conversions."
+  keywords="TOML converter, TOML to JSON, JSON to TOML, TOML to YAML, YAML to TOML, convert TOML, Cargo.toml converter"
+  breadcrumb={[{ name: "TOML Tools", href: "/toml-tools" }, { name: "TOML Converter" }]}
+  toolId="toml-converter"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">TOML Converter</h1>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <!-- Input -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Input</label>
+          <select id="input-format" class="text-sm border border-gray-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200">
+            <option value="toml">TOML</option>
+            <option value="json">JSON</option>
+            <option value="yaml">YAML</option>
+          </select>
+        </div>
+        <textarea
+          id="input"
+          data-share-key="input"
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Paste TOML, JSON, or YAML here..."
+        ></textarea>
+      </div>
+
+      <!-- Output -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Output</label>
+          <select id="output-format" class="text-sm border border-gray-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200">
+            <option value="json">JSON</option>
+            <option value="toml">TOML</option>
+            <option value="yaml">YAML</option>
+          </select>
+        </div>
+        <textarea
+          id="output"
+          readonly
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Converted output will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mb-4">
+      <button id="convert-btn" data-share-action="convert" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Convert
+      </button>
+      <button id="swap-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Swap Input/Output
+      </button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Copy Output
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Clear
+      </button>
+      <button id="sample-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Sample
+      </button>
+    </div>
+
+    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-300"></div>
+    <div id="success-box" class="hidden mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-800 dark:text-green-300"></div>
+
+    <!-- Quick conversions -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-6">
+      <button data-from="toml" data-to="json" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        TOML → JSON
+      </button>
+      <button data-from="json" data-to="toml" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        JSON → TOML
+      </button>
+      <button data-from="toml" data-to="yaml" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        TOML → YAML
+      </button>
+      <button data-from="yaml" data-to="toml" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        YAML → TOML
+      </button>
+      <button data-from="json" data-to="yaml" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        JSON → YAML
+      </button>
+      <button data-from="yaml" data-to="json" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        YAML → JSON
+      </button>
+    </div>
+
+    <div class="mt-8 space-y-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">TOML, JSON & YAML Converter</h2>
+        <p class="text-gray-600 dark:text-slate-300 mb-4">
+          Convert between TOML, JSON, and YAML formats with a single click. Perfect for converting
+          Cargo.toml to JSON for processing, or transforming JSON configs to TOML format.
+          All processing happens in your browser.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">TOML</h3>
+          <p class="text-gray-600 dark:text-slate-300">Tom's Obvious Minimal Language. Used by Rust (Cargo.toml), Python (pyproject.toml), Hugo, and more.</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">JSON</h3>
+          <p class="text-gray-600 dark:text-slate-300">Universal data format. Great for APIs, package.json, tsconfig, and programmatic access.</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">YAML</h3>
+          <p class="text-gray-600 dark:text-slate-300">Human-friendly format. Popular for Kubernetes, Docker Compose, CI/CD configs.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+  import * as TOML from 'smol-toml';
+  import * as jsYaml from 'js-yaml';
+
+  const inputEl = document.getElementById('input') as HTMLTextAreaElement;
+  const outputEl = document.getElementById('output') as HTMLTextAreaElement;
+  const inputFormat = document.getElementById('input-format') as HTMLSelectElement;
+  const outputFormat = document.getElementById('output-format') as HTMLSelectElement;
+  const errorBox = document.getElementById('error-box')!;
+  const successBox = document.getElementById('success-box')!;
+
+  ShareManager.register({
+    tool: 'toml-converter',
+    actions: {
+      convert: () => document.getElementById('convert-btn')?.click(),
+    }
+  });
+
+  const sampleToml = `# Example Cargo.toml
+[package]
+name = "my-rust-app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+
+[profile.release]
+opt-level = 3
+lto = true`;
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+    successBox.classList.add('hidden');
+  }
+
+  function showSuccess(msg: string) {
+    successBox.textContent = msg;
+    successBox.classList.remove('hidden');
+    errorBox.classList.add('hidden');
+  }
+
+  function hideMessages() {
+    errorBox.classList.add('hidden');
+    successBox.classList.add('hidden');
+  }
+
+  function parse(text: string, format: string): any {
+        
+    switch (format) {
+      case 'toml':
+        return TOML.parse(text);
+      case 'json':
+        return JSON.parse(text);
+      case 'yaml':
+        return jsYaml.load(text);
+      default:
+        throw new Error('Unknown format: ' + format);
+    }
+  }
+
+  function stringify(obj: any, format: string): string {
+        
+    switch (format) {
+      case 'toml':
+        return TOML.stringify(obj);
+      case 'json':
+        return JSON.stringify(obj, null, 2);
+      case 'yaml':
+        return jsYaml.dump(obj, { indent: 2, lineWidth: -1 });
+      default:
+        throw new Error('Unknown format: ' + format);
+    }
+  }
+
+  function convert() {
+    hideMessages();
+    const text = inputEl.value.trim();
+    if (!text) {
+      showError('Please enter some content');
+      return;
+    }
+
+    const fromFormat = inputFormat.value;
+    const toFormat = outputFormat.value;
+
+    try {
+      const parsed = parse(text, fromFormat);
+      const result = stringify(parsed, toFormat);
+      outputEl.value = result;
+      showSuccess(`Converted ${fromFormat.toUpperCase()} → ${toFormat.toUpperCase()}`);
+    } catch (e: any) {
+      showError(`Error parsing ${fromFormat.toUpperCase()}: ${e.message}`);
+    }
+  }
+
+  document.getElementById('convert-btn')!.addEventListener('click', convert);
+
+  document.getElementById('swap-btn')!.addEventListener('click', () => {
+    const tempText = inputEl.value;
+    const tempFormat = inputFormat.value;
+    inputEl.value = outputEl.value;
+    inputFormat.value = outputFormat.value;
+    outputEl.value = tempText;
+    outputFormat.value = tempFormat;
+    hideMessages();
+  });
+
+  document.getElementById('copy-btn')!.addEventListener('click', () => {
+    navigator.clipboard.writeText(outputEl.value);
+    showSuccess('Copied to clipboard!');
+  });
+
+  document.getElementById('clear-btn')!.addEventListener('click', () => {
+    inputEl.value = '';
+    outputEl.value = '';
+    hideMessages();
+  });
+
+  document.getElementById('sample-btn')!.addEventListener('click', () => {
+    inputEl.value = sampleToml;
+    inputFormat.value = 'toml';
+    outputFormat.value = 'json';
+    hideMessages();
+  });
+
+  // Quick convert buttons
+  document.querySelectorAll('.quick-convert').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const from = (btn as HTMLElement).dataset.from!;
+      const to = (btn as HTMLElement).dataset.to!;
+      inputFormat.value = from;
+      outputFormat.value = to;
+      if (inputEl.value.trim()) {
+        convert();
+      }
+    });
+  });
+
+  // Auto-convert on format change
+  inputFormat.addEventListener('change', () => {
+    if (inputEl.value.trim() && outputEl.value.trim()) {
+      convert();
+    }
+  });
+
+  outputFormat.addEventListener('change', () => {
+    if (inputEl.value.trim()) {
+      convert();
+    }
+  });
+</script>

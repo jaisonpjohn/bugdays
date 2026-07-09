@@ -1,0 +1,299 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Cron Expression Parser & Generator"
+  description="Parse cron expressions to human-readable format and see next execution times. Free online cron expression tool for scheduling tasks in Linux, Kubernetes, and CI/CD."
+  keywords="cron parser, cron expression generator, cron schedule explained, crontab parser, cron job scheduler, cron syntax, cron expression tester"
+  breadcrumb={[{ name: "Network Tools", href: "/network-tools" }, { name: "Cron Parser" }]}
+  toolId="cron-parser"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Cron Parser</h1>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Cron Expression</label>
+      <div class="flex gap-3">
+        <input
+          type="text"
+          id="cron-input"
+          data-share-key="cron"
+          class="flex-1 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="* * * * *"
+          value="0 9 * * 1-5"
+        />
+        <button id="parse-btn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+          Parse
+        </button>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="text-sm text-gray-500 dark:text-slate-400">Examples:</span>
+        <button class="example-btn text-sm text-indigo-600 hover:underline" data-cron="* * * * *">Every minute</button>
+        <button class="example-btn text-sm text-indigo-600 hover:underline" data-cron="0 * * * *">Every hour</button>
+        <button class="example-btn text-sm text-indigo-600 hover:underline" data-cron="0 0 * * *">Daily at midnight</button>
+        <button class="example-btn text-sm text-indigo-600 hover:underline" data-cron="0 9 * * 1-5">Weekdays at 9am</button>
+        <button class="example-btn text-sm text-indigo-600 hover:underline" data-cron="0 0 1 * *">Monthly</button>
+        <button class="example-btn text-sm text-indigo-600 hover:underline" data-cron="*/15 * * * *">Every 15 min</button>
+      </div>
+    </div>
+
+    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div id="results" class="space-y-4">
+      <!-- Human Readable -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Human Readable</label>
+        <div id="human-output" class="p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-800 font-medium"></div>
+      </div>
+
+      <!-- Cron Fields -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Expression Breakdown</label>
+        <div class="grid grid-cols-5 gap-2 text-center" id="fields-display">
+          <div class="p-2 bg-gray-50 dark:bg-slate-900 rounded border border-gray-200 dark:border-slate-700">
+            <div id="field-minute" class="font-mono text-lg font-bold text-indigo-600">*</div>
+            <div class="text-xs text-gray-500 dark:text-slate-400">Minute</div>
+            <div class="text-xs text-gray-400 dark:text-slate-500">0-59</div>
+          </div>
+          <div class="p-2 bg-gray-50 dark:bg-slate-900 rounded border border-gray-200 dark:border-slate-700">
+            <div id="field-hour" class="font-mono text-lg font-bold text-indigo-600">*</div>
+            <div class="text-xs text-gray-500 dark:text-slate-400">Hour</div>
+            <div class="text-xs text-gray-400 dark:text-slate-500">0-23</div>
+          </div>
+          <div class="p-2 bg-gray-50 dark:bg-slate-900 rounded border border-gray-200 dark:border-slate-700">
+            <div id="field-dom" class="font-mono text-lg font-bold text-indigo-600">*</div>
+            <div class="text-xs text-gray-500 dark:text-slate-400">Day (Month)</div>
+            <div class="text-xs text-gray-400 dark:text-slate-500">1-31</div>
+          </div>
+          <div class="p-2 bg-gray-50 dark:bg-slate-900 rounded border border-gray-200 dark:border-slate-700">
+            <div id="field-month" class="font-mono text-lg font-bold text-indigo-600">*</div>
+            <div class="text-xs text-gray-500 dark:text-slate-400">Month</div>
+            <div class="text-xs text-gray-400 dark:text-slate-500">1-12</div>
+          </div>
+          <div class="p-2 bg-gray-50 dark:bg-slate-900 rounded border border-gray-200 dark:border-slate-700">
+            <div id="field-dow" class="font-mono text-lg font-bold text-indigo-600">*</div>
+            <div class="text-xs text-gray-500 dark:text-slate-400">Day (Week)</div>
+            <div class="text-xs text-gray-400 dark:text-slate-500">0-6</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next Run Times -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Next 5 Run Times</label>
+        <div id="next-runs" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <!-- Cron Reference -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mt-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Quick Reference</label>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div>
+          <h4 class="font-medium text-gray-700 dark:text-slate-200 mb-1">Special Characters</h4>
+          <ul class="text-gray-600 dark:text-slate-300 space-y-1">
+            <li><code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">*</code> - Any value</li>
+            <li><code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">,</code> - Value list (1,3,5)</li>
+            <li><code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">-</code> - Range (1-5)</li>
+            <li><code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">/</code> - Step (*/15)</li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="font-medium text-gray-700 dark:text-slate-200 mb-1">Day of Week</h4>
+          <ul class="text-gray-600 dark:text-slate-300 space-y-1">
+            <li>0 = Sunday</li>
+            <li>1-5 = Monday-Friday</li>
+            <li>6 = Saturday</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online Cron Parser</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Parse and explain cron expressions in human-readable format. See the next scheduled run times
+        and understand each field of your cron expression. All processing happens in your browser.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cronstrue/2.48.0/cronstrue.min.js"></script>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const cronInput = document.getElementById('cron-input') as HTMLInputElement;
+  const errorBox = document.getElementById('error-box');
+  const humanOutput = document.getElementById('human-output');
+  const nextRunsOutput = document.getElementById('next-runs');
+
+  ShareManager.register({
+    tool: 'cron-parser',
+    afterLoad: () => parseCron()
+  });
+
+  const fieldIds = ['field-minute', 'field-hour', 'field-dom', 'field-month', 'field-dow'];
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function parseField(field: string, min: number, max: number): number[] {
+    const values: Set<number> = new Set();
+
+    for (const part of field.split(',')) {
+      if (part === '*') {
+        for (let i = min; i <= max; i++) values.add(i);
+      } else if (part.includes('/')) {
+        const [range, stepStr] = part.split('/');
+        const step = parseInt(stepStr, 10);
+        let start = min, end = max;
+
+        if (range !== '*') {
+          if (range.includes('-')) {
+            [start, end] = range.split('-').map(Number);
+          } else {
+            start = parseInt(range, 10);
+          }
+        }
+
+        for (let i = start; i <= end; i += step) {
+          values.add(i);
+        }
+      } else if (part.includes('-')) {
+        const [start, end] = part.split('-').map(Number);
+        for (let i = start; i <= end; i++) values.add(i);
+      } else {
+        values.add(parseInt(part, 10));
+      }
+    }
+
+    return Array.from(values).sort((a, b) => a - b);
+  }
+
+  function getNextRuns(cron: string, count: number): Date[] {
+    const parts = cron.trim().split(/\s+/);
+    if (parts.length !== 5) return [];
+
+    const minutes = parseField(parts[0], 0, 59);
+    const hours = parseField(parts[1], 0, 23);
+    const daysOfMonth = parseField(parts[2], 1, 31);
+    const months = parseField(parts[3], 1, 12);
+    const daysOfWeek = parseField(parts[4], 0, 6);
+
+    const results: Date[] = [];
+    const now = new Date();
+    let current = new Date(now.getFullYear(), now.getMonth(), now.getDate(), now.getHours(), now.getMinutes());
+
+    const maxIterations = 525600; // 1 year in minutes
+    let iterations = 0;
+
+    while (results.length < count && iterations < maxIterations) {
+      current = new Date(current.getTime() + 60000); // Add 1 minute
+      iterations++;
+
+      const minute = current.getMinutes();
+      const hour = current.getHours();
+      const dayOfMonth = current.getDate();
+      const month = current.getMonth() + 1;
+      const dayOfWeek = current.getDay();
+
+      if (
+        minutes.includes(minute) &&
+        hours.includes(hour) &&
+        months.includes(month) &&
+        (parts[2] === '*' || daysOfMonth.includes(dayOfMonth)) &&
+        (parts[4] === '*' || daysOfWeek.includes(dayOfWeek))
+      ) {
+        // Handle day of month and day of week interaction
+        if (parts[2] !== '*' && parts[4] !== '*') {
+          // Both specified: OR logic
+          if (daysOfMonth.includes(dayOfMonth) || daysOfWeek.includes(dayOfWeek)) {
+            results.push(new Date(current));
+          }
+        } else {
+          results.push(new Date(current));
+        }
+      }
+    }
+
+    return results;
+  }
+
+  function parseCron() {
+    const cron = cronInput.value.trim();
+    const parts = cron.split(/\s+/);
+
+    if (parts.length !== 5) {
+      showError('Invalid cron expression. Must have 5 fields: minute hour day-of-month month day-of-week');
+      return;
+    }
+
+    hideError();
+
+    // Update field display
+    fieldIds.forEach((id, i) => {
+      document.getElementById(id).textContent = parts[i];
+    });
+
+    // Human readable using cronstrue
+    try {
+      const humanReadable = (window as any).cronstrue.toString(cron);
+      humanOutput.textContent = humanReadable;
+    } catch (e) {
+      humanOutput.textContent = 'Unable to parse expression';
+    }
+
+    // Next run times
+    const nextRuns = getNextRuns(cron, 5);
+    if (nextRuns.length === 0) {
+      nextRunsOutput.innerHTML = '<p class="text-gray-500 dark:text-slate-400">No upcoming runs found</p>';
+    } else {
+      nextRunsOutput.innerHTML = nextRuns.map((date, i) => `
+        <div class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-slate-900 rounded border border-gray-200 dark:border-slate-700">
+          <span class="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded">${i + 1}</span>
+          <span class="font-mono text-sm">${date.toLocaleString('en-US', {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  document.getElementById('parse-btn').addEventListener('click', parseCron);
+
+  cronInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') parseCron();
+  });
+
+  // Auto-parse on input with debounce
+  let debounceTimer: number;
+  cronInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(parseCron, 300) as unknown as number;
+  });
+
+  // Example buttons
+  document.querySelectorAll('.example-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cronInput.value = (btn as HTMLElement).dataset.cron || '';
+      parseCron();
+    });
+  });
+
+  // Initial parse
+  parseCron();
+</script>

@@ -1,0 +1,313 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Avro Converter - JSON to Apache Avro"
+  description="Convert JSON to Apache Avro binary format and decode Avro back to JSON. Free online Avro converter with schema support for Kafka and big data applications."
+  keywords="Avro converter, JSON to Avro, Apache Avro decoder, Avro to JSON, Kafka Avro, Avro encoder, Avro schema, big data converter"
+  breadcrumb={[{ name: "Converters", href: "/converter-tools" }, { name: "Avro Converter" }]}
+  toolId="avro-converter"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">JSON ↔ Avro Converter</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <!-- Avro Schema -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Avro Schema (JSON)</label>
+        <textarea
+          id="schema-input"
+          data-share-key="schema"
+          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+          placeholder="Paste your Avro schema here..."
+        ></textarea>
+        <button id="load-sample-schema" class="mt-2 px-3 py-1 text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-200 dark:bg-slate-600">
+          Load Sample Schema
+        </button>
+      </div>
+
+      <!-- JSON Input -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">JSON Data</label>
+        <textarea
+          id="json-input"
+          data-share-key="json"
+          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+          placeholder="Paste your JSON data here..."
+        ></textarea>
+        <button id="load-sample-json" class="mt-2 px-3 py-1 text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-200 dark:bg-slate-600">
+          Load Sample JSON
+        </button>
+      </div>
+    </div>
+
+    <div id="error-box" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="encode-btn" data-share-action="encode" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        JSON → Avro (Binary)
+      </button>
+      <button id="decode-btn" data-share-action="decode" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Avro → JSON
+      </button>
+      <button id="validate-btn" data-share-action="validate" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Validate JSON
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Clear
+      </button>
+      <button id="copy-output-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Copy Output
+      </button>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mt-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Output</label>
+      <textarea
+        id="output"
+        readonly
+        class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none"
+        placeholder="Output will appear here..."
+      ></textarea>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online Avro Converter</h2>
+      <p class="text-gray-600 dark:text-slate-300 mb-4">
+        Convert between JSON and Apache Avro format. Provide an Avro schema and your data to encode JSON
+        to Avro binary (displayed as hex) or decode Avro binary back to JSON. Uses the avsc library.
+      </p>
+      <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+        <strong>Note:</strong> This tool handles single-record encoding. For full Avro container files with
+        headers and compression, additional processing would be needed.
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script src="https://cdn.jsdelivr.net/npm/avsc@5.7.7/dist/avsc.min.js"></script>
+
+<script>
+  const schemaInput = document.getElementById('schema-input') as HTMLTextAreaElement;
+  const jsonInput = document.getElementById('json-input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const errorBox = document.getElementById('error-box');
+
+  const sampleSchema = `{
+  "type": "record",
+  "name": "Person",
+  "namespace": "com.example",
+  "fields": [
+    {"name": "name", "type": "string"},
+    {"name": "age", "type": "int"},
+    {"name": "email", "type": ["null", "string"], "default": null},
+    {"name": "hobbies", "type": {"type": "array", "items": "string"}},
+    {
+      "name": "address",
+      "type": {
+        "type": "record",
+        "name": "Address",
+        "fields": [
+          {"name": "street", "type": "string"},
+          {"name": "city", "type": "string"},
+          {"name": "country", "type": "string"},
+          {"name": "zip", "type": "string"}
+        ]
+      }
+    }
+  ]
+}`;
+
+  const sampleJson = `{
+  "name": "John Doe",
+  "age": 30,
+  "email": {"string": "john@example.com"},
+  "hobbies": ["reading", "gaming", "hiking"],
+  "address": {
+    "street": "123 Main St",
+    "city": "New York",
+    "country": "USA",
+    "zip": "10001"
+  }
+}`;
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function bytesToHex(bytes: Uint8Array): string {
+    return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  function hexToBytes(hex: string): Uint8Array {
+    const bytes = new Uint8Array(hex.length / 2);
+    for (let i = 0; i < hex.length; i += 2) {
+      bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    }
+    return bytes;
+  }
+
+  function encode() {
+    const schema = schemaInput.value.trim();
+    const json = jsonInput.value.trim();
+
+    if (!schema) {
+      showError('Please provide an Avro schema');
+      return;
+    }
+    if (!json) {
+      showError('Please provide JSON data');
+      return;
+    }
+
+    try {
+      hideError();
+
+      const avsc = (window as any).avsc;
+      const schemaObj = JSON.parse(schema);
+      const type = avsc.Type.forSchema(schemaObj);
+
+      const jsonObj = JSON.parse(json);
+
+      // Validate
+      const errPaths = type.isValid(jsonObj, { errorHook: (path: string[]) => path });
+      if (errPaths) {
+        showError('Validation error at path: ' + errPaths.join('.'));
+        return;
+      }
+
+      const buffer = type.toBuffer(jsonObj);
+      const bytes = new Uint8Array(buffer);
+
+      const hex = bytesToHex(bytes);
+      output.value = `Binary (Hex): ${hex}\n\nBase64: ${btoa(String.fromCharCode.apply(null, bytes))}\n\nSize: ${bytes.length} bytes`;
+    } catch (e) {
+      showError('Error: ' + (e as Error).message);
+    }
+  }
+
+  function decode() {
+    const schema = schemaInput.value.trim();
+    const hexInput = jsonInput.value.trim();
+
+    if (!schema) {
+      showError('Please provide an Avro schema');
+      return;
+    }
+    if (!hexInput) {
+      showError('Please provide hex-encoded Avro data in the JSON field');
+      return;
+    }
+
+    try {
+      hideError();
+
+      const avsc = (window as any).avsc;
+      const schemaObj = JSON.parse(schema);
+      const type = avsc.Type.forSchema(schemaObj);
+
+      // Try to parse as hex or base64
+      let bytes: Uint8Array;
+      if (/^[0-9a-fA-F]+$/.test(hexInput)) {
+        bytes = hexToBytes(hexInput);
+      } else {
+        // Try base64
+        try {
+          const binaryStr = atob(hexInput);
+          bytes = new Uint8Array(binaryStr.length);
+          for (let i = 0; i < binaryStr.length; i++) {
+            bytes[i] = binaryStr.charCodeAt(i);
+          }
+        } catch {
+          showError('Invalid input: must be hex or base64 encoded');
+          return;
+        }
+      }
+
+      const buffer = Buffer.from(bytes);
+      const obj = type.fromBuffer(buffer);
+
+      output.value = JSON.stringify(obj, null, 2);
+    } catch (e) {
+      showError('Error: ' + (e as Error).message);
+    }
+  }
+
+  function validate() {
+    const schema = schemaInput.value.trim();
+    const json = jsonInput.value.trim();
+
+    if (!schema) {
+      showError('Please provide an Avro schema');
+      return;
+    }
+    if (!json) {
+      showError('Please provide JSON data');
+      return;
+    }
+
+    try {
+      hideError();
+
+      const avsc = (window as any).avsc;
+      const schemaObj = JSON.parse(schema);
+      const type = avsc.Type.forSchema(schemaObj);
+
+      const jsonObj = JSON.parse(json);
+
+      const errors: string[] = [];
+      type.isValid(jsonObj, {
+        errorHook: (path: string[], val: any, type: any) => {
+          errors.push(`Path: ${path.join('.') || '(root)'}, Value: ${JSON.stringify(val)}, Expected: ${type}`);
+        }
+      });
+
+      if (errors.length === 0) {
+        output.value = 'Valid! The JSON data matches the Avro schema.';
+      } else {
+        output.value = 'Validation Errors:\n\n' + errors.join('\n');
+      }
+    } catch (e) {
+      showError('Error: ' + (e as Error).message);
+    }
+  }
+
+  document.getElementById('encode-btn').addEventListener('click', encode);
+  document.getElementById('decode-btn').addEventListener('click', decode);
+  document.getElementById('validate-btn').addEventListener('click', validate);
+
+  document.getElementById('load-sample-schema').addEventListener('click', () => {
+    schemaInput.value = sampleSchema;
+  });
+
+  document.getElementById('load-sample-json').addEventListener('click', () => {
+    jsonInput.value = sampleJson;
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    schemaInput.value = '';
+    jsonInput.value = '';
+    output.value = '';
+    hideError();
+  });
+
+  document.getElementById('copy-output-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(output.value);
+  });
+
+  import { ShareManager } from '../lib/share';
+  ShareManager.register({
+    tool: 'avro-converter',
+    actions: {
+      encode: () => document.getElementById('encode-btn')!.click(),
+      decode: () => document.getElementById('decode-btn')!.click(),
+      validate: () => document.getElementById('validate-btn')!.click()
+    }
+  });
+</script>

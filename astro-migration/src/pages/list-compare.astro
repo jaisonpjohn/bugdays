@@ -1,0 +1,124 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Compare Two Lists Online - Find Differences, Common Items"
+  description="Compare two lists to find common items, differences, and unique entries. Intersection, union, and difference operations on text lists. Free online list comparison tool."
+  keywords="compare lists, list difference, find common items, list intersection, compare two lists online, diff lists, list comparison tool"
+  breadcrumb={[{ name: "Text Tools", href: "/text-tools" }, { name: "Compare Lists" }]}
+  toolId="list-compare"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Compare Two Lists</h1>
+
+    <div class="grid md:grid-cols-3 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">List A <span id="setA-count" class="text-gray-500 dark:text-slate-400"></span></label>
+        <textarea id="setA" data-share-key="setA" class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Enter items for List A...&#10;One per line"></textarea>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">List B <span id="setB-count" class="text-gray-500 dark:text-slate-400"></span></label>
+        <textarea id="setB" data-share-key="setB" class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Enter items for List B...&#10;One per line"></textarea>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Result <span id="result-label" class="text-gray-500 dark:text-slate-400"></span></label>
+        <textarea id="output" readonly class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none text-gray-900 dark:text-slate-100" placeholder="Result..."></textarea>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="intersection-btn" data-share-action="intersection" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" title="Items in both lists">Common (A ∩ B)</button>
+      <button id="union-btn" data-share-action="union" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" title="All unique items combined">All Unique (A ∪ B)</button>
+      <button id="diff-ab-btn" data-share-action="diffAB" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" title="Items only in A">Only in A</button>
+      <button id="diff-ba-btn" data-share-action="diffBA" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" title="Items only in B">Only in B</button>
+      <button id="symmetric-btn" data-share-action="symmetric" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" title="Items in exactly one list">Different (XOR)</button>
+      <button id="copy-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 font-medium">Copy</button>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Compare Two Lists Online</h2>
+      <p class="text-gray-600 dark:text-slate-300 mb-4">
+        Find what's common between two lists, what's different, or what's unique to each list. Perfect for comparing data sets, finding missing items, or merging lists.
+      </p>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
+          <p class="font-medium text-gray-700 dark:text-slate-200 mb-1">Common Items (Intersection)</p>
+          <p class="text-gray-500 dark:text-slate-400">Items that appear in both lists</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
+          <p class="font-medium text-gray-700 dark:text-slate-200 mb-1">Only in A / Only in B</p>
+          <p class="text-gray-500 dark:text-slate-400">Items unique to one list</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const setA = document.getElementById('setA') as HTMLTextAreaElement;
+  const setB = document.getElementById('setB') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const resultLabel = document.getElementById('result-label');
+  const setACount = document.getElementById('setA-count');
+  const setBCount = document.getElementById('setB-count');
+
+  function toSet(text: string) {
+    return new Set(text.split('\n').map(l => l.trim()).filter(l => l));
+  }
+
+  function updateCount(textarea: HTMLTextAreaElement, label: HTMLElement | null) {
+    const count = toSet(textarea.value).size;
+    if (label) label.textContent = count > 0 ? `(${count} items)` : '';
+  }
+
+  setA.addEventListener('input', () => updateCount(setA, setACount));
+  setB.addEventListener('input', () => updateCount(setB, setBCount));
+
+  function showResult(arr: string[]) {
+    output.value = arr.join('\n');
+    if (resultLabel) resultLabel.textContent = `(${arr.length} items)`;
+  }
+
+  document.getElementById('intersection-btn')?.addEventListener('click', () => {
+    const a = toSet(setA.value), b = toSet(setB.value);
+    showResult([...a].filter(x => b.has(x)));
+  });
+
+  document.getElementById('union-btn')?.addEventListener('click', () => {
+    const a = toSet(setA.value), b = toSet(setB.value);
+    showResult([...new Set([...a, ...b])]);
+  });
+
+  document.getElementById('diff-ab-btn')?.addEventListener('click', () => {
+    const a = toSet(setA.value), b = toSet(setB.value);
+    showResult([...a].filter(x => !b.has(x)));
+  });
+
+  document.getElementById('diff-ba-btn')?.addEventListener('click', () => {
+    const a = toSet(setA.value), b = toSet(setB.value);
+    showResult([...b].filter(x => !a.has(x)));
+  });
+
+  document.getElementById('symmetric-btn')?.addEventListener('click', () => {
+    const a = toSet(setA.value), b = toSet(setB.value);
+    showResult([...a].filter(x => !b.has(x)).concat([...b].filter(x => !a.has(x))));
+  });
+
+  document.getElementById('copy-btn')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(output.value);
+  });
+
+  ShareManager.register({
+    tool: 'list-compare',
+    actions: {
+      intersection: () => document.getElementById('intersection-btn')?.click(),
+      union: () => document.getElementById('union-btn')?.click(),
+      diffAB: () => document.getElementById('diff-ab-btn')?.click(),
+      diffBA: () => document.getElementById('diff-ba-btn')?.click(),
+      symmetric: () => document.getElementById('symmetric-btn')?.click()
+    }
+  });
+</script>

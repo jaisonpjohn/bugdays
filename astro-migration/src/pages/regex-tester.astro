@@ -1,0 +1,291 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Regex Tester - Regular Expression Tester"
+  description="Test regular expressions with live highlighting and match results. Free online regex tester with capture groups, flags support, and real-time validation."
+  keywords="regex tester, regular expression tester, regex online, test regex, regex validator, regex debugger, regex match, pattern matching"
+  breadcrumb={[{ name: "Text Tools", href: "/text-tools" }, { name: "Regex Tester" }]}
+  toolId="regex-tester"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Regex Tester</h1>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Regular Expression</label>
+      <div class="flex gap-2">
+        <span class="flex items-center px-3 bg-gray-100 dark:bg-slate-700 border border-r-0 border-gray-300 dark:border-slate-600 rounded-l-lg text-gray-500 dark:text-slate-400">/</span>
+        <input
+          type="text"
+          id="regex-input"
+          data-share-key="pattern"
+          class="flex-1 p-3 border border-gray-300 dark:border-slate-600 font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="Enter your regex pattern..."
+        />
+        <span class="flex items-center px-3 bg-gray-100 dark:bg-slate-700 border border-l-0 border-gray-300 dark:border-slate-600 text-gray-500 dark:text-slate-400">/</span>
+        <input
+          type="text"
+          id="flags-input"
+          data-share-key="flags"
+          class="w-20 p-3 border border-gray-300 dark:border-slate-600 rounded-r-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="gim"
+          value="g"
+        />
+      </div>
+      <div class="flex flex-wrap gap-3 mt-3">
+        <label class="inline-flex items-center text-sm">
+          <input type="checkbox" id="flag-g" checked class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+          <span class="ml-1">global (g)</span>
+        </label>
+        <label class="inline-flex items-center text-sm">
+          <input type="checkbox" id="flag-i" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+          <span class="ml-1">case-insensitive (i)</span>
+        </label>
+        <label class="inline-flex items-center text-sm">
+          <input type="checkbox" id="flag-m" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+          <span class="ml-1">multiline (m)</span>
+        </label>
+        <label class="inline-flex items-center text-sm">
+          <input type="checkbox" id="flag-s" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+          <span class="ml-1">dotAll (s)</span>
+        </label>
+      </div>
+    </div>
+
+    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Test String</label>
+        <textarea
+          id="test-input"
+          data-share-key="testString"
+          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+          placeholder="Enter text to test against the regex..."
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Highlighted Matches</label>
+        <div
+          id="highlight-output"
+          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 overflow-auto whitespace-pre-wrap"
+        ></div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mt-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Match Details</label>
+      <div id="matches-output" class="text-sm"></div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mt-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Common Regex Patterns</label>
+      <div class="flex flex-wrap gap-2">
+        <button class="pattern-btn text-xs px-3 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">Email</button>
+        <button class="pattern-btn text-xs px-3 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-pattern="https?://[^\s]+">URL</button>
+        <button class="pattern-btn text-xs px-3 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-pattern="\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b">IPv4</button>
+        <button class="pattern-btn text-xs px-3 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-pattern="^\d{4}-\d{2}-\d{2}$">Date (YYYY-MM-DD)</button>
+        <button class="pattern-btn text-xs px-3 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-pattern="^\+?[1-9]\d{1,14}$">Phone (E.164)</button>
+        <button class="pattern-btn text-xs px-3 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-pattern="#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})">Hex Color</button>
+        <button class="pattern-btn text-xs px-3 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}">UUID</button>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online Regex Tester</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Test and debug regular expressions with live matching and highlighting. View all matches with their
+        positions and capture groups. Supports global, case-insensitive, multiline, and dotAll flags.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<style>
+  .match-highlight {
+    background-color: #fef08a;
+    border-radius: 2px;
+  }
+  .match-highlight:nth-of-type(even) {
+    background-color: #bbf7d0;
+  }
+</style>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const regexInput = document.getElementById('regex-input') as HTMLInputElement;
+  const flagsInput = document.getElementById('flags-input') as HTMLInputElement;
+  const testInput = document.getElementById('test-input') as HTMLTextAreaElement;
+  const highlightOutput = document.getElementById('highlight-output');
+  const matchesOutput = document.getElementById('matches-output');
+  const errorBox = document.getElementById('error-box');
+
+  ShareManager.register({
+    tool: 'regex-tester',
+    afterLoad: () => testRegex()
+  });
+
+  const flagCheckboxes = {
+    g: document.getElementById('flag-g') as HTMLInputElement,
+    i: document.getElementById('flag-i') as HTMLInputElement,
+    m: document.getElementById('flag-m') as HTMLInputElement,
+    s: document.getElementById('flag-s') as HTMLInputElement
+  };
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function updateFlagsFromCheckboxes() {
+    let flags = '';
+    if (flagCheckboxes.g.checked) flags += 'g';
+    if (flagCheckboxes.i.checked) flags += 'i';
+    if (flagCheckboxes.m.checked) flags += 'm';
+    if (flagCheckboxes.s.checked) flags += 's';
+    flagsInput.value = flags;
+  }
+
+  function updateCheckboxesFromFlags() {
+    const flags = flagsInput.value;
+    flagCheckboxes.g.checked = flags.includes('g');
+    flagCheckboxes.i.checked = flags.includes('i');
+    flagCheckboxes.m.checked = flags.includes('m');
+    flagCheckboxes.s.checked = flags.includes('s');
+  }
+
+  function testRegex() {
+    hideError();
+
+    const pattern = regexInput.value;
+    const flags = flagsInput.value;
+    const testStr = testInput.value;
+
+    if (!pattern) {
+      highlightOutput.innerHTML = escapeHtml(testStr);
+      matchesOutput.innerHTML = '<p class="text-gray-500 dark:text-slate-400">Enter a regex pattern to see matches</p>';
+      return;
+    }
+
+    let regex: RegExp;
+    try {
+      regex = new RegExp(pattern, flags);
+    } catch (e) {
+      showError('Invalid regex: ' + (e as Error).message);
+      highlightOutput.innerHTML = escapeHtml(testStr);
+      matchesOutput.innerHTML = '';
+      return;
+    }
+
+    // Find all matches
+    const matches: { match: string; index: number; groups: string[] }[] = [];
+
+    if (flags.includes('g')) {
+      let match;
+      while ((match = regex.exec(testStr)) !== null) {
+        matches.push({
+          match: match[0],
+          index: match.index,
+          groups: match.slice(1)
+        });
+        if (match[0].length === 0) {
+          regex.lastIndex++; // Prevent infinite loop for zero-length matches
+        }
+      }
+    } else {
+      const match = regex.exec(testStr);
+      if (match) {
+        matches.push({
+          match: match[0],
+          index: match.index,
+          groups: match.slice(1)
+        });
+      }
+    }
+
+    // Highlight matches
+    if (matches.length === 0) {
+      highlightOutput.innerHTML = escapeHtml(testStr);
+    } else {
+      let highlighted = '';
+      let lastIndex = 0;
+
+      for (let i = 0; i < matches.length; i++) {
+        const m = matches[i];
+        highlighted += escapeHtml(testStr.slice(lastIndex, m.index));
+        highlighted += `<span class="match-highlight">${escapeHtml(m.match)}</span>`;
+        lastIndex = m.index + m.match.length;
+      }
+      highlighted += escapeHtml(testStr.slice(lastIndex));
+      highlightOutput.innerHTML = highlighted;
+    }
+
+    // Display match details
+    if (matches.length === 0) {
+      matchesOutput.innerHTML = '<p class="text-gray-500 dark:text-slate-400">No matches found</p>';
+    } else {
+      let html = `<p class="mb-2 font-medium">${matches.length} match${matches.length > 1 ? 'es' : ''} found</p>`;
+      html += '<div class="space-y-2 max-h-48 overflow-auto">';
+
+      matches.forEach((m, i) => {
+        html += `<div class="p-2 bg-gray-50 dark:bg-slate-900 rounded border border-gray-200 dark:border-slate-700">`;
+        html += `<div class="flex items-center gap-2">`;
+        html += `<span class="text-xs px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded">Match ${i + 1}</span>`;
+        html += `<span class="text-xs text-gray-500 dark:text-slate-400">Index: ${m.index}</span>`;
+        html += `</div>`;
+        html += `<div class="font-mono text-sm mt-1 break-all">"${escapeHtml(m.match)}"</div>`;
+
+        if (m.groups.length > 0) {
+          html += `<div class="mt-1 text-xs text-gray-600 dark:text-slate-300">`;
+          m.groups.forEach((g, gi) => {
+            html += `<div>Group ${gi + 1}: "${escapeHtml(g || '')}"</div>`;
+          });
+          html += `</div>`;
+        }
+        html += `</div>`;
+      });
+
+      html += '</div>';
+      matchesOutput.innerHTML = html;
+    }
+  }
+
+  // Event listeners
+  regexInput.addEventListener('input', testRegex);
+  flagsInput.addEventListener('input', () => {
+    updateCheckboxesFromFlags();
+    testRegex();
+  });
+  testInput.addEventListener('input', testRegex);
+
+  Object.values(flagCheckboxes).forEach(cb => {
+    cb.addEventListener('change', () => {
+      updateFlagsFromCheckboxes();
+      testRegex();
+    });
+  });
+
+  // Pattern buttons
+  document.querySelectorAll('.pattern-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      regexInput.value = (btn as HTMLElement).dataset.pattern || '';
+      testRegex();
+    });
+  });
+
+  // Initialize
+  testRegex();
+</script>

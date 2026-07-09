@@ -1,0 +1,175 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Sort Lines Online - Alphabetical, Numeric, Shuffle"
+  description="Sort lines of text alphabetically, numerically, by length, or shuffle randomly. Free online line sorter with ascending/descending options."
+  keywords="sort lines, sort text online, alphabetical sort, numeric sort, sort by length, shuffle lines, line sorter"
+  breadcrumb={[{ name: "Text Tools", href: "/text-tools" }, { name: "Sort Lines" }]}
+  toolId="sort-lines"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Sort Lines</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+          Input <span id="input-count" class="text-gray-500 dark:text-slate-400 font-normal"></span>
+        </label>
+        <textarea
+          id="input"
+          data-share-key="input"
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Enter lines to sort...&#10;One item per line"
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+          Output <span id="output-count" class="text-gray-500 dark:text-slate-400 font-normal"></span>
+        </label>
+        <textarea
+          id="output"
+          readonly
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none text-gray-900 dark:text-slate-100"
+          placeholder="Sorted lines will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="mt-4 p-4 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+      <div class="flex flex-wrap gap-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="sort-type" data-share-key="sortType" value="asc" checked class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">A → Z</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="sort-type" value="desc" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Z → A</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="sort-type" value="numeric" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Numeric</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="sort-type" value="length-asc" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">By length ↑</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="sort-type" value="length-desc" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">By length ↓</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="radio" name="sort-type" value="shuffle" class="w-4 h-4 text-indigo-600 focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Shuffle</span>
+        </label>
+      </div>
+      <div class="flex flex-wrap gap-4 mt-3">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="case-insensitive" data-share-key="caseInsensitive" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Case insensitive</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="trim" data-share-key="trim" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Trim whitespace</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="execute-btn" data-share-action="execute" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Sort Lines
+      </button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Copy
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Clear
+      </button>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Sort Lines Online</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Sort lines of text in various ways: alphabetically (A-Z or Z-A), numerically, by line length, or shuffle randomly. Useful for organizing lists, data processing, and more.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const inputCount = document.getElementById('input-count');
+  const outputCount = document.getElementById('output-count');
+
+  function execute() {
+    const sortType = (document.querySelector('input[name="sort-type"]:checked') as HTMLInputElement).value;
+    const caseInsensitive = (document.getElementById('case-insensitive') as HTMLInputElement).checked;
+    const trim = (document.getElementById('trim') as HTMLInputElement).checked;
+
+    let lines = input.value.split('\n');
+    if (trim) lines = lines.map(l => l.trim());
+
+    const compare = (a: string, b: string): number => {
+      const aa = caseInsensitive ? a.toLowerCase() : a;
+      const bb = caseInsensitive ? b.toLowerCase() : b;
+      return aa.localeCompare(bb);
+    };
+
+    switch (sortType) {
+      case 'asc':
+        lines.sort(compare);
+        break;
+      case 'desc':
+        lines.sort((a, b) => -compare(a, b));
+        break;
+      case 'numeric':
+        lines.sort((a, b) => {
+          const numA = parseFloat(a) || 0;
+          const numB = parseFloat(b) || 0;
+          return numA - numB;
+        });
+        break;
+      case 'length-asc':
+        lines.sort((a, b) => a.length - b.length);
+        break;
+      case 'length-desc':
+        lines.sort((a, b) => b.length - a.length);
+        break;
+      case 'shuffle':
+        for (let i = lines.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [lines[i], lines[j]] = [lines[j], lines[i]];
+        }
+        break;
+    }
+
+    output.value = lines.join('\n');
+    outputCount!.textContent = `(${lines.length} lines)`;
+  }
+
+  function updateInputCount() {
+    const lines = input.value.split('\n').filter(l => l.trim() !== '');
+    inputCount!.textContent = lines.length > 0 ? `(${lines.length} lines)` : '';
+  }
+
+  document.getElementById('execute-btn')?.addEventListener('click', execute);
+  document.getElementById('copy-btn')?.addEventListener('click', () => navigator.clipboard.writeText(output.value));
+  document.getElementById('clear-btn')?.addEventListener('click', () => {
+    input.value = '';
+    output.value = '';
+    inputCount!.textContent = '';
+    outputCount!.textContent = '';
+  });
+
+  input.addEventListener('input', updateInputCount);
+
+  ShareManager.register({
+    tool: 'sort-lines',
+    actions: { execute: () => document.getElementById('execute-btn')?.click() }
+  });
+</script>

@@ -1,0 +1,48 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const tools = [
+  { name: 'CIDR Calculator', href: '/cidr-calculator', description: 'Calculate IP ranges, subnet masks, and available host counts' },
+  { name: 'API Client', href: '/api-client', description: 'Test REST APIs with custom headers, body, and authentication' },
+  { name: 'Bulk API Invoker', href: '/bulk-api-invoker', description: 'Execute multiple API calls from CSV with URL templates' },
+  { name: 'SOAP Client', href: '/soap-client', description: 'Parse WSDL and test SOAP web services with XML requests' },
+  { name: 'gRPC Client', href: '/grpc-client', description: 'Test gRPC services with protobuf message building' },
+  { name: 'WebSocket Client', href: '/websocket-client', description: 'Test WebSocket connections with real-time message exchange' },
+  { name: 'SSE Client', href: '/sse-client', description: 'Connect to Server-Sent Events streams and view real-time events' },
+  { name: 'Cron Parser', href: '/cron-parser', description: 'Parse cron expressions to human readable schedules' },
+];
+---
+
+<Layout
+  title="Network Tools"
+  description="Free online network tools for developers. CIDR calculator, REST API client, SOAP client, gRPC client, WebSocket tester, SSE client, and cron parser."
+  keywords="CIDR calculator, subnet calculator, API client, REST client, SOAP client, WSDL tester, gRPC client, WebSocket client, SSE client, server-sent events, cron parser, network tools"
+  breadcrumb={[{ name: "Network Tools" }]}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-2">Network Tools</h1>
+    <p class="text-gray-600 dark:text-slate-400 mb-6">Calculate, test, and parse network configurations</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="block p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all"
+        >
+          <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{tool.name}</h2>
+          <p class="text-sm text-gray-600 dark:text-slate-300">{tool.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About Network Tools</h2>
+      <p class="text-gray-600 dark:text-slate-300 text-sm">
+        Network configuration and API testing are essential developer tasks. Our CIDR calculator helps you plan IP
+        subnets and understand network ranges. Test REST APIs, SOAP web services (with WSDL parsing), and gRPC
+        endpoints (with protobuf support) directly in your browser. The cron parser decodes scheduling expressions
+        into plain English.
+      </p>
+    </div>
+  </div>
+</Layout>

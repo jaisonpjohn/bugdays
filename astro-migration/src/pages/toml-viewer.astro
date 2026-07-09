@@ -1,0 +1,453 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "TOML Viewer & Validator",
+    "description": "Free online TOML viewer and validator. Parse TOML with interactive tree view, collapsible nodes, and copyable paths.",
+    "url": "https://bugdays.com/toml-viewer",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": ["TOML validation", "Interactive tree view", "Collapsible nodes", "Path extraction", "TOML to JSON conversion"]
+  }
+];
+---
+
+<Layout
+  title="TOML Viewer & Validator - Interactive Tree View Online"
+  description="Free online TOML viewer with interactive tree view. Parse and validate TOML, explore with collapsible nodes, copy paths to any value. Perfect for Cargo.toml, pyproject.toml, config files."
+  keywords="TOML viewer, TOML validator, TOML tree view, TOML parser, TOML path, validate TOML, TOML explorer, Cargo.toml viewer, pyproject.toml"
+  breadcrumb={[{ name: "TOML Tools", href: "/toml-tools" }, { name: "TOML Viewer" }]}
+  toolId="toml-viewer"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">TOML Viewer & Validator</h1>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+      <!-- Toolbar -->
+      <div class="flex flex-wrap items-center gap-2 p-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+        <div id="input-buttons" class="flex flex-wrap gap-2">
+          <button id="parse-btn" data-share-action="parse" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Tree View
+          </button>
+          <button id="to-json-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+            To JSON
+          </button>
+          <button id="to-yaml-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+            To YAML
+          </button>
+          <button id="to-toml-btn" class="hidden px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 transition-colors text-sm font-medium">
+            Back to TOML
+          </button>
+          <button id="sample-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors text-sm font-medium">
+            Sample
+          </button>
+        </div>
+        <div id="tree-buttons" class="hidden flex flex-wrap gap-2">
+          <button id="back-btn" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Back to Editor
+          </button>
+          <button id="expand-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+            Expand All
+          </button>
+          <button id="collapse-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+            Collapse All
+          </button>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <div class="relative">
+          <button id="copy-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Copy">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+          </button>
+          <span id="copied-msg" class="hidden absolute -top-8 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs px-2 py-1 rounded whitespace-nowrap">Copied!</span>
+        </div>
+        <button id="clear-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Clear">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Error message -->
+      <div id="error-box" class="hidden bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4">
+        <p class="text-red-700 dark:text-red-300 text-sm">
+          <span class="font-medium">Invalid TOML:</span> <span id="error-text"></span>
+        </p>
+      </div>
+
+      <!-- Editor area -->
+      <div id="editor-view">
+        <textarea
+          id="editor"
+          data-share-key="toml"
+          class="w-full min-h-[400px] max-h-[600px] p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset resize-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 border-0"
+          placeholder="Paste your TOML here...
+
+Example:
+[package]
+name = &quot;my-app&quot;
+version = &quot;1.0.0&quot;
+
+[dependencies]
+serde = &quot;1.0&quot;"
+        ></textarea>
+      </div>
+
+      <!-- Tree View -->
+      <div id="tree-view" class="hidden p-4 min-h-[400px] max-h-[600px] overflow-auto font-mono text-sm bg-white dark:bg-slate-800"></div>
+
+      <!-- Path tooltip -->
+      <div id="path-tooltip" class="hidden fixed bg-slate-800 dark:bg-slate-700 text-white px-3 py-1.5 rounded shadow-lg z-50 text-xs font-mono cursor-pointer hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors" title="Click to copy">
+        <span id="path-text"></span>
+      </div>
+    </div>
+
+    <div class="mt-8 space-y-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Interactive TOML Viewer & Validator</h2>
+        <p class="text-gray-600 dark:text-slate-300 mb-4">
+          Parse and explore TOML with an interactive tree view. Validate TOML syntax, navigate complex nested structures
+          with collapsible nodes, and easily copy paths to any value. Perfect for Cargo.toml, pyproject.toml,
+          and other configuration files.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Interactive Tree</h3>
+          <p class="text-gray-600 dark:text-slate-300">Collapsible nodes let you focus on specific sections. Expand or collapse all with one click.</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Copy Paths</h3>
+          <p class="text-gray-600 dark:text-slate-300">Click any value to see its path. One more click copies it - perfect for scripting.</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Format Conversion</h3>
+          <p class="text-gray-600 dark:text-slate-300">Convert TOML to JSON or YAML with one click.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+  import * as TOML from 'smol-toml';
+  import * as jsYaml from 'js-yaml';
+
+  const editor = document.getElementById('editor') as HTMLTextAreaElement;
+  const editorView = document.getElementById('editor-view')!;
+  const treeView = document.getElementById('tree-view')!;
+  const inputButtons = document.getElementById('input-buttons')!;
+  const treeButtons = document.getElementById('tree-buttons')!;
+  const errorBox = document.getElementById('error-box')!;
+  const errorText = document.getElementById('error-text')!;
+  const copiedMsg = document.getElementById('copied-msg')!;
+  const pathTooltip = document.getElementById('path-tooltip')!;
+  const pathText = document.getElementById('path-text')!;
+
+  let originalText = '';
+  let originalToml = '';  // Store original TOML for conversions
+  let currentFormat = 'toml';  // Track current format
+  let currentPath = '';
+  let hideTimeout: number;
+
+  ShareManager.register({
+    tool: 'toml-viewer',
+    actions: {
+      parse: () => document.getElementById('parse-btn')?.click(),
+    }
+  });
+
+  const sample = `# Cargo.toml example
+[package]
+name = "my-rust-app"
+version = "0.1.0"
+edition = "2021"
+authors = ["Developer <dev@example.com>"]
+description = "An awesome Rust application"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+reqwest = "0.11"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bin]]
+name = "my-app"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = true`;
+
+  function showError(msg: string) {
+    errorText.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function buildTreeHtml(obj: any, path = '', level = 0): string {
+    if (obj === null) {
+      return `<span class="yaml-tree-value yaml-val-null" data-path="${escapeHtml(path)}">null</span>`;
+    }
+    if (obj === undefined) {
+      return `<span class="yaml-tree-value yaml-val-null" data-path="${escapeHtml(path)}">undefined</span>`;
+    }
+    if (obj instanceof Date) {
+      return `<span class="yaml-tree-value yaml-val-string" data-path="${escapeHtml(path)}">${obj.toISOString()}</span>`;
+    }
+    if (typeof obj !== 'object') {
+      if (typeof obj === 'string') {
+        return `<span class="yaml-tree-value yaml-val-string" data-path="${escapeHtml(path)}">"${escapeHtml(obj)}"</span>`;
+      }
+      if (typeof obj === 'number') {
+        return `<span class="yaml-tree-value yaml-val-number" data-path="${escapeHtml(path)}">${obj}</span>`;
+      }
+      if (typeof obj === 'boolean') {
+        return `<span class="yaml-tree-value yaml-val-boolean" data-path="${escapeHtml(path)}">${obj}</span>`;
+      }
+      return `<span class="yaml-tree-value" data-path="${escapeHtml(path)}">${escapeHtml(String(obj))}</span>`;
+    }
+
+    const isArray = Array.isArray(obj);
+    const keys = Object.keys(obj);
+    if (keys.length === 0) {
+      return isArray ? '[]' : '{}';
+    }
+
+    const id = 'n' + Math.random().toString(36).substr(2, 8);
+    let html = `<div class="yaml-tree-node" data-id="${id}">`;
+    html += `<button onclick="toggleTomlNode('${id}')" class="yaml-toggle">`;
+    html += `<span class="arrow">▼</span></button>`;
+    html += isArray
+      ? `<span class="yaml-count">[${keys.length} items]</span>`
+      : `<span class="yaml-count">{${keys.length} keys}</span>`;
+    html += `<div class="yaml-children children">`;
+
+    for (const key of keys) {
+      const keyPath = isArray ? `${path}[${key}]` : (path ? `${path}.${key}` : `.${key}`);
+      const displayKey = isArray ? key : escapeHtml(key);
+      const keyClass = isArray ? 'yaml-index' : 'yaml-key';
+
+      html += `<div class="yaml-row">`;
+      html += `<span class="${keyClass}" data-path="${escapeHtml(keyPath)}">${displayKey}</span>`;
+      html += `<span class="yaml-colon">:</span> `;
+      html += buildTreeHtml(obj[key], keyPath, level + 1);
+      html += `</div>`;
+    }
+
+    html += '</div></div>';
+    return html;
+  }
+
+  // Global function for onclick
+  (window as any).toggleTomlNode = function(id: string) {
+    const node = document.querySelector(`[data-id="${id}"]`);
+    const children = node?.querySelector('.children');
+    const arrow = node?.querySelector('.arrow');
+    if (children?.classList.contains('hidden')) {
+      children.classList.remove('hidden');
+      if (arrow) arrow.textContent = '▼';
+    } else {
+      children?.classList.add('hidden');
+      if (arrow) arrow.textContent = '▶';
+    }
+  };
+
+  function showPathTooltip(path: string, rect: DOMRect) {
+    currentPath = path;
+    pathText.textContent = path;
+
+    let left = rect.left;
+    let top = rect.bottom + 4;
+
+    const tooltipWidth = 300;
+    if (left + tooltipWidth > window.innerWidth) {
+      left = window.innerWidth - tooltipWidth - 10;
+    }
+
+    pathTooltip.style.left = left + 'px';
+    pathTooltip.style.top = top + 'px';
+    pathTooltip.classList.remove('hidden');
+
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+      pathTooltip.classList.add('hidden');
+    }, 4000) as unknown as number;
+  }
+
+  // Parse button
+  document.getElementById('parse-btn')!.addEventListener('click', () => {
+    hideError();
+    const text = editor.value.trim();
+    if (!text) {
+      showError('Empty input');
+      return;
+    }
+
+        try {
+      const parsed = TOML.parse(text);
+      originalText = text;
+      treeView.innerHTML = buildTreeHtml(parsed);
+      editorView.classList.add('hidden');
+      treeView.classList.remove('hidden');
+      inputButtons.classList.add('hidden');
+      treeButtons.classList.remove('hidden');
+    } catch (e: any) {
+      showError(e.message);
+    }
+  });
+
+  // Back button
+  document.getElementById('back-btn')!.addEventListener('click', () => {
+    treeView.classList.add('hidden');
+    editorView.classList.remove('hidden');
+    treeButtons.classList.add('hidden');
+    inputButtons.classList.remove('hidden');
+    pathTooltip.classList.add('hidden');
+  });
+
+  // Expand all
+  document.getElementById('expand-btn')!.addEventListener('click', () => {
+    document.querySelectorAll('#tree-view .children').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('#tree-view .arrow').forEach(el => el.textContent = '▼');
+  });
+
+  // Collapse all
+  document.getElementById('collapse-btn')!.addEventListener('click', () => {
+    document.querySelectorAll('#tree-view .children').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('#tree-view .arrow').forEach(el => el.textContent = '▶');
+  });
+
+  // To JSON
+  document.getElementById('to-json-btn')!.addEventListener('click', () => {
+    hideError();
+    const text = editor.value.trim();
+    if (!text) return;
+
+    try {
+      // Store original TOML if not already stored
+      if (currentFormat === 'toml') {
+        originalToml = text;
+      }
+      const parsed = TOML.parse(originalToml || text);
+      editor.value = JSON.stringify(parsed, null, 2);
+      currentFormat = 'json';
+      updateFormatIndicator();
+    } catch (e: any) {
+      showError(e.message);
+    }
+  });
+
+  // To YAML
+  document.getElementById('to-yaml-btn')!.addEventListener('click', () => {
+    hideError();
+    const text = editor.value.trim();
+    if (!text) return;
+
+    try {
+      // Store original TOML if not already stored
+      if (currentFormat === 'toml') {
+        originalToml = text;
+      }
+      const parsed = TOML.parse(originalToml || text);
+      editor.value = jsYaml.dump(parsed, { indent: 2, lineWidth: -1 });
+      currentFormat = 'yaml';
+      updateFormatIndicator();
+    } catch (e: any) {
+      showError(e.message);
+    }
+  });
+
+  // Back to TOML
+  document.getElementById('to-toml-btn')?.addEventListener('click', () => {
+    if (originalToml) {
+      editor.value = originalToml;
+      currentFormat = 'toml';
+      updateFormatIndicator();
+    }
+  });
+
+  function updateFormatIndicator() {
+    const toTomlBtn = document.getElementById('to-toml-btn');
+    if (currentFormat === 'toml') {
+      toTomlBtn?.classList.add('hidden');
+    } else {
+      toTomlBtn?.classList.remove('hidden');
+    }
+  }
+
+  // Sample
+  document.getElementById('sample-btn')!.addEventListener('click', () => {
+    editor.value = sample;
+    originalToml = '';
+    currentFormat = 'toml';
+    updateFormatIndicator();
+    hideError();
+  });
+
+  // Copy
+  document.getElementById('copy-btn')!.addEventListener('click', () => {
+    const text = editor.value || originalText;
+    navigator.clipboard.writeText(text);
+    copiedMsg.classList.remove('hidden');
+    setTimeout(() => copiedMsg.classList.add('hidden'), 1500);
+  });
+
+  // Clear
+  document.getElementById('clear-btn')!.addEventListener('click', () => {
+    editor.value = '';
+    originalToml = '';
+    currentFormat = 'toml';
+    updateFormatIndicator();
+    hideError();
+    if (!treeView.classList.contains('hidden')) {
+      treeView.classList.add('hidden');
+      editorView.classList.remove('hidden');
+      treeButtons.classList.add('hidden');
+      inputButtons.classList.remove('hidden');
+    }
+  });
+
+  // Path click handler for tree view
+  treeView.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.dataset.path !== undefined) {
+      e.stopPropagation();
+      showPathTooltip(target.dataset.path, target.getBoundingClientRect());
+    }
+  });
+
+  // Copy path when clicking tooltip
+  pathTooltip.addEventListener('click', () => {
+    navigator.clipboard.writeText(currentPath);
+    pathText.textContent = 'Copied!';
+    setTimeout(() => {
+      pathTooltip.classList.add('hidden');
+    }, 800);
+  });
+</script>

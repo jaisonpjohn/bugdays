@@ -1,0 +1,119 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Split Text into Lines Online - Delimiter Splitter"
+  description="Split delimited text into separate lines. Convert CSV, comma-separated, or any delimited string into a list. Free online text splitter tool."
+  keywords="split text, text splitter, split by delimiter, csv to lines, comma separated to lines, split string online"
+  breadcrumb={[{ name: "Text Tools", href: "/text-tools" }, { name: "Split Text" }]}
+  toolId="split-text"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Split Text into Lines</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+          Input <span id="input-count" class="text-gray-500 dark:text-slate-400 font-normal"></span>
+        </label>
+        <textarea
+          id="input"
+          data-share-key="input"
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Enter delimited text to split...&#10;e.g., 'a', 'b', 'c'"
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+          Output <span id="output-count" class="text-gray-500 dark:text-slate-400 font-normal"></span>
+        </label>
+        <textarea
+          id="output"
+          readonly
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none text-gray-900 dark:text-slate-100"
+          placeholder="Split lines will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="mt-4 p-4 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+      <div class="flex flex-wrap items-end gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Delimiter</label>
+          <input type="text" id="delimiter" data-share-key="delimiter" class="w-24 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-mono bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" value=",">
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-4 mt-3">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="trim" data-share-key="trim" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Trim whitespace</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="remove-quotes" data-share-key="removeQuotes" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Remove quotes</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="skip-empty" data-share-key="skipEmpty" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Skip empty</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="execute-btn" data-share-action="execute" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Split Text
+      </button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Copy
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Clear
+      </button>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Split Text Online</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Split a delimited string into separate lines. Great for converting comma-separated values, SQL IN clauses, or JSON arrays back into a list format.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const outputCount = document.getElementById('output-count');
+
+  function execute() {
+    const delimiter = (document.getElementById('delimiter') as HTMLInputElement).value;
+    const trim = (document.getElementById('trim') as HTMLInputElement).checked;
+    const removeQuotes = (document.getElementById('remove-quotes') as HTMLInputElement).checked;
+    const skipEmpty = (document.getElementById('skip-empty') as HTMLInputElement).checked;
+
+    let parts = input.value.split(delimiter);
+    if (trim) parts = parts.map(p => p.trim());
+    if (removeQuotes) parts = parts.map(p => p.replace(/^['"`\[\]\(\)]|['"`\[\]\(\)]$/g, ''));
+    if (skipEmpty) parts = parts.filter(p => p !== '');
+
+    output.value = parts.join('\n');
+    outputCount!.textContent = `(${parts.length} lines)`;
+  }
+
+  document.getElementById('execute-btn')?.addEventListener('click', execute);
+  document.getElementById('copy-btn')?.addEventListener('click', () => navigator.clipboard.writeText(output.value));
+  document.getElementById('clear-btn')?.addEventListener('click', () => {
+    input.value = '';
+    output.value = '';
+    outputCount!.textContent = '';
+  });
+
+  ShareManager.register({
+    tool: 'split-text',
+    actions: { execute: () => document.getElementById('execute-btn')?.click() }
+  });
+</script>

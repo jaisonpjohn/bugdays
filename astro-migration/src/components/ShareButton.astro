@@ -1,0 +1,230 @@
+---
+// Share button — appears in the header when toolId is set, plus a floating
+// pill above the Feedback button so sharing is hard to miss.
+// The user always chooses HOW to share: data-in-URL (private) or
+// server-stored short link (30 days).
+---
+
+<div class="share-button relative">
+  <button
+    id="share-btn"
+    type="button"
+    class="share-trigger flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg
+           bg-indigo-600 hover:bg-indigo-700
+           text-white text-sm font-semibold
+           transition-colors shadow-sm"
+    aria-label="Share"
+    title="Share this tool with current data"
+  >
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+    </svg>
+    <span>Share</span>
+  </button>
+</div>
+
+<!-- Result toast (fixed, works for both header + floating triggers) -->
+<span id="share-tooltip" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-green-500 text-white text-sm px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap z-50">
+  Link copied!
+</span>
+
+<!-- Floating share pill (above the Feedback button) -->
+<button
+  id="share-btn-floating"
+  type="button"
+  class="share-trigger fixed bottom-16 right-4 z-40 flex items-center gap-2 px-3 py-2
+         bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium
+         rounded-full shadow-lg transition-all hover:scale-105"
+  aria-label="Share this tool with current data"
+>
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path>
+  </svg>
+  <span class="hidden sm:inline">Share</span>
+</button>
+
+<!-- Share Chooser Modal -->
+<div id="share-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6">
+    <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-1">Share this tool</h3>
+    <p class="text-xs text-gray-500 dark:text-slate-400 mb-4">
+      Data size: <span id="share-modal-size" class="font-medium"></span> — choose how to share it:
+    </p>
+
+    <div class="space-y-3">
+      <!-- Option 1: URL -->
+      <button id="share-url-btn" class="w-full text-left p-3 rounded-lg border-2 border-indigo-200 dark:border-indigo-800 hover:border-indigo-500 dark:hover:border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20 transition-colors group">
+        <div class="flex items-center gap-2 mb-1">
+          <svg class="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+          <span class="text-sm font-semibold text-gray-800 dark:text-slate-100">Link with data embedded</span>
+          <span class="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">Private</span>
+        </div>
+        <p class="text-xs text-gray-600 dark:text-slate-300">
+          Your data lives only inside the link — nothing is uploaded.
+          Link length: <span id="share-url-length" class="font-medium"></span> characters.
+        </p>
+        <p id="share-url-warning" class="hidden mt-1.5 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-1">
+          <svg class="w-3.5 h-3.5 shrink-0 mt-px" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
+          <span>This link is very long — it may get cut off or break in some email clients and chat apps. Consider the short link below instead.</span>
+        </p>
+      </button>
+
+      <!-- Option 2: Server -->
+      <button id="share-server-btn" class="w-full text-left p-3 rounded-lg border-2 border-gray-200 dark:border-slate-600 hover:border-indigo-500 dark:hover:border-indigo-500 transition-colors">
+        <div class="flex items-center gap-2 mb-1">
+          <svg class="w-4 h-4 text-gray-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" />
+          </svg>
+          <span class="text-sm font-semibold text-gray-800 dark:text-slate-100">Short link (uploads data)</span>
+        </div>
+        <p class="text-xs text-gray-600 dark:text-slate-300">
+          Data is stored on our server for 30 days and you get a short link.
+        </p>
+        <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">Don't upload sensitive data — anyone with the link can view it.</p>
+      </button>
+    </div>
+
+    <div class="flex items-center justify-between mt-4">
+      <label class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-slate-400 cursor-pointer">
+        <input id="share-remember" type="checkbox" class="rounded text-indigo-600 focus:ring-indigo-500" />
+        Remember my choice
+      </label>
+      <button id="share-cancel-btn" class="px-4 py-1.5 text-sm bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { ShareManager } from '../lib/share';
+  import type { SharePrepared } from '../lib/share';
+
+  const PREF_KEY = 'bd-share-method'; // 'url' | 'server' | absent = always ask
+
+  function initShareButton() {
+    const triggers = document.querySelectorAll('.share-trigger, #share-btn-floating');
+    const tooltip = document.getElementById('share-tooltip');
+    const modal = document.getElementById('share-modal');
+    const urlBtn = document.getElementById('share-url-btn');
+    const serverBtn = document.getElementById('share-server-btn');
+    const cancelBtn = document.getElementById('share-cancel-btn');
+    const rememberCheck = document.getElementById('share-remember') as HTMLInputElement | null;
+    const sizeEl = document.getElementById('share-modal-size');
+    const urlLengthEl = document.getElementById('share-url-length');
+    const urlWarningEl = document.getElementById('share-url-warning');
+
+    if (!modal || triggers.length === 0) return;
+
+    let pending: SharePrepared | null = null;
+
+    function showTooltip(message: string, isError = false) {
+      if (!tooltip) return;
+      tooltip.textContent = message;
+      tooltip.className = tooltip.className
+        .replace(/bg-(green|red)-500/g, '')
+        + (isError ? ' bg-red-500' : ' bg-green-500');
+      tooltip.classList.remove('hidden');
+      setTimeout(() => tooltip.classList.add('hidden'), 2000);
+    }
+
+    function closeModal() {
+      modal?.classList.add('hidden');
+      pending = null;
+    }
+
+    function maybeRememberChoice(method: 'url' | 'server') {
+      if (rememberCheck?.checked) {
+        try { localStorage.setItem(PREF_KEY, method); } catch {}
+      }
+    }
+
+    async function doShareUrl(prepared: SharePrepared) {
+      const result = await ShareManager.shareViaUrl(prepared);
+      showTooltip(result.message, !result.success);
+    }
+
+    async function doShareServer(prepared: SharePrepared) {
+      const result = await ShareManager.shareViaServer(prepared.stateJson);
+      showTooltip(result.message, !result.success);
+    }
+
+    function openChooser(prepared: SharePrepared) {
+      pending = prepared;
+      if (sizeEl) sizeEl.textContent = ShareManager.formatBytes(prepared.rawBytes);
+      if (urlLengthEl) urlLengthEl.textContent = String(prepared.urlLength);
+      urlWarningEl?.classList.toggle('hidden', !prepared.urlOverWarnLimit);
+      if (rememberCheck) rememberCheck.checked = false;
+      modal?.classList.remove('hidden');
+    }
+
+    async function handleShareClick() {
+      const result = ShareManager.prepareShare();
+      if (!result.ok) {
+        showTooltip(result.message, true);
+        return;
+      }
+
+      const prepared = result.prepared;
+      let saved: string | null = null;
+      try { saved = localStorage.getItem(PREF_KEY); } catch {}
+
+      // Respect a remembered choice — but if the URL would be worryingly
+      // long, always surface the chooser so the user can reconsider.
+      if (saved === 'url' && !prepared.urlOverWarnLimit) {
+        await doShareUrl(prepared);
+        return;
+      }
+      if (saved === 'server') {
+        await doShareServer(prepared);
+        return;
+      }
+
+      openChooser(prepared);
+    }
+
+    triggers.forEach(btn => {
+      const el = btn as HTMLElement;
+      if (el.dataset.shareInit === '1') return;
+      el.dataset.shareInit = '1';
+      el.addEventListener('click', handleShareClick);
+    });
+
+    if (modal.dataset.shareInit !== '1') {
+      modal.dataset.shareInit = '1';
+
+      urlBtn?.addEventListener('click', async () => {
+        if (!pending) return;
+        maybeRememberChoice('url');
+        const prepared = pending;
+        closeModal();
+        await doShareUrl(prepared);
+      });
+
+      serverBtn?.addEventListener('click', async () => {
+        if (!pending) return;
+        maybeRememberChoice('server');
+        const prepared = pending;
+        closeModal();
+        await doShareServer(prepared);
+      });
+
+      cancelBtn?.addEventListener('click', closeModal);
+
+      // Close modal on backdrop click
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+    }
+  }
+
+  // Run on load
+  initShareButton();
+
+  // Re-run after Astro page transitions
+  document.addEventListener('astro:after-swap', initShareButton);
+</script>

@@ -1,0 +1,89 @@
+---
+import { toolGroups } from '../lib/tools';
+
+interface Props {
+  currentPath: string;
+}
+const { currentPath: rawPath } = Astro.props;
+const currentPath = rawPath === '/' ? '/' : rawPath.replace(/\/$/, '');
+
+function isActive(href: string): boolean {
+  return currentPath === href;
+}
+
+function groupHasActiveItem(items: { href: string }[]): boolean {
+  return items.some(item => isActive(item.href));
+}
+---
+
+<nav class="py-3 px-2">
+  {toolGroups.map((group, groupIndex) => (
+    <div class:list={["sidebar-group", group.alwaysOpen && "mb-2"]} data-group-index={groupIndex}>
+      <div
+        class="sidebar-group-toggle w-full flex items-center gap-2 px-2 py-1.5 text-left rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+        data-always-open={group.alwaysOpen ? "true" : "false"}
+        aria-expanded={group.alwaysOpen || groupHasActiveItem(group.items) ? "true" : "false"}
+      >
+        <span class="text-xs tracking-wider uppercase font-semibold text-slate-500 dark:text-slate-400 flex-1">
+          {group.name}
+        </span>
+        {!group.alwaysOpen && (
+          <svg class="sidebar-chevron w-3 h-3 text-slate-400 dark:text-slate-500 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        )}
+      </div>
+      <div
+        class:list={[
+          "sidebar-group-content",
+          (group.alwaysOpen || groupHasActiveItem(group.items)) && "open"
+        ]}
+      >
+        <div class="py-1">
+          {group.items.map((item) => (
+            <a
+              href={item.href}
+              class:list={[
+                "block px-2 py-1.5 text-sm rounded-md transition-all duration-150 truncate ml-1",
+                isActive(item.href)
+                  ? "bg-indigo-600 text-white font-medium shadow-sm"
+                  : "text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800"
+              ]}
+            >
+              {item.name}
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  ))}
+</nav>
+
+<script>
+  function initSidebarGroups() {
+    const toggles = document.querySelectorAll('.sidebar-group-toggle');
+
+    toggles.forEach(toggle => {
+      const alwaysOpen = toggle.getAttribute('data-always-open') === 'true';
+      if (alwaysOpen) return;
+
+      toggle.addEventListener('click', () => {
+        const group = toggle.closest('.sidebar-group');
+        const content = group?.querySelector('.sidebar-group-content');
+        const chevron = toggle.querySelector('.sidebar-chevron');
+        const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+
+        toggle.setAttribute('aria-expanded', (!isExpanded).toString());
+        content?.classList.toggle('open', !isExpanded);
+        chevron?.classList.toggle('rotate-180', !isExpanded);
+      });
+
+      const isExpanded = toggle.getAttribute('aria-expanded') === 'true';
+      const chevron = toggle.querySelector('.sidebar-chevron');
+      chevron?.classList.toggle('rotate-180', isExpanded);
+    });
+  }
+
+  initSidebarGroups();
+  document.addEventListener('astro:after-swap', initSidebarGroups);
+</script>

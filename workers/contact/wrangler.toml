@@ -1,0 +1,14 @@
+name = "bugdays-contact"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Route configuration - adjust based on your setup
+# routes = [
+#   { pattern = "bugdays.com/api/contact", zone_name = "bugdays.com" }
+# ]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "bugdays-contact"
+database_id = "7c27fce7-1983-454c-88b6-f13b0f4c8a55"

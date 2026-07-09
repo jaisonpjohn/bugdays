@@ -1,0 +1,242 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Case Converter - camelCase, snake_case, kebab-case"
+  description="Convert text between camelCase, snake_case, kebab-case, PascalCase, CONSTANT_CASE, and more. Free online case converter for variable naming in programming."
+  keywords="case converter, camelCase converter, snake_case converter, kebab-case, PascalCase, text case changer, variable naming, code formatting"
+  breadcrumb={[{ name: "Text Tools", href: "/text-tools" }, { name: "Case Converter" }]}
+  toolId="case-converter"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Case Converter</h1>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Input Text</label>
+      <textarea
+        id="input"
+        data-share-key="input"
+        class="w-full h-24 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+        placeholder="Enter text to convert (e.g., hello world, helloWorld, hello_world)..."
+      ></textarea>
+      <div class="flex flex-wrap gap-2 mt-2">
+        <button id="clear-btn" class="px-4 py-1 text-sm bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded hover:bg-gray-300 transition-colors">
+          Clear
+        </button>
+        <button class="sample-btn px-4 py-1 text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-200 dark:bg-slate-600" data-sample="hello world">hello world</button>
+        <button class="sample-btn px-4 py-1 text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-200 dark:bg-slate-600" data-sample="getUserById">getUserById</button>
+        <button class="sample-btn px-4 py-1 text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-200 dark:bg-slate-600" data-sample="get_user_by_id">get_user_by_id</button>
+        <button class="sample-btn px-4 py-1 text-sm bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded hover:bg-gray-200 dark:bg-slate-600" data-sample="get-user-by-id">get-user-by-id</button>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">camelCase</label>
+          <button class="copy-btn text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-target="camel-output">Copy</button>
+        </div>
+        <input id="camel-output" readonly class="w-full p-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm" />
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">PascalCase</label>
+          <button class="copy-btn text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-target="pascal-output">Copy</button>
+        </div>
+        <input id="pascal-output" readonly class="w-full p-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm" />
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">snake_case</label>
+          <button class="copy-btn text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-target="snake-output">Copy</button>
+        </div>
+        <input id="snake-output" readonly class="w-full p-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm" />
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">SCREAMING_SNAKE_CASE</label>
+          <button class="copy-btn text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-target="screaming-output">Copy</button>
+        </div>
+        <input id="screaming-output" readonly class="w-full p-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm" />
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">kebab-case</label>
+          <button class="copy-btn text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-target="kebab-output">Copy</button>
+        </div>
+        <input id="kebab-output" readonly class="w-full p-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm" />
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">TRAIN-CASE</label>
+          <button class="copy-btn text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-target="train-output">Copy</button>
+        </div>
+        <input id="train-output" readonly class="w-full p-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm" />
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Title Case</label>
+          <button class="copy-btn text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-target="title-output">Copy</button>
+        </div>
+        <input id="title-output" readonly class="w-full p-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm" />
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Sentence case</label>
+          <button class="copy-btn text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-target="sentence-output">Copy</button>
+        </div>
+        <input id="sentence-output" readonly class="w-full p-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm" />
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">dot.case</label>
+          <button class="copy-btn text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-target="dot-output">Copy</button>
+        </div>
+        <input id="dot-output" readonly class="w-full p-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm" />
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">path/case</label>
+          <button class="copy-btn text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:bg-slate-600 rounded" data-target="path-output">Copy</button>
+        </div>
+        <input id="path-output" readonly class="w-full p-2 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm" />
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online Case Converter</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Convert text between different naming conventions instantly. Supports camelCase, PascalCase, snake_case,
+        kebab-case, SCREAMING_SNAKE_CASE, Title Case, and more. Perfect for converting variable names,
+        CSS class names, and identifiers between different coding styles.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+
+  // Split text into words
+  function toWords(text: string): string[] {
+    // Handle different input formats
+    let normalized = text
+      // Insert space before uppercase letters (camelCase/PascalCase)
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      // Replace underscores, hyphens, dots, slashes with spaces
+      .replace(/[_\-./]+/g, ' ')
+      // Remove extra spaces
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return normalized.toLowerCase().split(' ').filter(w => w.length > 0);
+  }
+
+  // Convert to different cases
+  function toCamelCase(words: string[]): string {
+    return words.map((w, i) =>
+      i === 0 ? w : w.charAt(0).toUpperCase() + w.slice(1)
+    ).join('');
+  }
+
+  function toPascalCase(words: string[]): string {
+    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+  }
+
+  function toSnakeCase(words: string[]): string {
+    return words.join('_');
+  }
+
+  function toScreamingSnakeCase(words: string[]): string {
+    return words.join('_').toUpperCase();
+  }
+
+  function toKebabCase(words: string[]): string {
+    return words.join('-');
+  }
+
+  function toTrainCase(words: string[]): string {
+    return words.join('-').toUpperCase();
+  }
+
+  function toTitleCase(words: string[]): string {
+    return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  function toSentenceCase(words: string[]): string {
+    const sentence = words.join(' ');
+    return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+  }
+
+  function toDotCase(words: string[]): string {
+    return words.join('.');
+  }
+
+  function toPathCase(words: string[]): string {
+    return words.join('/');
+  }
+
+  function convert() {
+    const text = input.value;
+    const words = toWords(text);
+
+    if (words.length === 0) {
+      document.querySelectorAll('input[readonly]').forEach((el) => {
+        (el as HTMLInputElement).value = '';
+      });
+      return;
+    }
+
+    (document.getElementById('camel-output') as HTMLInputElement).value = toCamelCase(words);
+    (document.getElementById('pascal-output') as HTMLInputElement).value = toPascalCase(words);
+    (document.getElementById('snake-output') as HTMLInputElement).value = toSnakeCase(words);
+    (document.getElementById('screaming-output') as HTMLInputElement).value = toScreamingSnakeCase(words);
+    (document.getElementById('kebab-output') as HTMLInputElement).value = toKebabCase(words);
+    (document.getElementById('train-output') as HTMLInputElement).value = toTrainCase(words);
+    (document.getElementById('title-output') as HTMLInputElement).value = toTitleCase(words);
+    (document.getElementById('sentence-output') as HTMLInputElement).value = toSentenceCase(words);
+    (document.getElementById('dot-output') as HTMLInputElement).value = toDotCase(words);
+    (document.getElementById('path-output') as HTMLInputElement).value = toPathCase(words);
+  }
+
+  input.addEventListener('input', convert);
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    input.value = '';
+    convert();
+  });
+
+  // Copy buttons
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = (btn as HTMLElement).dataset.target;
+      const target = document.getElementById(targetId) as HTMLInputElement;
+      navigator.clipboard.writeText(target.value);
+    });
+  });
+
+  // Sample buttons
+  document.querySelectorAll('.sample-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      input.value = (btn as HTMLElement).dataset.sample || '';
+      convert();
+    });
+  });
+
+  ShareManager.register({
+    tool: 'case-converter',
+    afterLoad: () => convert()
+  });
+</script>

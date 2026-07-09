@@ -1,0 +1,44 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const tools = [
+  { name: 'Base64 Encoder/Decoder', href: '/base64-encoder-decoder', description: 'Encode and decode Base64 strings with UTF-8 support' },
+  { name: 'URL Encoder/Decoder', href: '/url-encoder', description: 'Encode and decode URL strings and query parameters' },
+  { name: 'Image ↔ Base64', href: '/image-base64', description: 'Convert images to Base64 data URIs and vice versa' },
+  { name: 'GZip & Base64', href: '/gzip-base64', description: 'Compress with GZip and encode to Base64 in one step' },
+  { name: 'QR Code Generator', href: '/qr-code', description: 'Generate and read QR codes for text, URLs, and data' },
+];
+---
+
+<Layout
+  title="Encoding & Decoding Tools"
+  description="Free online encoding and decoding tools. Base64, URL encoding, image to Base64, GZip compression, and QR code generation. All tools run in your browser."
+  keywords="Base64 encoder, URL encoder, encoding tools, decoding tools, image to Base64, GZip Base64, QR code generator, online encoder"
+  breadcrumb={[{ name: "Encoding Tools" }]}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-2">Encoding & Decoding Tools</h1>
+    <p class="text-gray-600 dark:text-slate-400 mb-6">Encode, decode, and transform data between formats</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="block p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all"
+        >
+          <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{tool.name}</h2>
+          <p class="text-sm text-gray-600 dark:text-slate-300">{tool.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About Encoding Tools</h2>
+      <p class="text-gray-600 dark:text-slate-300 text-sm">
+        Data encoding is essential for safely transmitting binary data, special characters, and media over text-based
+        protocols. Our encoding tools support Base64 for binary data, URL encoding for query strings, and even QR codes
+        for mobile-friendly data sharing. All processing happens locally in your browser.
+      </p>
+    </div>
+  </div>
+</Layout>

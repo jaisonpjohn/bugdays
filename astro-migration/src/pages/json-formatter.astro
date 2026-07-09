@@ -1,0 +1,415 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "JSON Formatter & Validator",
+    "description": "Free online JSON formatter, beautifier, and validator. Prettify, format, and validate JSON instantly.",
+    "url": "https://bugdays.com/json-formatter",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": ["JSON formatting", "JSON beautifying", "JSON validation", "JSON minification", "Tree view", "jq path extraction"]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is JSON formatting?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "JSON formatting (also called beautifying or prettifying) adds proper indentation and line breaks to make JSON data human-readable."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How do I validate JSON online?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Paste your JSON into the editor and click Prettify. If there's a syntax error, the validator highlights the exact position and shows an error message."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is my JSON data safe?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! All processing happens in your browser. Your JSON data is never sent to any server."
+        }
+      }
+    ]
+  }
+];
+---
+
+<Layout
+  title="JSON Formatter & Validator - Beautify, Prettify JSON Online Free"
+  description="Free online JSON formatter, beautifier & validator. Prettify, format, validate and minify JSON instantly. No signup, no data stored. Interactive tree view with jq paths."
+  keywords="JSON formatter, JSON beautifier, JSON prettify, JSON validator, JSON pretty print, format JSON online, JSON beautify, validate JSON, JSON viewer, JSON parser, minify JSON, JSON lint, JSON checker"
+  breadcrumb={[{ name: "JSON Tools", href: "/json-tools" }, { name: "JSON Formatter" }]}
+  toolId="json-formatter"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">JSON Formatter & Validator</h1>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+      <!-- Toolbar -->
+      <div class="flex flex-wrap items-center gap-2 p-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+        <div id="text-buttons" class="flex flex-wrap gap-2">
+          <button id="prettify-btn" data-share-action="prettify" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Prettify
+          </button>
+          <button id="compact-btn" data-share-action="compact" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Compact
+          </button>
+          <button id="tree-btn" data-share-action="tree" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Tree View
+          </button>
+        </div>
+        <div id="tree-buttons" class="hidden flex flex-wrap gap-2">
+          <button id="back-btn" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Back to Raw Text
+          </button>
+          <button id="expand-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+            Expand All
+          </button>
+          <button id="collapse-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+            Collapse All
+          </button>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <div class="relative">
+          <button id="copy-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Copy">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+          </button>
+          <span id="copied-msg" class="hidden absolute -top-8 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs px-2 py-1 rounded whitespace-nowrap">Copied!</span>
+        </div>
+        <button id="download-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Download">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Error message -->
+      <div id="error-box" class="hidden bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4">
+        <p class="text-red-700 dark:text-red-300 text-sm">
+          <span class="font-medium">Invalid JSON:</span> <span id="error-text"></span>
+        </p>
+      </div>
+
+      <!-- Editor area -->
+      <div id="editor-view">
+        <div
+          id="editor"
+          contenteditable="true"
+          data-share-key="json"
+          class="min-h-[400px] max-h-[600px] overflow-auto p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset whitespace-pre-wrap bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+          data-placeholder="Paste your JSON here..."
+        ></div>
+      </div>
+
+      <!-- Tree View -->
+      <div id="tree-view" class="hidden p-4 min-h-[400px] max-h-[600px] overflow-auto font-mono text-sm"></div>
+
+      <!-- Path tooltip -->
+      <div id="path-tooltip" class="hidden fixed bg-slate-800 dark:bg-slate-700 text-white px-3 py-1.5 rounded shadow-lg z-50 text-xs font-mono cursor-pointer hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors" title="Click to copy">
+        <span id="path-text"></span>
+      </div>
+    </div>
+
+    <div class="mt-8 space-y-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online JSON Formatter & Beautifier</h2>
+        <p class="text-gray-600 dark:text-slate-300 mb-4">
+          Instantly format, beautify, prettify, and validate your JSON data. This free JSON formatter takes messy,
+          minified, or unformatted JSON and transforms it into clean, readable, properly indented code.
+          Perfect for developers debugging APIs, working with configuration files, or analyzing data.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">✨ JSON Beautifier</h3>
+          <p class="text-gray-600 dark:text-slate-300">Prettify JSON with proper indentation and formatting. Makes minified JSON readable.</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">✓ JSON Validator</h3>
+          <p class="text-gray-600 dark:text-slate-300">Validate JSON syntax instantly. Highlights exact error location for quick fixes.</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">🌳 Tree View</h3>
+          <p class="text-gray-600 dark:text-slate-300">Interactive tree visualization. Click any value to copy its jq path.</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg text-sm">
+        <p class="font-medium text-gray-700 dark:text-slate-200 mb-2">How to use:</p>
+        <ol class="text-gray-600 dark:text-slate-300 space-y-1 list-decimal list-inside">
+          <li>Paste your JSON into the editor above</li>
+          <li>Click <strong>Prettify</strong> to format and beautify JSON with indentation</li>
+          <li>Click <strong>Compact</strong> to minify JSON to a single line</li>
+          <li>Click <strong>Tree View</strong> for interactive exploration</li>
+        </ol>
+      </div>
+
+      <details class="bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+        <summary class="p-4 font-medium text-gray-700 dark:text-slate-200 cursor-pointer">Frequently Asked Questions</summary>
+        <div class="px-4 pb-4 space-y-4 text-sm">
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100">What is JSON formatting?</h4>
+            <p class="text-gray-600 dark:text-slate-300">JSON formatting (also called beautifying or prettifying) adds proper indentation and line breaks to make JSON data human-readable. This formatter converts compact JSON like <code>{`{"name":"John","age":30}`}</code> into properly indented, multi-line output.</p>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100">How do I validate JSON?</h4>
+            <p class="text-gray-600 dark:text-slate-300">Paste your JSON and click Prettify. If there's a syntax error, the validator highlights the exact position and shows an error message. Common issues include missing commas, unquoted keys, or trailing commas.</p>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100">Is my data safe?</h4>
+            <p class="text-gray-600 dark:text-slate-300">Yes! All processing happens in your browser. Your JSON data is never sent to any server. This is a 100% client-side tool.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+
+  </div>
+</Layout>
+
+<style>
+  #editor:empty:before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+  }
+</style>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const editor = document.getElementById('editor')!;
+  const treeView = document.getElementById('tree-view')!;
+  const editorView = document.getElementById('editor-view')!;
+  const textButtons = document.getElementById('text-buttons')!;
+  const treeButtons = document.getElementById('tree-buttons')!;
+  const errorBox = document.getElementById('error-box')!;
+  const errorText = document.getElementById('error-text')!;
+  const copiedMsg = document.getElementById('copied-msg')!;
+
+  let originalText = '';
+
+  ShareManager.register({
+    tool: 'json-formatter',
+    actions: {
+      prettify: () => document.getElementById('prettify-btn')?.click(),
+      compact: () => document.getElementById('compact-btn')?.click(),
+      tree: () => document.getElementById('tree-btn')?.click(),
+    }
+  });
+
+  function showError(msg: string) {
+    errorText.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function escapeHtml(text: string) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  document.getElementById('prettify-btn')!.addEventListener('click', () => {
+    hideError();
+    const text = (editor as HTMLElement).innerText;
+    if (!text.trim()) {
+      showError('Empty JSON');
+      return;
+    }
+    try {
+      const parsed = JSON.parse(text);
+      (editor as HTMLElement).innerText = JSON.stringify(parsed, null, 2);
+    } catch (e: any) {
+      showError(e.message);
+      highlightError(text, e.message);
+    }
+  });
+
+  document.getElementById('compact-btn')!.addEventListener('click', () => {
+    hideError();
+    const text = (editor as HTMLElement).innerText;
+    if (!text.trim()) return;
+    try {
+      const parsed = JSON.parse(text);
+      (editor as HTMLElement).innerText = JSON.stringify(parsed);
+    } catch (e: any) {
+      showError(e.message);
+    }
+  });
+
+  function highlightError(text: string, errorMsg: string) {
+    const match = errorMsg.match(/position (\d+)/);
+    if (match) {
+      const pos = parseInt(match[1], 10);
+      const pre = text.substring(0, pos);
+      const char = text.substring(pos, pos + 1);
+      const post = text.substring(pos + 1);
+      editor.innerHTML = escapeHtml(pre) +
+        '<span class="bg-red-300 border-2 border-red-500">' + escapeHtml(char) + '</span>' +
+        escapeHtml(post);
+    }
+  }
+
+  document.getElementById('tree-btn')!.addEventListener('click', () => {
+    hideError();
+    const text = (editor as HTMLElement).innerText;
+    try {
+      const obj = JSON.parse(text);
+      originalText = text;
+      treeView.innerHTML = buildTreeHtml(obj);
+      editorView.classList.add('hidden');
+      treeView.classList.remove('hidden');
+      textButtons.classList.add('hidden');
+      treeButtons.classList.remove('hidden');
+    } catch (e: any) {
+      showError(e.message);
+    }
+  });
+
+  document.getElementById('back-btn')!.addEventListener('click', () => {
+    treeView.classList.add('hidden');
+    editorView.classList.remove('hidden');
+    treeButtons.classList.add('hidden');
+    textButtons.classList.remove('hidden');
+    (editor as HTMLElement).innerText = originalText;
+  });
+
+  function buildTreeHtml(obj: any, path = '', level = 0): string {
+    if (obj === null) return `<span class="text-orange-600 dark:text-orange-400 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 px-0.5 rounded" data-path="${escapeHtml(path)}">null</span>`;
+    if (typeof obj !== 'object') {
+      if (typeof obj === 'string') return `<span class="text-green-700 dark:text-green-400 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 px-0.5 rounded" data-path="${escapeHtml(path)}">"${escapeHtml(obj)}"</span>`;
+      if (typeof obj === 'number') return `<span class="text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 px-0.5 rounded" data-path="${escapeHtml(path)}">${obj}</span>`;
+      if (typeof obj === 'boolean') return `<span class="text-purple-600 dark:text-purple-400 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 px-0.5 rounded" data-path="${escapeHtml(path)}">${obj}</span>`;
+      return String(obj);
+    }
+
+    const isArray = Array.isArray(obj);
+    const keys = Object.keys(obj);
+    if (keys.length === 0) return isArray ? '[]' : '{}';
+
+    const id = 'n' + Math.random().toString(36).substr(2, 6);
+    let html = `<div class="tree-node" data-id="${id}">`;
+    html += `<button onclick="toggleNode('${id}')" class="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 mr-1">`;
+    html += `<span class="arrow">▼</span></button>`;
+    html += isArray ? `<span class="text-gray-500 dark:text-slate-400">[${keys.length}]</span>` : `<span class="text-gray-500 dark:text-slate-400">{${keys.length}}</span>`;
+    html += `<div class="children ml-4 border-l-2 border-gray-200 dark:border-slate-700 pl-3">`;
+
+    for (const key of keys) {
+      const keyPath = isArray ? `${path}[${key}]` : (path ? `${path}.${key}` : key);
+      const keyDisplay = isArray
+        ? `<span class="text-gray-400 dark:text-slate-500 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 px-0.5 rounded" data-path="${escapeHtml(keyPath)}">${key}</span>`
+        : `<span class="text-blue-800 dark:text-blue-300 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 px-0.5 rounded" data-path="${escapeHtml(keyPath)}">"${escapeHtml(key)}"</span>`;
+      html += `<div class="py-0.5">${keyDisplay}: ${buildTreeHtml(obj[key], keyPath, level + 1)}</div>`;
+    }
+
+    html += '</div></div>';
+    return html;
+  }
+
+  (window as any).toggleNode = function(id: string) {
+    const node = document.querySelector(`[data-id="${id}"]`);
+    const children = node?.querySelector('.children');
+    const arrow = node?.querySelector('.arrow');
+    if (children?.classList.contains('hidden')) {
+      children.classList.remove('hidden');
+      if (arrow) arrow.textContent = '▼';
+    } else {
+      children?.classList.add('hidden');
+      if (arrow) arrow.textContent = '▶';
+    }
+  };
+
+  document.getElementById('expand-btn')!.addEventListener('click', () => {
+    document.querySelectorAll('.children').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.arrow').forEach(el => el.textContent = '▼');
+  });
+
+  document.getElementById('collapse-btn')!.addEventListener('click', () => {
+    document.querySelectorAll('.children').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.arrow').forEach(el => el.textContent = '▶');
+  });
+
+  document.getElementById('copy-btn')!.addEventListener('click', () => {
+    const text = (editor as HTMLElement).innerText || originalText;
+    navigator.clipboard.writeText(text);
+    copiedMsg.classList.remove('hidden');
+    setTimeout(() => copiedMsg.classList.add('hidden'), 1500);
+  });
+
+  document.getElementById('download-btn')!.addEventListener('click', () => {
+    const text = (editor as HTMLElement).innerText || originalText;
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'formatted.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  editor.addEventListener('paste', (e) => {
+    e.preventDefault();
+    const text = (e as ClipboardEvent).clipboardData?.getData('text/plain') || '';
+    document.execCommand('insertText', false, text);
+  });
+
+  // Path tooltip
+  const pathTooltip = document.getElementById('path-tooltip')!;
+  const pathText = document.getElementById('path-text')!;
+  let currentPath = '';
+  let hideTimeout: number;
+
+  function showPathTooltip(path: string, rect: DOMRect) {
+    currentPath = path;
+    pathText.textContent = '.' + path;
+    pathTooltip.style.left = rect.left + 'px';
+    pathTooltip.style.top = (rect.bottom + 4) + 'px';
+    pathTooltip.classList.remove('hidden');
+
+    clearTimeout(hideTimeout);
+    hideTimeout = setTimeout(() => {
+      pathTooltip.classList.add('hidden');
+    }, 3000) as unknown as number;
+  }
+
+  treeView.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    if (target.dataset.path !== undefined) {
+      e.stopPropagation();
+      showPathTooltip(target.dataset.path, target.getBoundingClientRect());
+    }
+  });
+
+  pathTooltip.addEventListener('click', () => {
+    const path = '.' + currentPath;
+    navigator.clipboard.writeText(path);
+    pathText.textContent = 'Copied!';
+    setTimeout(() => {
+      pathTooltip.classList.add('hidden');
+    }, 800);
+  });
+</script>

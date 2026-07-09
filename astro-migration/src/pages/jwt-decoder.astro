@@ -1,0 +1,268 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="JWT Decoder - Decode JSON Web Tokens"
+  description="Decode and inspect JSON Web Tokens (JWT) instantly. View header, payload, and signature. Free online JWT decoder for debugging authentication tokens."
+  keywords="JWT decoder, decode JWT, JSON Web Token decoder, JWT parser, JWT debugger, decode token, JWT inspector, authentication token"
+  breadcrumb={[{ name: "Security Tools", href: "/security-tools" }, { name: "JWT Decoder" }]}
+  toolId="jwt-decoder"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">JWT Decoder</h1>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">JWT Token</label>
+      <textarea
+        id="jwt-input"
+        data-share-key="jwt"
+        class="w-full h-32 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+        placeholder="Paste your JWT token here..."
+      ></textarea>
+      <div class="flex flex-wrap gap-3 mt-3">
+        <button id="decode-btn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+          Decode
+        </button>
+        <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+          Clear
+        </button>
+        <button id="sample-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+          Load Sample
+        </button>
+      </div>
+    </div>
+
+    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div id="results" class="hidden space-y-4">
+      <!-- Token Status -->
+      <div id="token-status" class="p-4 rounded-lg border"></div>
+
+      <div class="grid md:grid-cols-2 gap-4">
+        <!-- Header -->
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Header</label>
+            <span class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">ALGORITHM & TOKEN TYPE</span>
+          </div>
+          <pre id="header-output" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg text-sm font-mono overflow-auto max-h-48 border border-gray-200 dark:border-slate-700"></pre>
+        </div>
+
+        <!-- Payload -->
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Payload</label>
+            <span class="text-xs px-2 py-1 bg-purple-100 text-purple-700 rounded">DATA</span>
+          </div>
+          <pre id="payload-output" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg text-sm font-mono overflow-auto max-h-48 border border-gray-200 dark:border-slate-700"></pre>
+        </div>
+      </div>
+
+      <!-- Signature -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Signature</label>
+          <span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">VERIFY SIGNATURE</span>
+        </div>
+        <div id="signature-output" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg text-sm font-mono break-all border border-gray-200 dark:border-slate-700"></div>
+      </div>
+
+      <!-- Claims -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Registered Claims</label>
+        <div id="claims-output" class="space-y-2"></div>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online JWT Decoder</h2>
+      <p class="text-gray-600 dark:text-slate-300 mb-4">
+        Decode and inspect JSON Web Tokens (JWT) without sharing them with a server. View the header, payload,
+        and signature. Check token expiration and other registered claims. All processing happens in your browser.
+      </p>
+      <div class="text-sm text-gray-500 dark:text-slate-400">
+        <p class="font-medium text-gray-700 dark:text-slate-200 mb-1">Note:</p>
+        <p>This tool only decodes JWTs - it does not verify signatures. Never paste sensitive production tokens in any online tool.</p>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const jwtInput = document.getElementById('jwt-input') as HTMLTextAreaElement;
+  const errorBox = document.getElementById('error-box');
+  const results = document.getElementById('results');
+  const tokenStatus = document.getElementById('token-status');
+  const headerOutput = document.getElementById('header-output');
+  const payloadOutput = document.getElementById('payload-output');
+  const signatureOutput = document.getElementById('signature-output');
+  const claimsOutput = document.getElementById('claims-output');
+
+  // Sample JWT for demonstration
+  const sampleJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE4OTM0NTYwMDAsImF1ZCI6ImFwaS5leGFtcGxlLmNvbSIsImlzcyI6ImF1dGguZXhhbXBsZS5jb20ifQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+    results.classList.add('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function base64UrlDecode(str: string): string {
+    // Replace URL-safe characters
+    let base64 = str.replace(/-/g, '+').replace(/_/g, '/');
+    // Add padding if needed
+    const pad = base64.length % 4;
+    if (pad) {
+      base64 += '='.repeat(4 - pad);
+    }
+    return atob(base64);
+  }
+
+  function formatTimestamp(timestamp: number): string {
+    const date = new Date(timestamp * 1000);
+    return date.toLocaleString('en-US', {
+      dateStyle: 'full',
+      timeStyle: 'long'
+    });
+  }
+
+  function getTimeFromNow(timestamp: number): string {
+    const now = Date.now() / 1000;
+    const diff = timestamp - now;
+    const absDiff = Math.abs(diff);
+
+    if (absDiff < 60) return diff > 0 ? 'in a few seconds' : 'a few seconds ago';
+    if (absDiff < 3600) {
+      const mins = Math.floor(absDiff / 60);
+      return diff > 0 ? `in ${mins} minute${mins > 1 ? 's' : ''}` : `${mins} minute${mins > 1 ? 's' : ''} ago`;
+    }
+    if (absDiff < 86400) {
+      const hours = Math.floor(absDiff / 3600);
+      return diff > 0 ? `in ${hours} hour${hours > 1 ? 's' : ''}` : `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    }
+    const days = Math.floor(absDiff / 86400);
+    return diff > 0 ? `in ${days} day${days > 1 ? 's' : ''}` : `${days} day${days > 1 ? 's' : ''} ago`;
+  }
+
+  function decode() {
+    const jwt = jwtInput.value.trim();
+    if (!jwt) {
+      showError('Please enter a JWT token');
+      return;
+    }
+
+    hideError();
+
+    const parts = jwt.split('.');
+    if (parts.length !== 3) {
+      showError('Invalid JWT format. Token must have 3 parts separated by dots.');
+      return;
+    }
+
+    try {
+      // Decode header
+      const headerJson = base64UrlDecode(parts[0]);
+      const header = JSON.parse(headerJson);
+      headerOutput.textContent = JSON.stringify(header, null, 2);
+
+      // Decode payload
+      const payloadJson = base64UrlDecode(parts[1]);
+      const payload = JSON.parse(payloadJson);
+      payloadOutput.textContent = JSON.stringify(payload, null, 2);
+
+      // Display signature
+      signatureOutput.textContent = parts[2];
+
+      // Check expiration and display status
+      const now = Date.now() / 1000;
+      let statusClass = '';
+      let statusText = '';
+
+      if (payload.exp) {
+        if (payload.exp < now) {
+          statusClass = 'bg-red-50 border-red-200 text-red-800';
+          statusText = `Token is EXPIRED (expired ${getTimeFromNow(payload.exp)})`;
+        } else {
+          statusClass = 'bg-green-50 border-green-200 text-green-800';
+          statusText = `Token is VALID (expires ${getTimeFromNow(payload.exp)})`;
+        }
+      } else {
+        statusClass = 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        statusText = 'Token has no expiration claim (exp)';
+      }
+
+      tokenStatus.className = `p-4 rounded-lg border ${statusClass}`;
+      tokenStatus.innerHTML = `<span class="font-medium">${statusText}</span>`;
+
+      // Display registered claims
+      const registeredClaims: { [key: string]: string } = {
+        iss: 'Issuer',
+        sub: 'Subject',
+        aud: 'Audience',
+        exp: 'Expiration Time',
+        nbf: 'Not Before',
+        iat: 'Issued At',
+        jti: 'JWT ID'
+      };
+
+      let claimsHtml = '';
+      for (const [key, label] of Object.entries(registeredClaims)) {
+        if (payload[key] !== undefined) {
+          let value = payload[key];
+          let displayValue = value;
+
+          // Format timestamps
+          if (['exp', 'nbf', 'iat'].includes(key) && typeof value === 'number') {
+            displayValue = `${value} (${formatTimestamp(value)})`;
+          }
+
+          claimsHtml += `
+            <div class="flex items-start gap-2 p-2 bg-gray-50 dark:bg-slate-900 rounded border border-gray-200 dark:border-slate-700">
+              <span class="font-medium text-gray-700 dark:text-slate-200 min-w-[100px]">${key}:</span>
+              <span class="text-gray-600 dark:text-slate-300">${label}</span>
+              <span class="ml-auto font-mono text-sm text-gray-800 dark:text-slate-100">${displayValue}</span>
+            </div>
+          `;
+        }
+      }
+
+      claimsOutput.innerHTML = claimsHtml || '<p class="text-gray-500 dark:text-slate-400 text-sm">No registered claims found</p>';
+
+      results.classList.remove('hidden');
+    } catch (e) {
+      showError('Error decoding JWT: ' + (e as Error).message);
+    }
+  }
+
+  document.getElementById('decode-btn').addEventListener('click', decode);
+
+  jwtInput.addEventListener('input', () => {
+    // Auto-decode on paste
+    if (jwtInput.value.includes('.')) {
+      decode();
+    }
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    jwtInput.value = '';
+    results.classList.add('hidden');
+    hideError();
+  });
+
+  document.getElementById('sample-btn').addEventListener('click', () => {
+    jwtInput.value = sampleJwt;
+    decode();
+  });
+
+  ShareManager.register({
+    tool: 'jwt-decoder',
+    afterLoad: () => decode()
+  });
+</script>

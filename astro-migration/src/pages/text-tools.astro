@@ -1,0 +1,48 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const tools = [
+  { name: 'Text Diff', href: '/text-diff', description: 'Compare two texts with GitHub-style diff view and line highlighting' },
+  { name: 'Case Converter', href: '/case-converter', description: 'Convert between camelCase, snake_case, kebab-case, and more' },
+  { name: 'Join Lines', href: '/join-lines', description: 'Convert lines to SQL IN clauses, JSON arrays, CSV, and more' },
+  { name: 'Split Text', href: '/split-text', description: 'Split delimited strings into separate lines' },
+  { name: 'Sort Lines', href: '/sort-lines', description: 'Sort lines alphabetically, numerically, by length, or shuffle' },
+  { name: 'Remove Duplicates', href: '/remove-duplicate-lines', description: 'Remove duplicate lines with detailed report' },
+  { name: 'Compare Lists', href: '/list-compare', description: 'Find common items, differences, and unique entries between lists' },
+  { name: 'Text Extractor', href: '/text-extractor', description: 'Extract patterns like emails, URLs, and numbers from text' },
+  { name: 'Regex Tester', href: '/regex-tester', description: 'Test regular expressions with live highlighting and match info' },
+];
+---
+
+<Layout
+  title="Text Tools"
+  description="Free online text manipulation tools. Compare text, convert case, deduplicate lines, set operations, extract patterns, and test regex. All tools run in your browser."
+  keywords="text tools, text diff, case converter, line dedupe, regex tester, text extractor, online text tools, text manipulation"
+  breadcrumb={[{ name: "Text Tools" }]}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-2">Text Tools</h1>
+    <p class="text-gray-600 dark:text-slate-400 mb-6">Compare, transform, and analyze text data</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="block p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all"
+        >
+          <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{tool.name}</h2>
+          <p class="text-sm text-gray-600 dark:text-slate-300">{tool.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About Text Tools</h2>
+      <p class="text-gray-600 dark:text-slate-300 text-sm">
+        Working with text is a daily task for developers. Our text tools help you compare files to find changes,
+        convert between naming conventions, clean up duplicate data, and test regular expressions before using them
+        in code. All processing happens in your browser - your data stays private.
+      </p>
+    </div>
+  </div>
+</Layout>

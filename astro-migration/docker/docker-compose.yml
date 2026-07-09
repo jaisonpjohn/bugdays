@@ -1,0 +1,42 @@
+# CORS Proxy for API Client Tool
+#
+# This docker-compose sets up a local CORS proxy using cors-anywhere,
+# allowing the API Client tool to make requests to APIs that don't
+# support CORS.
+#
+# Usage:
+#   cd docker
+#   docker-compose up -d
+#
+# The proxy will be available at http://localhost:8080/
+# To make a request through the proxy, prepend the proxy URL to your target URL:
+#   http://localhost:8080/https://api.example.com/endpoint
+#
+# To stop:
+#   docker-compose down
+
+version: '3.8'
+
+services:
+  cors-proxy:
+    image: node:20-alpine
+    container_name: cors-proxy
+    working_dir: /app
+    command: >
+      sh -c "
+        npm init -y &&
+        npm install cors-anywhere &&
+        node -e \"
+          const corsAnywhere = require('cors-anywhere');
+          corsAnywhere.createServer({
+            originWhitelist: [],
+            requireHeader: [],
+            removeHeaders: ['cookie', 'cookie2']
+          }).listen(8080, '0.0.0.0', function() {
+            console.log('CORS Anywhere proxy running on port 8080');
+          });
+        \"
+      "
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

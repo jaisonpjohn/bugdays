@@ -1,0 +1,350 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="CIDR Calculator - Subnet & IP Range"
+  description="Calculate CIDR notation, subnet masks, IP ranges, and host counts. Free online CIDR calculator for network planning and IP address management."
+  keywords="CIDR calculator, subnet calculator, IP range calculator, subnet mask calculator, CIDR to IP range, network calculator, IP subnet, CIDR notation"
+  breadcrumb={[{ name: "Network Tools", href: "/network-tools" }, { name: "CIDR Calculator" }]}
+  toolId="cidr-calculator"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">CIDR Calculator</h1>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">CIDR Notation</label>
+      <div class="flex gap-3">
+        <input
+          type="text"
+          id="cidr-input"
+          data-share-key="cidr"
+          class="flex-1 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="e.g., 192.168.1.0/24"
+        />
+        <button id="calculate-btn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+          Calculate
+        </button>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="text-sm text-gray-500 dark:text-slate-400">Examples:</span>
+        <button class="example-btn text-sm text-indigo-600 hover:underline" data-cidr="10.0.0.0/8">10.0.0.0/8</button>
+        <button class="example-btn text-sm text-indigo-600 hover:underline" data-cidr="172.16.0.0/16">172.16.0.0/16</button>
+        <button class="example-btn text-sm text-indigo-600 hover:underline" data-cidr="192.168.1.0/24">192.168.1.0/24</button>
+        <button class="example-btn text-sm text-indigo-600 hover:underline" data-cidr="192.168.1.128/25">192.168.1.128/25</button>
+      </div>
+    </div>
+
+    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div id="results" class="hidden">
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Network Address</label>
+          <div id="network" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg font-mono text-sm border border-gray-200 dark:border-slate-700"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Broadcast Address</label>
+          <div id="broadcast" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg font-mono text-sm border border-gray-200 dark:border-slate-700"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Subnet Mask</label>
+          <div id="subnet-mask" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg font-mono text-sm border border-gray-200 dark:border-slate-700"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Wildcard Mask</label>
+          <div id="wildcard" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg font-mono text-sm border border-gray-200 dark:border-slate-700"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">First Usable IP</label>
+          <div id="first-ip" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg font-mono text-sm border border-gray-200 dark:border-slate-700"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Last Usable IP</label>
+          <div id="last-ip" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg font-mono text-sm border border-gray-200 dark:border-slate-700"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Total Hosts</label>
+          <div id="total-hosts" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg font-mono text-sm border border-gray-200 dark:border-slate-700"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Usable Hosts</label>
+          <div id="usable-hosts" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg font-mono text-sm border border-gray-200 dark:border-slate-700"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">IP Range</label>
+          <div id="ip-range" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg font-mono text-sm border border-gray-200 dark:border-slate-700"></div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Binary Subnet Mask</label>
+          <div id="binary-mask" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg font-mono text-sm border border-gray-200 dark:border-slate-700 break-all"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mt-6">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-3">CIDR ↔ Subnet Mask</h2>
+      <div class="flex flex-wrap gap-3 items-end">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Prefix</label>
+          <div class="flex items-center gap-1">
+            <span class="text-gray-500 dark:text-slate-400 font-mono">/</span>
+            <input
+              type="number"
+              id="prefix-input"
+              min="0"
+              max="32"
+              value="24"
+              class="w-16 p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm text-center focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+        </div>
+        <div class="flex-1 min-w-[200px]">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Subnet Mask</label>
+          <input
+            type="text"
+            id="mask-input"
+            value="255.255.255.0"
+            class="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+        <div class="text-sm text-gray-600 dark:text-slate-300">
+          <span id="converter-hosts" class="font-mono">256</span> hosts
+        </div>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <span class="text-sm text-gray-500 dark:text-slate-400">Common:</span>
+        <button class="prefix-btn text-sm text-indigo-600 hover:underline" data-prefix="8">/8</button>
+        <button class="prefix-btn text-sm text-indigo-600 hover:underline" data-prefix="16">/16</button>
+        <button class="prefix-btn text-sm text-indigo-600 hover:underline" data-prefix="24">/24</button>
+        <button class="prefix-btn text-sm text-indigo-600 hover:underline" data-prefix="25">/25</button>
+        <button class="prefix-btn text-sm text-indigo-600 hover:underline" data-prefix="26">/26</button>
+        <button class="prefix-btn text-sm text-indigo-600 hover:underline" data-prefix="27">/27</button>
+        <button class="prefix-btn text-sm text-indigo-600 hover:underline" data-prefix="28">/28</button>
+        <button class="prefix-btn text-sm text-indigo-600 hover:underline" data-prefix="30">/30</button>
+        <button class="prefix-btn text-sm text-indigo-600 hover:underline" data-prefix="32">/32</button>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online CIDR Calculator</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Calculate IP ranges, subnet masks, and host counts from CIDR notation. Enter a CIDR block like 192.168.1.0/24
+        to see the network address, broadcast address, first and last usable IPs, subnet mask, and total host count.
+        Supports IPv4 addresses with prefix lengths from /0 to /32.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const cidrInput = document.getElementById('cidr-input') as HTMLInputElement;
+  const errorBox = document.getElementById('error-box');
+  const results = document.getElementById('results');
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+    results.classList.add('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function ipToNum(ip: string): number {
+    const parts = ip.split('.').map(Number);
+    return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+  }
+
+  function numToIp(num: number): string {
+    return [
+      (num >>> 24) & 255,
+      (num >>> 16) & 255,
+      (num >>> 8) & 255,
+      num & 255
+    ].join('.');
+  }
+
+  function isValidIp(ip: string): boolean {
+    const parts = ip.split('.');
+    if (parts.length !== 4) return false;
+    return parts.every(part => {
+      const num = parseInt(part, 10);
+      return !isNaN(num) && num >= 0 && num <= 255 && part === num.toString();
+    });
+  }
+
+  function calculate() {
+    hideError();
+    const input = cidrInput.value.trim();
+
+    if (!input) {
+      showError('Please enter a CIDR notation');
+      return;
+    }
+
+    const match = input.match(/^(.+)\/(\d+)$/);
+    if (!match) {
+      showError('Invalid CIDR format. Use format: IP/prefix (e.g., 192.168.1.0/24)');
+      return;
+    }
+
+    const ip = match[1];
+    const prefix = parseInt(match[2], 10);
+
+    if (!isValidIp(ip)) {
+      showError('Invalid IP address');
+      return;
+    }
+
+    if (prefix < 0 || prefix > 32) {
+      showError('Prefix must be between 0 and 32');
+      return;
+    }
+
+    // Calculate subnet mask
+    const maskBits = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+    const wildcardBits = ~maskBits >>> 0;
+
+    // Calculate network and broadcast
+    const ipNum = ipToNum(ip);
+    const networkNum = (ipNum & maskBits) >>> 0;
+    const broadcastNum = (networkNum | wildcardBits) >>> 0;
+
+    // Total and usable hosts
+    const totalHosts = Math.pow(2, 32 - prefix);
+    const usableHosts = prefix >= 31 ? totalHosts : totalHosts - 2;
+
+    // First and last usable IPs
+    let firstUsable: string, lastUsable: string;
+    if (prefix === 32) {
+      firstUsable = numToIp(networkNum);
+      lastUsable = numToIp(networkNum);
+    } else if (prefix === 31) {
+      // Point-to-point link (RFC 3021)
+      firstUsable = numToIp(networkNum);
+      lastUsable = numToIp(broadcastNum);
+    } else {
+      firstUsable = numToIp(networkNum + 1);
+      lastUsable = numToIp(broadcastNum - 1);
+    }
+
+    // Binary representation
+    const binaryMask = maskBits.toString(2).padStart(32, '0');
+    const formattedBinary = [
+      binaryMask.slice(0, 8),
+      binaryMask.slice(8, 16),
+      binaryMask.slice(16, 24),
+      binaryMask.slice(24, 32)
+    ].join('.');
+
+    // Display results
+    document.getElementById('network').textContent = numToIp(networkNum);
+    document.getElementById('broadcast').textContent = numToIp(broadcastNum);
+    document.getElementById('subnet-mask').textContent = numToIp(maskBits);
+    document.getElementById('wildcard').textContent = numToIp(wildcardBits);
+    document.getElementById('first-ip').textContent = firstUsable;
+    document.getElementById('last-ip').textContent = lastUsable;
+    document.getElementById('total-hosts').textContent = totalHosts.toLocaleString();
+    document.getElementById('usable-hosts').textContent = usableHosts.toLocaleString();
+    document.getElementById('ip-range').textContent = `${numToIp(networkNum)} - ${numToIp(broadcastNum)}`;
+    document.getElementById('binary-mask').textContent = formattedBinary;
+
+    results.classList.remove('hidden');
+  }
+
+  document.getElementById('calculate-btn').addEventListener('click', calculate);
+
+  cidrInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') calculate();
+  });
+
+  // Example buttons
+  document.querySelectorAll('.example-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cidrInput.value = (btn as HTMLElement).dataset.cidr;
+      calculate();
+    });
+  });
+
+  ShareManager.register({
+    tool: 'cidr-calculator',
+    afterLoad: () => calculate()
+  });
+
+  // CIDR <-> Subnet Mask Converter
+  const prefixInput = document.getElementById('prefix-input') as HTMLInputElement;
+  const maskInput = document.getElementById('mask-input') as HTMLInputElement;
+  const converterHosts = document.getElementById('converter-hosts');
+
+  function prefixToMask(prefix: number): string {
+    if (prefix < 0 || prefix > 32) return '';
+    const maskBits = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+    return numToIp(maskBits);
+  }
+
+  function maskToPrefix(mask: string): number | null {
+    if (!isValidIp(mask)) return null;
+    const maskNum = ipToNum(mask);
+
+    // Check if it's a valid subnet mask (contiguous 1s followed by 0s)
+    let foundZero = false;
+    let prefix = 0;
+    for (let i = 31; i >= 0; i--) {
+      const bit = (maskNum >> i) & 1;
+      if (bit === 1) {
+        if (foundZero) return null; // Invalid: 1 after 0
+        prefix++;
+      } else {
+        foundZero = true;
+      }
+    }
+    return prefix;
+  }
+
+  function updateFromPrefix() {
+    const prefix = parseInt(prefixInput.value, 10);
+    if (isNaN(prefix) || prefix < 0 || prefix > 32) return;
+
+    maskInput.value = prefixToMask(prefix);
+    converterHosts.textContent = Math.pow(2, 32 - prefix).toLocaleString();
+  }
+
+  function updateFromMask() {
+    const prefix = maskToPrefix(maskInput.value.trim());
+    if (prefix === null) return;
+
+    prefixInput.value = prefix.toString();
+    converterHosts.textContent = Math.pow(2, 32 - prefix).toLocaleString();
+  }
+
+  prefixInput.addEventListener('input', updateFromPrefix);
+  maskInput.addEventListener('input', updateFromMask);
+  maskInput.addEventListener('blur', () => {
+    // Normalize mask on blur
+    const prefix = maskToPrefix(maskInput.value.trim());
+    if (prefix !== null) {
+      maskInput.value = prefixToMask(prefix);
+    }
+  });
+
+  // Quick prefix buttons
+  document.querySelectorAll('.prefix-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      prefixInput.value = (btn as HTMLElement).dataset.prefix;
+      updateFromPrefix();
+    });
+  });
+</script>

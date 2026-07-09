@@ -1,0 +1,242 @@
+---
+// Command palette (Cmd+K / Ctrl+K) — quick search across all tools.
+// Renders the header trigger button; the modal itself is fixed-position.
+---
+
+<!-- Trigger button -->
+<button
+  id="palette-trigger"
+  type="button"
+  class="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400
+         hover:text-slate-700 dark:hover:text-slate-200
+         border border-slate-200 dark:border-slate-700 rounded-lg
+         px-2.5 py-1.5 md:pr-2 md:w-56 lg:w-64
+         hover:border-slate-300 dark:hover:border-slate-600
+         bg-slate-50 dark:bg-slate-800 transition-colors"
+  aria-label="Search tools"
+>
+  <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+  </svg>
+  <span class="hidden md:inline flex-1 text-left truncate">Search tools…</span>
+  <kbd id="palette-kbd" class="hidden md:inline text-[10px] font-sans font-medium px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900">⌘K</kbd>
+</button>
+
+<!-- Palette modal -->
+<div id="palette-modal" class="hidden fixed inset-0 z-50" role="dialog" aria-modal="true" aria-label="Tool search">
+  <div id="palette-backdrop" class="absolute inset-0 bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm"></div>
+  <div class="relative max-w-lg mx-auto mt-[12vh] px-4">
+    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <div class="flex items-center gap-2 px-4 border-b border-slate-200 dark:border-slate-700">
+        <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+        </svg>
+        <input
+          id="palette-input"
+          type="text"
+          placeholder="Search tools… (e.g. json, diff, base64)"
+          autocomplete="off"
+          spellcheck="false"
+          class="flex-1 py-3.5 bg-transparent text-sm text-slate-900 dark:text-slate-100
+                 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none"
+        />
+        <kbd class="text-[10px] font-sans px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-600 text-slate-400">esc</kbd>
+      </div>
+      <ul id="palette-results" class="max-h-[50vh] overflow-y-auto py-2" role="listbox"></ul>
+      <div id="palette-empty" class="hidden px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+        No tools found. Try a different term.
+      </div>
+      <div class="flex items-center gap-3 px-4 py-2 border-t border-slate-200 dark:border-slate-700 text-[11px] text-slate-400 dark:text-slate-500">
+        <span><kbd class="font-sans">↑↓</kbd> navigate</span>
+        <span><kbd class="font-sans">↵</kbd> open</span>
+        <span class="ml-auto" id="palette-count"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { allTools } from '../lib/tools';
+
+  const RECENTS_KEY = 'bd-recent-tools';
+  const MAX_RECENTS = 5;
+
+  interface Entry { name: string; href: string; description: string; keywords: string[]; group: string; }
+
+  function getRecents(): Entry[] {
+    try {
+      const hrefs: string[] = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
+      return hrefs
+        .map(h => allTools.find(t => t.href === h))
+        .filter((t): t is Entry => !!t);
+    } catch { return []; }
+  }
+
+  function pushRecent(href: string) {
+    try {
+      const hrefs: string[] = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
+      const next = [href, ...hrefs.filter(h => h !== href)].slice(0, MAX_RECENTS);
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
+    } catch { /* private mode etc. */ }
+  }
+
+  // Score a tool against a query. Higher = better; 0 = no match.
+  function scoreTool(tool: Entry, query: string): number {
+    const q = query.toLowerCase().trim();
+    if (!q) return 1;
+    const name = tool.name.toLowerCase();
+    const terms = q.split(/\s+/);
+
+    let total = 0;
+    for (const term of terms) {
+      let best = 0;
+      if (name.startsWith(term)) best = 100;
+      else if (name.split(/[\s↔&/-]+/).some(w => w.startsWith(term))) best = 80;
+      else if (name.includes(term)) best = 60;
+      else if (tool.keywords.some(k => k.toLowerCase().startsWith(term))) best = 50;
+      else if (tool.keywords.some(k => k.toLowerCase().includes(term))) best = 35;
+      else if (tool.group.toLowerCase().includes(term)) best = 25;
+      else if (tool.description.toLowerCase().includes(term)) best = 20;
+      if (best === 0) return 0; // every term must match somewhere
+      total += best;
+    }
+    return total;
+  }
+
+  function initPalette() {
+    const trigger = document.getElementById('palette-trigger');
+    const modal = document.getElementById('palette-modal');
+    const backdrop = document.getElementById('palette-backdrop');
+    const input = document.getElementById('palette-input') as HTMLInputElement | null;
+    const resultsEl = document.getElementById('palette-results');
+    const emptyEl = document.getElementById('palette-empty');
+    const countEl = document.getElementById('palette-count');
+    const kbdHint = document.getElementById('palette-kbd');
+
+    if (!trigger || !modal || !input || !resultsEl || !emptyEl) return;
+    if (trigger.dataset.init === '1') return; // guard against double init
+    trigger.dataset.init = '1';
+
+    // Show Ctrl+K on non-Mac platforms
+    if (kbdHint && !/Mac|iPhone|iPad/.test(navigator.platform)) {
+      kbdHint.textContent = 'Ctrl K';
+    }
+
+    let items: Entry[] = [];
+    let selected = 0;
+
+    function render(query: string) {
+      const recents = getRecents();
+      let heading = '';
+
+      if (!query.trim()) {
+        // Empty query: recents first (if any), then everything grouped order
+        const recentHrefs = new Set(recents.map(r => r.href));
+        items = [...recents, ...allTools.filter(t => !recentHrefs.has(t.href))];
+        heading = recents.length ? 'Recent' : '';
+      } else {
+        items = allTools
+          .map(t => ({ t, s: scoreTool(t, query) }))
+          .filter(x => x.s > 0)
+          .sort((a, b) => b.s - a.s)
+          .map(x => x.t);
+      }
+
+      selected = 0;
+      resultsEl!.innerHTML = '';
+      emptyEl!.classList.toggle('hidden', items.length > 0);
+      if (countEl) countEl.textContent = items.length ? `${items.length} tool${items.length === 1 ? '' : 's'}` : '';
+
+      items.forEach((tool, i) => {
+        const li = document.createElement('li');
+        li.setAttribute('role', 'option');
+        li.dataset.index = String(i);
+        const isRecent = heading === 'Recent' && i < recents.length;
+        li.innerHTML = `
+          <a href="${tool.href}" class="palette-item flex items-center gap-3 px-4 py-2 text-sm" tabindex="-1">
+            <span class="flex-1 min-w-0">
+              <span class="font-medium text-slate-800 dark:text-slate-100">${tool.name}</span>
+              <span class="ml-2 text-slate-400 dark:text-slate-500 text-xs truncate">${tool.description}</span>
+            </span>
+            <span class="shrink-0 text-[10px] uppercase tracking-wide text-slate-400 dark:text-slate-500">${isRecent ? 'recent' : tool.group}</span>
+          </a>`;
+        resultsEl!.appendChild(li);
+      });
+      highlight();
+    }
+
+    function highlight() {
+      resultsEl!.querySelectorAll('.palette-item').forEach((el, i) => {
+        el.classList.toggle('bg-indigo-50', i === selected);
+        el.classList.toggle('dark:bg-indigo-500/15', i === selected);
+      });
+      const active = resultsEl!.children[selected] as HTMLElement | undefined;
+      active?.scrollIntoView({ block: 'nearest' });
+    }
+
+    function open() {
+      modal!.classList.remove('hidden');
+      input!.value = '';
+      render('');
+      // Delay focus so the opening keystroke isn't typed into the input
+      requestAnimationFrame(() => input!.focus());
+    }
+
+    function close() {
+      modal!.classList.add('hidden');
+      input!.blur();
+    }
+
+    function go(index: number) {
+      const tool = items[index];
+      if (!tool) return;
+      pushRecent(tool.href);
+      close();
+      window.location.href = tool.href;
+    }
+
+    trigger.addEventListener('click', open);
+    backdrop?.addEventListener('click', close);
+
+    input.addEventListener('input', () => render(input.value));
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); selected = Math.min(selected + 1, items.length - 1); highlight(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); selected = Math.max(selected - 1, 0); highlight(); }
+      else if (e.key === 'Enter') { e.preventDefault(); go(selected); }
+      else if (e.key === 'Escape') { e.preventDefault(); close(); }
+    });
+
+    resultsEl.addEventListener('click', (e) => {
+      const item = (e.target as HTMLElement).closest('.palette-item') as HTMLAnchorElement | null;
+      if (!item) return;
+      e.preventDefault();
+      const li = item.closest('li');
+      go(Number(li?.dataset.index ?? -1));
+    });
+
+    resultsEl.addEventListener('mousemove', (e) => {
+      const li = (e.target as HTMLElement).closest('li');
+      if (!li) return;
+      const idx = Number(li.dataset.index);
+      if (idx !== selected) { selected = idx; highlight(); }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      const isModK = (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k';
+      const target = e.target as HTMLElement;
+      const typing = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+      const isSlash = e.key === '/' && !typing && !e.metaKey && !e.ctrlKey && !e.altKey;
+
+      if (isModK || isSlash) {
+        e.preventDefault();
+        modal!.classList.contains('hidden') ? open() : close();
+      } else if (e.key === 'Escape' && !modal!.classList.contains('hidden')) {
+        close();
+      }
+    });
+  }
+
+  initPalette();
+  document.addEventListener('astro:after-swap', initPalette);
+</script>

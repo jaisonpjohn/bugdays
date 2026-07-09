@@ -1,0 +1,43 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const tools = [
+  { name: 'Hash Generator', href: '/hash-generator', description: 'Generate MD5, SHA-1, SHA-256, and SHA-512 hashes' },
+  { name: 'JWT Decoder', href: '/jwt-decoder', description: 'Decode and inspect JSON Web Tokens without validation' },
+  { name: 'Password Generator', href: '/password-generator', description: 'Generate cryptographically secure random passwords' },
+  { name: 'DBeaver Password Decrypt', href: '/dbeaver-password-decrypter', description: 'Decrypt DBeaver saved database passwords' },
+];
+---
+
+<Layout
+  title="Security & Crypto Tools"
+  description="Free online security and cryptography tools. Hash generator, JWT decoder, password generator, and more. All tools run locally in your browser for maximum privacy."
+  keywords="hash generator, JWT decoder, password generator, security tools, crypto tools, MD5, SHA-256, online security tools"
+  breadcrumb={[{ name: "Security Tools" }]}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-2">Security & Crypto Tools</h1>
+    <p class="text-gray-600 dark:text-slate-400 mb-6">Hash, encrypt, and secure your data</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="block p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all"
+        >
+          <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{tool.name}</h2>
+          <p class="text-sm text-gray-600 dark:text-slate-300">{tool.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About Security Tools</h2>
+      <p class="text-gray-600 dark:text-slate-300 text-sm">
+        Security is crucial for developers. Our cryptographic tools help you generate secure hashes for data integrity,
+        inspect JWTs for debugging authentication, and create strong passwords. All processing happens entirely in your
+        browser - sensitive data never leaves your device.
+      </p>
+    </div>
+  </div>
+</Layout>

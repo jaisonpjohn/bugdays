@@ -1,0 +1,722 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Text Diff - Compare Text Online"
+  description="Compare two text files and find differences line by line. Free online diff tool with GitHub-style unified and split views, color-coded changes, and collapsible unchanged sections."
+  keywords="text diff, compare text, diff tool online, text comparison, find differences, side by side diff, code diff, file comparison, github diff"
+  breadcrumb={[{ name: "Text Tools", href: "/text-tools" }, { name: "Text Diff" }]}
+  toolId="text-diff"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Text Diff Tool</h1>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Original Text</label>
+          <span id="line-count-1" class="text-xs text-gray-400 dark:text-slate-500">0 lines</span>
+        </div>
+        <textarea
+          id="text1"
+          data-share-key="text1"
+          class="w-full h-40 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Paste original text here..."
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Modified Text</label>
+          <span id="line-count-2" class="text-xs text-gray-400 dark:text-slate-500">0 lines</span>
+        </div>
+        <textarea
+          id="text2"
+          data-share-key="text2"
+          class="w-full h-40 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Paste modified text here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mb-4 items-center">
+      <button id="compare-btn" data-share-action="compare" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Compare
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Clear
+      </button>
+      <button id="swap-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Swap
+      </button>
+      <button id="sample-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Sample
+      </button>
+      <div class="h-6 w-px bg-gray-300 dark:bg-slate-600 mx-1"></div>
+      <label class="inline-flex items-center gap-2 cursor-pointer text-sm">
+        <input type="checkbox" id="opt-collapse" data-share-key="collapse" checked class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+        <span class="text-gray-700 dark:text-slate-200">Collapse unchanged</span>
+      </label>
+      <label class="inline-flex items-center gap-2 cursor-pointer text-sm">
+        <input type="checkbox" id="opt-ignore-whitespace" data-share-key="ignoreWhitespace" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+        <span class="text-gray-700 dark:text-slate-200">Ignore whitespace</span>
+      </label>
+      <div class="flex items-center gap-2 ml-auto">
+        <label class="text-sm text-gray-600 dark:text-slate-300">Context:</label>
+        <select id="context-lines" data-share-key="contextLines" class="px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200">
+          <option value="3">3 lines</option>
+          <option value="5">5 lines</option>
+          <option value="10">10 lines</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="stats" class="hidden mb-4 p-3 rounded-lg text-sm"></div>
+
+    <!-- GitHub-style Diff View -->
+    <div id="diff-container" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+      <div class="bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 px-4 py-2 flex items-center justify-between">
+        <div class="flex items-center gap-4 text-sm">
+          <span id="diff-stats" class="text-gray-600 dark:text-slate-300"></span>
+        </div>
+        <div class="flex items-center gap-3">
+          <!-- View toggle like GitHub -->
+          <div class="inline-flex rounded-md border border-gray-300 dark:border-slate-600 overflow-hidden text-sm">
+            <button id="view-unified" class="px-3 py-1 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border-r border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 view-toggle-active">
+              Unified
+            </button>
+            <button id="view-split" class="px-3 py-1 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-700 dark:text-slate-200">
+              Split
+            </button>
+          </div>
+          <button id="expand-all-btn" class="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300">Expand all</button>
+        </div>
+      </div>
+      <div id="diff-output" class="overflow-auto max-h-[600px]"></div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online Text Diff Tool</h2>
+      <p class="text-gray-600 dark:text-slate-300 mb-3">
+        Compare two text files with GitHub-style diff visualization. Choose unified or split view.
+        Added lines shown in green, removed in red. Unchanged sections can be collapsed. All processing happens in your browser.
+      </p>
+      <p class="text-gray-500 dark:text-slate-400 text-sm">
+        Looking to compare JSON objects? Try our <a href="/json-diff" class="text-indigo-600 hover:underline">JSON Diff Tool</a> for semantic comparison.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const text1 = document.getElementById('text1') as HTMLTextAreaElement;
+  const text2 = document.getElementById('text2') as HTMLTextAreaElement;
+
+  // Register share actions
+  ShareManager.register({
+    tool: 'text-diff',
+    actions: {
+      compare: () => document.getElementById('compare-btn')?.click(),
+    }
+  });
+  const diffOutput = document.getElementById('diff-output')!;
+  const stats = document.getElementById('stats')!;
+  const diffStats = document.getElementById('diff-stats')!;
+  const lineCount1 = document.getElementById('line-count-1')!;
+  const lineCount2 = document.getElementById('line-count-2')!;
+  const optCollapse = document.getElementById('opt-collapse') as HTMLInputElement;
+  const optIgnoreWhitespace = document.getElementById('opt-ignore-whitespace') as HTMLInputElement;
+  const contextLines = document.getElementById('context-lines') as HTMLSelectElement;
+  const viewUnified = document.getElementById('view-unified')!;
+  const viewSplit = document.getElementById('view-split')!;
+
+  let currentView: 'unified' | 'split' = 'unified';
+  let lastDiff: DiffLine[] = [];
+
+  function updateLineCounts() {
+    const c1 = text1.value ? text1.value.split('\n').length : 0;
+    const c2 = text2.value ? text2.value.split('\n').length : 0;
+    lineCount1.textContent = `${c1} line${c1 !== 1 ? 's' : ''}`;
+    lineCount2.textContent = `${c2} line${c2 !== 1 ? 's' : ''}`;
+  }
+  text1.addEventListener('input', updateLineCounts);
+  text2.addEventListener('input', updateLineCounts);
+
+  function preprocessLine(line: string): string {
+    let l = line;
+    if (optIgnoreWhitespace.checked) l = l.replace(/\s+/g, ' ').trim();
+    return l;
+  }
+
+  interface DiffLine {
+    type: 'added' | 'removed' | 'unchanged' | 'modified';
+    leftNum?: number;
+    rightNum?: number;
+    leftText?: string;
+    rightText?: string;
+  }
+
+  function computeDiff(lines1: string[], lines2: string[]): DiffLine[] {
+    const processed1 = lines1.map(preprocessLine);
+    const processed2 = lines2.map(preprocessLine);
+
+    const m = processed1.length;
+    const n = processed2.length;
+
+    const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (processed1[i - 1] === processed2[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+
+    const raw: { type: 'added' | 'removed' | 'unchanged'; idx1?: number; idx2?: number }[] = [];
+    let i = m, j = n;
+    while (i > 0 || j > 0) {
+      if (i > 0 && j > 0 && processed1[i - 1] === processed2[j - 1]) {
+        raw.unshift({ type: 'unchanged', idx1: i - 1, idx2: j - 1 });
+        i--; j--;
+      } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+        raw.unshift({ type: 'added', idx2: j - 1 });
+        j--;
+      } else {
+        raw.unshift({ type: 'removed', idx1: i - 1 });
+        i--;
+      }
+    }
+
+    const result: DiffLine[] = [];
+    let leftNum = 0;
+    let rightNum = 0;
+
+    let k = 0;
+    while (k < raw.length) {
+      const item = raw[k];
+
+      if (item.type === 'unchanged') {
+        leftNum++;
+        rightNum++;
+        result.push({
+          type: 'unchanged',
+          leftNum,
+          rightNum,
+          leftText: lines1[item.idx1!],
+          rightText: lines2[item.idx2!]
+        });
+        k++;
+      } else if (item.type === 'removed') {
+        const removedLines: number[] = [];
+        while (k < raw.length && raw[k].type === 'removed') {
+          removedLines.push(raw[k].idx1!);
+          k++;
+        }
+        const addedLines: number[] = [];
+        while (k < raw.length && raw[k].type === 'added') {
+          addedLines.push(raw[k].idx2!);
+          k++;
+        }
+
+        const pairs = Math.min(removedLines.length, addedLines.length);
+        for (let p = 0; p < pairs; p++) {
+          leftNum++;
+          rightNum++;
+          result.push({
+            type: 'modified',
+            leftNum,
+            rightNum,
+            leftText: lines1[removedLines[p]],
+            rightText: lines2[addedLines[p]]
+          });
+        }
+        for (let p = pairs; p < removedLines.length; p++) {
+          leftNum++;
+          result.push({
+            type: 'removed',
+            leftNum,
+            leftText: lines1[removedLines[p]]
+          });
+        }
+        for (let p = pairs; p < addedLines.length; p++) {
+          rightNum++;
+          result.push({
+            type: 'added',
+            rightNum,
+            rightText: lines2[addedLines[p]]
+          });
+        }
+      } else {
+        rightNum++;
+        result.push({
+          type: 'added',
+          rightNum,
+          rightText: lines2[item.idx2!]
+        });
+        k++;
+      }
+    }
+
+    return result;
+  }
+
+  function wordDiff(oldText: string, newText: string): { left: string; right: string } {
+    const oldWords = oldText.split(/(\s+)/);
+    const newWords = newText.split(/(\s+)/);
+
+    const m = oldWords.length;
+    const n = newWords.length;
+    const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        if (oldWords[i - 1] === newWords[j - 1]) {
+          dp[i][j] = dp[i - 1][j - 1] + 1;
+        } else {
+          dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+        }
+      }
+    }
+
+    const oldMarked: { text: string; changed: boolean }[] = [];
+    const newMarked: { text: string; changed: boolean }[] = [];
+
+    let oi = m, ni = n;
+    while (oi > 0 || ni > 0) {
+      if (oi > 0 && ni > 0 && oldWords[oi - 1] === newWords[ni - 1]) {
+        oldMarked.unshift({ text: oldWords[oi - 1], changed: false });
+        newMarked.unshift({ text: newWords[ni - 1], changed: false });
+        oi--; ni--;
+      } else if (ni > 0 && (oi === 0 || dp[oi][ni - 1] >= dp[oi - 1][ni])) {
+        newMarked.unshift({ text: newWords[ni - 1], changed: true });
+        ni--;
+      } else {
+        oldMarked.unshift({ text: oldWords[oi - 1], changed: true });
+        oi--;
+      }
+    }
+
+    const left = oldMarked.map(w =>
+      w.changed ? `<span class="word-removed">${escapeHtml(w.text)}</span>` : escapeHtml(w.text)
+    ).join('');
+
+    const right = newMarked.map(w =>
+      w.changed ? `<span class="word-added">${escapeHtml(w.text)}</span>` : escapeHtml(w.text)
+    ).join('');
+
+    return { left, right };
+  }
+
+  function escapeHtml(text: string): string {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function compare() {
+    const lines1 = text1.value.split('\n');
+    const lines2 = text2.value.split('\n');
+
+    if (!text1.value && !text2.value) {
+      diffOutput.innerHTML = '<div class="diff-empty">Enter text in both panels and click Compare</div>';
+      stats.classList.add('hidden');
+      return;
+    }
+
+    lastDiff = computeDiff(lines1, lines2);
+
+    const added = lastDiff.filter(d => d.type === 'added').length;
+    const removed = lastDiff.filter(d => d.type === 'removed').length;
+    const modified = lastDiff.filter(d => d.type === 'modified').length;
+
+    if (added === 0 && removed === 0 && modified === 0) {
+      stats.innerHTML = '&#10003; <strong>No differences</strong> - texts are identical';
+      stats.className = 'mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-800 dark:text-green-300';
+      diffStats.textContent = '';
+    } else {
+      stats.innerHTML = `Found <strong>${added + removed + modified} change${added + removed + modified !== 1 ? 's' : ''}</strong>`;
+      stats.className = 'mb-4 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-800 dark:text-amber-300';
+
+      const statParts: string[] = [];
+      if (added > 0) statParts.push(`<span class="text-green-600 font-medium">+${added}</span>`);
+      if (removed > 0) statParts.push(`<span class="text-red-600 font-medium">-${removed}</span>`);
+      if (modified > 0) statParts.push(`<span class="text-amber-600 font-medium">~${modified}</span>`);
+      diffStats.innerHTML = statParts.join(' ');
+    }
+    stats.classList.remove('hidden');
+
+    renderDiff(lastDiff);
+  }
+
+  function renderDiff(diff: DiffLine[]) {
+    if (currentView === 'unified') {
+      renderUnifiedDiff(diff);
+    } else {
+      renderSplitDiff(diff);
+    }
+  }
+
+  function buildHunks(diff: DiffLine[]) {
+    const collapse = optCollapse.checked;
+    const ctx = contextLines.value === 'all' ? Infinity : parseInt(contextLines.value, 10);
+
+    interface Hunk {
+      type: 'changes' | 'collapsed';
+      lines: DiffLine[];
+      collapsedCount?: number;
+      startLeft?: number;
+      startRight?: number;
+    }
+
+    const hunks: Hunk[] = [];
+
+    if (!collapse || ctx === Infinity) {
+      hunks.push({ type: 'changes', lines: diff });
+    } else {
+      const changeIndices: number[] = [];
+      diff.forEach((d, i) => {
+        if (d.type !== 'unchanged') changeIndices.push(i);
+      });
+
+      if (changeIndices.length === 0) {
+        if (diff.length <= ctx * 2) {
+          hunks.push({ type: 'changes', lines: diff });
+        } else {
+          hunks.push({ type: 'changes', lines: diff.slice(0, ctx) });
+          hunks.push({
+            type: 'collapsed',
+            lines: diff.slice(ctx, -ctx),
+            collapsedCount: diff.length - ctx * 2,
+            startLeft: diff[ctx]?.leftNum,
+            startRight: diff[ctx]?.rightNum
+          });
+          hunks.push({ type: 'changes', lines: diff.slice(-ctx) });
+        }
+      } else {
+        const visible = new Set<number>();
+        for (const ci of changeIndices) {
+          for (let i = Math.max(0, ci - ctx); i <= Math.min(diff.length - 1, ci + ctx); i++) {
+            visible.add(i);
+          }
+        }
+
+        let i = 0;
+        while (i < diff.length) {
+          if (visible.has(i)) {
+            const start = i;
+            while (i < diff.length && visible.has(i)) i++;
+            hunks.push({ type: 'changes', lines: diff.slice(start, i) });
+          } else {
+            const start = i;
+            while (i < diff.length && !visible.has(i)) i++;
+            hunks.push({
+              type: 'collapsed',
+              lines: diff.slice(start, i),
+              collapsedCount: i - start,
+              startLeft: diff[start]?.leftNum,
+              startRight: diff[start]?.rightNum
+            });
+          }
+        }
+      }
+    }
+
+    return hunks;
+  }
+
+  function renderUnifiedDiff(diff: DiffLine[]) {
+    const hunks = buildHunks(diff);
+
+    let html = '<table class="diff-table-unified">';
+
+    for (const hunk of hunks) {
+      if (hunk.type === 'collapsed') {
+        const id = `hunk-${hunk.startLeft}-${hunk.startRight}`;
+        html += `
+          <tr class="diff-hunk-header" data-hunk-id="${id}">
+            <td colspan="4">
+              <svg class="expand-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.177.677l2.896 2.896a.25.25 0 01-.177.427H8.75v1.25a.75.75 0 01-1.5 0V4H5.104a.25.25 0 01-.177-.427L7.823.677a.25.25 0 01.354 0zM7.25 10.75a.75.75 0 011.5 0V12h2.146a.25.25 0 01.177.427l-2.896 2.896a.25.25 0 01-.354 0l-2.896-2.896A.25.25 0 015.104 12H7.25v-1.25zm-5-2a.75.75 0 000-1.5h-.5a.75.75 0 000 1.5h.5zM6 8a.75.75 0 01-.75.75h-.5a.75.75 0 010-1.5h.5A.75.75 0 016 8zm2.25.75a.75.75 0 000-1.5h-.5a.75.75 0 000 1.5h.5zM12 8a.75.75 0 01-.75.75h-.5a.75.75 0 010-1.5h.5A.75.75 0 0112 8zm2.25.75a.75.75 0 000-1.5h-.5a.75.75 0 000 1.5h.5z"></path></svg>
+              <span class="diff-hunk-info">@@ ${hunk.collapsedCount} unchanged line${hunk.collapsedCount !== 1 ? 's' : ''} hidden @@</span>
+              <span class="text-gray-500 dark:text-slate-400 ml-2">Click to expand</span>
+            </td>
+          </tr>
+          <tbody id="${id}" class="diff-hunk-body" style="display: none;">
+            ${renderUnifiedLines(hunk.lines)}
+          </tbody>
+        `;
+      } else {
+        html += renderUnifiedLines(hunk.lines);
+      }
+    }
+
+    html += '</table>';
+    diffOutput.innerHTML = html;
+    attachHunkHandlers();
+  }
+
+  function renderUnifiedLines(lines: DiffLine[]): string {
+    let html = '';
+
+    for (const line of lines) {
+      if (line.type === 'unchanged') {
+        html += `
+          <tr class="diff-row-unchanged">
+            <td class="line-num">${line.leftNum}</td>
+            <td class="line-num">${line.rightNum}</td>
+            <td class="line-sign"></td>
+            <td class="line-content">${escapeHtml(line.leftText ?? '') || '&nbsp;'}</td>
+          </tr>
+        `;
+      } else if (line.type === 'removed') {
+        html += `
+          <tr class="diff-row-removed">
+            <td class="line-num">${line.leftNum}</td>
+            <td class="line-num"></td>
+            <td class="line-sign">-</td>
+            <td class="line-content">${escapeHtml(line.leftText ?? '') || '&nbsp;'}</td>
+          </tr>
+        `;
+      } else if (line.type === 'added') {
+        html += `
+          <tr class="diff-row-added">
+            <td class="line-num"></td>
+            <td class="line-num">${line.rightNum}</td>
+            <td class="line-sign">+</td>
+            <td class="line-content">${escapeHtml(line.rightText ?? '') || '&nbsp;'}</td>
+          </tr>
+        `;
+      } else if (line.type === 'modified') {
+        const wd = wordDiff(line.leftText ?? '', line.rightText ?? '');
+        html += `
+          <tr class="diff-row-removed">
+            <td class="line-num">${line.leftNum}</td>
+            <td class="line-num"></td>
+            <td class="line-sign">-</td>
+            <td class="line-content">${wd.left || '&nbsp;'}</td>
+          </tr>
+          <tr class="diff-row-added">
+            <td class="line-num"></td>
+            <td class="line-num">${line.rightNum}</td>
+            <td class="line-sign">+</td>
+            <td class="line-content">${wd.right || '&nbsp;'}</td>
+          </tr>
+        `;
+      }
+    }
+
+    return html;
+  }
+
+  function renderSplitDiff(diff: DiffLine[]) {
+    const hunks = buildHunks(diff);
+
+    let html = '<table class="diff-table-split">';
+
+    for (const hunk of hunks) {
+      if (hunk.type === 'collapsed') {
+        const id = `hunk-split-${hunk.startLeft}-${hunk.startRight}`;
+        html += `
+          <tr class="diff-hunk-header" data-hunk-id="${id}">
+            <td colspan="5">
+              <svg class="expand-icon" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.177.677l2.896 2.896a.25.25 0 01-.177.427H8.75v1.25a.75.75 0 01-1.5 0V4H5.104a.25.25 0 01-.177-.427L7.823.677a.25.25 0 01.354 0zM7.25 10.75a.75.75 0 011.5 0V12h2.146a.25.25 0 01.177.427l-2.896 2.896a.25.25 0 01-.354 0l-2.896-2.896A.25.25 0 015.104 12H7.25v-1.25zm-5-2a.75.75 0 000-1.5h-.5a.75.75 0 000 1.5h.5zM6 8a.75.75 0 01-.75.75h-.5a.75.75 0 010-1.5h.5A.75.75 0 016 8zm2.25.75a.75.75 0 000-1.5h-.5a.75.75 0 000 1.5h.5zM12 8a.75.75 0 01-.75.75h-.5a.75.75 0 010-1.5h.5A.75.75 0 0112 8zm2.25.75a.75.75 0 000-1.5h-.5a.75.75 0 000 1.5h.5z"></path></svg>
+              <span class="diff-hunk-info">@@ ${hunk.collapsedCount} unchanged line${hunk.collapsedCount !== 1 ? 's' : ''} hidden @@</span>
+              <span class="text-gray-500 dark:text-slate-400 ml-2">Click to expand</span>
+            </td>
+          </tr>
+          <tbody id="${id}" class="diff-hunk-body" style="display: none;">
+            ${renderSplitLines(hunk.lines)}
+          </tbody>
+        `;
+      } else {
+        html += renderSplitLines(hunk.lines);
+      }
+    }
+
+    html += '</table>';
+    diffOutput.innerHTML = html;
+    attachHunkHandlers();
+  }
+
+  function renderSplitLines(lines: DiffLine[]): string {
+    let html = '';
+
+    for (const line of lines) {
+      if (line.type === 'unchanged') {
+        const text = escapeHtml(line.leftText ?? '') || '&nbsp;';
+        html += `
+          <tr class="diff-row-unchanged">
+            <td class="line-num">${line.leftNum}</td>
+            <td class="line-content">${text}</td>
+            <td class="split-divider"></td>
+            <td class="line-num">${line.rightNum}</td>
+            <td class="line-content">${text}</td>
+          </tr>
+        `;
+      } else if (line.type === 'removed') {
+        html += `
+          <tr>
+            <td class="line-num diff-row-removed">${line.leftNum}</td>
+            <td class="line-content diff-row-removed">${escapeHtml(line.leftText ?? '') || '&nbsp;'}</td>
+            <td class="split-divider"></td>
+            <td class="line-num diff-cell-empty"></td>
+            <td class="line-content diff-cell-empty">&nbsp;</td>
+          </tr>
+        `;
+      } else if (line.type === 'added') {
+        html += `
+          <tr>
+            <td class="line-num diff-cell-empty"></td>
+            <td class="line-content diff-cell-empty">&nbsp;</td>
+            <td class="split-divider"></td>
+            <td class="line-num diff-row-added">${line.rightNum}</td>
+            <td class="line-content diff-row-added">${escapeHtml(line.rightText ?? '') || '&nbsp;'}</td>
+          </tr>
+        `;
+      } else if (line.type === 'modified') {
+        const wd = wordDiff(line.leftText ?? '', line.rightText ?? '');
+        html += `
+          <tr>
+            <td class="line-num diff-row-removed">${line.leftNum}</td>
+            <td class="line-content diff-row-removed">${wd.left || '&nbsp;'}</td>
+            <td class="split-divider"></td>
+            <td class="line-num diff-row-added">${line.rightNum}</td>
+            <td class="line-content diff-row-added">${wd.right || '&nbsp;'}</td>
+          </tr>
+        `;
+      }
+    }
+
+    return html;
+  }
+
+  function attachHunkHandlers() {
+    document.querySelectorAll('.diff-hunk-header').forEach(header => {
+      header.addEventListener('click', () => {
+        const hunkId = header.getAttribute('data-hunk-id');
+        const body = document.getElementById(hunkId!);
+        if (body) {
+          const isHidden = body.style.display === 'none';
+          body.style.display = isHidden ? '' : 'none';
+          (header as HTMLElement).style.display = isHidden ? 'none' : '';
+        }
+      });
+    });
+
+    document.getElementById('expand-all-btn')!.onclick = () => {
+      document.querySelectorAll('.diff-hunk-header').forEach(h => (h as HTMLElement).style.display = 'none');
+      document.querySelectorAll('.diff-hunk-body').forEach(b => (b as HTMLElement).style.display = '');
+    };
+  }
+
+  // View toggle handlers
+  viewUnified.addEventListener('click', () => {
+    if (currentView !== 'unified') {
+      currentView = 'unified';
+      viewUnified.classList.add('view-toggle-active');
+      viewSplit.classList.remove('view-toggle-active');
+      if (lastDiff.length > 0) renderDiff(lastDiff);
+    }
+  });
+
+  viewSplit.addEventListener('click', () => {
+    if (currentView !== 'split') {
+      currentView = 'split';
+      viewSplit.classList.add('view-toggle-active');
+      viewUnified.classList.remove('view-toggle-active');
+      if (lastDiff.length > 0) renderDiff(lastDiff);
+    }
+  });
+
+  // Sample data
+  const sampleOriginal = `function calculateTotal(items) {
+  let total = 0;
+  for (let i = 0; i < items.length; i++) {
+    total += items[i].price;
+  }
+  return total;
+}
+
+function formatCurrency(amount) {
+  return "$" + amount.toFixed(2);
+}
+
+// Main function
+const items = [
+  { name: "Widget", price: 9.99 },
+  { name: "Gadget", price: 24.99 },
+  { name: "Doohickey", price: 4.99 }
+];
+
+const result = calculateTotal(items);
+console.log(formatCurrency(result));`;
+
+  const sampleModified = `function calculateTotal(items) {
+  let total = 0;
+  for (const item of items) {
+    total += item.price * item.quantity;
+  }
+  return Math.round(total * 100) / 100;
+}
+
+function formatCurrency(amount, currency = "USD") {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency
+  }).format(amount);
+}
+
+// Main function
+const items = [
+  { name: "Widget", price: 9.99, quantity: 2 },
+  { name: "Gadget", price: 24.99, quantity: 1 },
+  { name: "Doohickey", price: 4.99, quantity: 3 }
+];
+
+const total = calculateTotal(items);
+console.log(formatCurrency(total));`;
+
+  // Event listeners
+  document.getElementById('compare-btn')!.addEventListener('click', compare);
+
+  document.getElementById('clear-btn')!.addEventListener('click', () => {
+    text1.value = '';
+    text2.value = '';
+    lastDiff = [];
+    diffOutput.innerHTML = '<div class="diff-empty">Enter text in both panels and click Compare</div>';
+    stats.classList.add('hidden');
+    diffStats.textContent = '';
+    updateLineCounts();
+  });
+
+  document.getElementById('swap-btn')!.addEventListener('click', () => {
+    const temp = text1.value;
+    text1.value = text2.value;
+    text2.value = temp;
+    updateLineCounts();
+    if (!stats.classList.contains('hidden')) compare();
+  });
+
+  document.getElementById('sample-btn')!.addEventListener('click', () => {
+    text1.value = sampleOriginal;
+    text2.value = sampleModified;
+    updateLineCounts();
+    compare();
+  });
+
+  optCollapse.addEventListener('change', () => {
+    if (lastDiff.length > 0) renderDiff(lastDiff);
+  });
+  optIgnoreWhitespace.addEventListener('change', () => {
+    if (!stats.classList.contains('hidden')) compare();
+  });
+  contextLines.addEventListener('change', () => {
+    if (lastDiff.length > 0) renderDiff(lastDiff);
+  });
+
+  // Initialize
+  diffOutput.innerHTML = '<div class="diff-empty">Enter text in both panels and click Compare</div>';
+</script>

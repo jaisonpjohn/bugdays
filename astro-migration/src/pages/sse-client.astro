@@ -1,0 +1,387 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="SSE Client - Server-Sent Events Tester Online"
+  description="Free online SSE client to test Server-Sent Events streams. Connect to event streams, view real-time events, and debug SSE APIs with automatic reconnection."
+  keywords="sse client, server-sent events tester, eventsource client, sse debugger, event stream tester, real-time events, sse api testing"
+  breadcrumb={[{ name: "Network Tools", href: "/network-tools" }, { name: "SSE Client" }]}
+  toolId="sse-client"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">SSE Client</h1>
+
+    <!-- Connection -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <div class="flex flex-wrap gap-3 mb-4">
+        <input
+          type="text"
+          id="sse-url"
+          class="flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="https://api.example.com/events"
+        />
+        <button id="connect-btn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+          Connect
+        </button>
+        <button id="disconnect-btn" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium hidden">
+          Disconnect
+        </button>
+      </div>
+
+      <!-- Proxy Settings -->
+      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg mb-4">
+        <input type="checkbox" id="use-proxy" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+        <label for="use-proxy" class="text-sm text-gray-700 dark:text-slate-200">Use CORS Proxy</label>
+        <input
+          type="text"
+          id="proxy-url"
+          class="flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="http://localhost:2345/"
+          value="http://localhost:2345/"
+          disabled
+        />
+        <button id="proxy-info-btn" class="text-indigo-600 hover:text-indigo-800 text-sm">
+          Setup Instructions
+        </button>
+      </div>
+
+      <!-- Connection Status -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span id="status-indicator" class="w-3 h-3 rounded-full bg-gray-400"></span>
+          <span id="status-text" class="text-sm text-gray-600 dark:text-slate-400">Disconnected</span>
+        </div>
+        <div class="flex items-center gap-4 text-sm text-gray-500 dark:text-slate-400">
+          <span>Events: <span id="event-count" class="font-medium text-gray-700 dark:text-slate-200">0</span></span>
+          <span>Last Event: <span id="last-event-id" class="font-mono">-</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Event Filters -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Event Filters</h3>
+      <div class="flex flex-wrap gap-2">
+        <label class="inline-flex items-center gap-1 text-sm">
+          <input type="checkbox" class="event-filter rounded border-gray-300 text-indigo-600" data-type="message" checked />
+          <span class="text-gray-700 dark:text-slate-200">message</span>
+        </label>
+        <label class="inline-flex items-center gap-1 text-sm">
+          <input type="checkbox" class="event-filter rounded border-gray-300 text-indigo-600" data-type="open" checked />
+          <span class="text-gray-700 dark:text-slate-200">open</span>
+        </label>
+        <label class="inline-flex items-center gap-1 text-sm">
+          <input type="checkbox" class="event-filter rounded border-gray-300 text-indigo-600" data-type="error" checked />
+          <span class="text-gray-700 dark:text-slate-200">error</span>
+        </label>
+        <label class="inline-flex items-center gap-1 text-sm">
+          <input type="checkbox" class="event-filter rounded border-gray-300 text-indigo-600" data-type="custom" checked />
+          <span class="text-gray-700 dark:text-slate-200">custom events</span>
+        </label>
+      </div>
+      <div class="mt-3">
+        <input
+          type="text"
+          id="custom-events"
+          class="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Custom event types to listen for (comma-separated, e.g., update,ping,status)"
+        />
+      </div>
+    </div>
+
+    <!-- Events Log -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200">Events</h3>
+        <div class="flex gap-2">
+          <button id="auto-scroll-btn" class="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded" data-enabled="true">
+            Auto-scroll: ON
+          </button>
+          <button id="clear-btn" class="text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded text-gray-700 dark:text-slate-200">
+            Clear
+          </button>
+        </div>
+      </div>
+      <div id="events-log" class="h-96 overflow-y-auto bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 p-3 font-mono text-sm space-y-2">
+        <div class="text-gray-400 dark:text-slate-500 text-center py-8">Connect to an SSE endpoint to start receiving events</div>
+      </div>
+    </div>
+
+    <!-- Proxy Setup Modal -->
+    <div id="proxy-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-4">CORS Proxy Setup</h3>
+        <div class="space-y-4 text-sm text-gray-600 dark:text-slate-300">
+          <p>To bypass CORS restrictions, run <a href="https://github.com/bugdays-com/holy-cors" target="_blank" class="text-indigo-600 hover:underline">Holy CORS</a> locally:</p>
+          <div class="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-xs overflow-auto">
+            <p class="text-gray-400"># macOS (Homebrew)</p>
+            <p>brew install bugdays-com/tap/holy-cors</p>
+            <p>holy-cors</p>
+          </div>
+          <div class="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-xs overflow-auto">
+            <p class="text-gray-400"># Docker</p>
+            <p>docker run -p 2345:2345 ghcr.io/bugdays-com/holy-cors</p>
+          </div>
+          <p>The proxy will be available at <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">http://localhost:2345/</code></p>
+        </div>
+        <button id="close-modal-btn" class="mt-4 px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500">Close</button>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online Server-Sent Events Tester</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Test Server-Sent Events (SSE) streams in real-time. Connect to any SSE endpoint, filter events by type,
+        and view incoming data with timestamps. Supports custom event types and automatic reconnection.
+        Perfect for debugging real-time APIs and event-driven applications.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  let eventSource: EventSource | null = null;
+  let eventCount = 0;
+  let autoScroll = true;
+  let customEventHandlers: string[] = [];
+
+  const sseUrlInput = document.getElementById('sse-url') as HTMLInputElement;
+  const connectBtn = document.getElementById('connect-btn') as HTMLButtonElement;
+  const disconnectBtn = document.getElementById('disconnect-btn') as HTMLButtonElement;
+  const eventsLog = document.getElementById('events-log') as HTMLDivElement;
+  const statusIndicator = document.getElementById('status-indicator') as HTMLSpanElement;
+  const statusText = document.getElementById('status-text') as HTMLSpanElement;
+  const eventCountEl = document.getElementById('event-count') as HTMLSpanElement;
+  const lastEventIdEl = document.getElementById('last-event-id') as HTMLSpanElement;
+  const useProxyCheckbox = document.getElementById('use-proxy') as HTMLInputElement;
+  const proxyUrlInput = document.getElementById('proxy-url') as HTMLInputElement;
+  const customEventsInput = document.getElementById('custom-events') as HTMLInputElement;
+  const autoScrollBtn = document.getElementById('auto-scroll-btn') as HTMLButtonElement;
+  const proxyModal = document.getElementById('proxy-modal');
+
+  // Proxy toggle
+  useProxyCheckbox?.addEventListener('change', () => {
+    proxyUrlInput.disabled = !useProxyCheckbox.checked;
+  });
+
+  // Auto-scroll toggle
+  autoScrollBtn?.addEventListener('click', () => {
+    autoScroll = !autoScroll;
+    autoScrollBtn.textContent = `Auto-scroll: ${autoScroll ? 'ON' : 'OFF'}`;
+    autoScrollBtn.className = autoScroll
+      ? 'text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded'
+      : 'text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded';
+  });
+
+  function getFilters(): Record<string, boolean> {
+    const filters: Record<string, boolean> = {};
+    document.querySelectorAll('.event-filter').forEach((el) => {
+      const checkbox = el as HTMLInputElement;
+      filters[checkbox.dataset.type || ''] = checkbox.checked;
+    });
+    return filters;
+  }
+
+  function setStatus(status: 'connecting' | 'connected' | 'disconnected' | 'error') {
+    const colors: Record<string, string> = {
+      connecting: 'bg-yellow-400',
+      connected: 'bg-green-500',
+      disconnected: 'bg-gray-400',
+      error: 'bg-red-500'
+    };
+    const texts: Record<string, string> = {
+      connecting: 'Connecting...',
+      connected: 'Connected',
+      disconnected: 'Disconnected',
+      error: 'Connection Error'
+    };
+
+    statusIndicator.className = `w-3 h-3 rounded-full ${colors[status]}`;
+    statusText.textContent = texts[status];
+
+    if (status === 'connected') {
+      connectBtn.classList.add('hidden');
+      disconnectBtn.classList.remove('hidden');
+    } else {
+      connectBtn.classList.remove('hidden');
+      disconnectBtn.classList.add('hidden');
+    }
+  }
+
+  function formatTime(): string {
+    return new Date().toLocaleTimeString('en-US', { hour12: false, fractionalSecondDigits: 3 });
+  }
+
+  function addEvent(type: string, data: string, eventId?: string, isSystem = false) {
+    const filters = getFilters();
+
+    // Check filters
+    if (type === 'message' && !filters.message) return;
+    if (type === 'open' && !filters.open) return;
+    if (type === 'error' && !filters.error) return;
+    if (!['message', 'open', 'error'].includes(type) && !filters.custom) return;
+
+    const placeholder = eventsLog.querySelector('.text-center');
+    if (placeholder) placeholder.remove();
+
+    const div = document.createElement('div');
+    const time = formatTime();
+
+    const typeColors: Record<string, string> = {
+      message: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+      open: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+      error: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+      system: 'bg-gray-100 text-gray-800 dark:bg-slate-700 dark:text-slate-300'
+    };
+
+    const colorClass = isSystem ? typeColors.system : (typeColors[type] || 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300');
+
+    div.className = 'p-2 rounded border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800';
+    div.innerHTML = `
+      <div class="flex items-center gap-2 mb-1">
+        <span class="text-xs text-gray-400 dark:text-slate-500">${time}</span>
+        <span class="text-xs px-1.5 py-0.5 rounded ${colorClass}">${escapeHtml(type)}</span>
+        ${eventId ? `<span class="text-xs text-gray-400 dark:text-slate-500">id: ${escapeHtml(eventId)}</span>` : ''}
+      </div>
+      <pre class="text-xs whitespace-pre-wrap break-all text-gray-700 dark:text-slate-300">${escapeHtml(data)}</pre>
+    `;
+
+    eventsLog.appendChild(div);
+
+    if (autoScroll) {
+      eventsLog.scrollTop = eventsLog.scrollHeight;
+    }
+
+    if (!isSystem) {
+      eventCount++;
+      eventCountEl.textContent = eventCount.toString();
+      if (eventId) {
+        lastEventIdEl.textContent = eventId;
+      }
+    }
+  }
+
+  function escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function connect() {
+    let url = sseUrlInput.value.trim();
+    if (!url) {
+      addEvent('error', 'Please enter an SSE endpoint URL', undefined, true);
+      return;
+    }
+
+    // Handle proxy
+    if (useProxyCheckbox.checked) {
+      const proxyUrl = proxyUrlInput.value.trim();
+      url = proxyUrl + url;
+    }
+
+    disconnect(); // Close existing connection
+    eventCount = 0;
+    eventCountEl.textContent = '0';
+    lastEventIdEl.textContent = '-';
+
+    setStatus('connecting');
+    addEvent('system', `Connecting to ${sseUrlInput.value.trim()}...`, undefined, true);
+
+    try {
+      eventSource = new EventSource(url);
+
+      eventSource.onopen = () => {
+        setStatus('connected');
+        addEvent('open', 'Connection established');
+      };
+
+      eventSource.onmessage = (event) => {
+        let data = event.data;
+        try {
+          const json = JSON.parse(data);
+          data = JSON.stringify(json, null, 2);
+        } catch {
+          // Not JSON
+        }
+        addEvent('message', data, event.lastEventId);
+      };
+
+      eventSource.onerror = () => {
+        if (eventSource?.readyState === EventSource.CLOSED) {
+          setStatus('disconnected');
+          addEvent('error', 'Connection closed by server');
+        } else if (eventSource?.readyState === EventSource.CONNECTING) {
+          setStatus('connecting');
+          addEvent('error', 'Connection lost, attempting to reconnect...');
+        } else {
+          setStatus('error');
+          if (!useProxyCheckbox.checked) {
+            addEvent('error', 'Connection failed. This may be a CORS issue - try enabling the proxy.');
+          } else {
+            addEvent('error', 'Connection failed. Is Holy CORS running? Start it with: holy-cors');
+          }
+        }
+      };
+
+      // Set up custom event listeners
+      const customTypes = customEventsInput.value.split(',').map(s => s.trim()).filter(Boolean);
+      customEventHandlers = customTypes;
+
+      customTypes.forEach(eventType => {
+        eventSource?.addEventListener(eventType, (event: Event) => {
+          const msgEvent = event as MessageEvent;
+          let data = msgEvent.data;
+          try {
+            const json = JSON.parse(data);
+            data = JSON.stringify(json, null, 2);
+          } catch {
+            // Not JSON
+          }
+          addEvent(eventType, data, msgEvent.lastEventId);
+        });
+      });
+
+    } catch (err) {
+      setStatus('error');
+      addEvent('error', `Failed to connect: ${(err as Error).message}`, undefined, true);
+    }
+  }
+
+  function disconnect() {
+    if (eventSource) {
+      eventSource.close();
+      eventSource = null;
+      setStatus('disconnected');
+      addEvent('system', 'Disconnected', undefined, true);
+    }
+  }
+
+  connectBtn.addEventListener('click', connect);
+  disconnectBtn.addEventListener('click', disconnect);
+
+  document.getElementById('clear-btn')?.addEventListener('click', () => {
+    eventsLog.innerHTML = '<div class="text-gray-400 dark:text-slate-500 text-center py-8">Events cleared</div>';
+    eventCount = 0;
+    eventCountEl.textContent = '0';
+  });
+
+  // Proxy modal
+  document.getElementById('proxy-info-btn')?.addEventListener('click', () => {
+    proxyModal?.classList.remove('hidden');
+  });
+
+  document.getElementById('close-modal-btn')?.addEventListener('click', () => {
+    proxyModal?.classList.add('hidden');
+  });
+
+  proxyModal?.addEventListener('click', (e) => {
+    if (e.target === proxyModal) proxyModal.classList.add('hidden');
+  });
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    if (eventSource) eventSource.close();
+  });
+</script>

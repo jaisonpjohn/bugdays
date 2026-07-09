@@ -1,0 +1,175 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Join Lines Online - Convert Lines to SQL IN, JSON Array, CSV"
+  description="Join multiple lines into a single delimited string. Convert lists to SQL IN clauses, JSON arrays, Python lists, or CSV. Free online line joiner tool."
+  keywords="join lines, combine lines, lines to SQL IN, lines to JSON array, line joiner, merge lines, concatenate lines online"
+  breadcrumb={[{ name: "Text Tools", href: "/text-tools" }, { name: "Join Lines" }]}
+  toolId="join-lines"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Join Lines</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+          Input <span id="input-count" class="text-gray-500 dark:text-slate-400 font-normal"></span>
+        </label>
+        <textarea
+          id="input"
+          data-share-key="input"
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Enter lines to join...&#10;One item per line"
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+          Output <span id="output-count" class="text-gray-500 dark:text-slate-400 font-normal"></span>
+        </label>
+        <textarea
+          id="output"
+          readonly
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none text-gray-900 dark:text-slate-100"
+          placeholder="Joined output will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="mt-4 p-4 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+      <div class="flex flex-wrap items-end gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Preset</label>
+          <select id="preset" data-share-key="preset" class="px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">
+            <option value="sql">SQL IN</option>
+            <option value="json">JSON Array</option>
+            <option value="python">Python List</option>
+            <option value="csv">CSV</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Wrapper</label>
+          <input type="text" id="wrapper" data-share-key="wrapper" class="w-16 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-mono bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" value="'">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Delimiter</label>
+          <input type="text" id="delimiter" data-share-key="delimiter" class="w-16 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-mono bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" value=", ">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Prefix</label>
+          <input type="text" id="prefix" data-share-key="prefix" class="w-16 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-mono bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" value="(">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">Suffix</label>
+          <input type="text" id="suffix" data-share-key="suffix" class="w-16 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm font-mono bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" value=")">
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-4 mt-3">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="trim" data-share-key="trim" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Trim whitespace</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="skip-empty" data-share-key="skipEmpty" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Skip empty lines</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="execute-btn" data-share-action="execute" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Join Lines
+      </button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Copy
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Clear
+      </button>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Join Lines Online</h2>
+      <p class="text-gray-600 dark:text-slate-300 mb-4">
+        Convert multiple lines into a single delimited string. Perfect for creating SQL IN clauses, JSON arrays, Python lists, or CSV values from a list of items.
+      </p>
+      <div class="grid md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
+          <p class="font-medium text-gray-700 dark:text-slate-200 mb-1">SQL IN Example:</p>
+          <code class="text-indigo-600 dark:text-indigo-400">('apple', 'banana', 'cherry')</code>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
+          <p class="font-medium text-gray-700 dark:text-slate-200 mb-1">JSON Array Example:</p>
+          <code class="text-indigo-600 dark:text-indigo-400">["apple", "banana", "cherry"]</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const inputCount = document.getElementById('input-count');
+  const outputCount = document.getElementById('output-count');
+
+  const presets: Record<string, { wrapper: string; delimiter: string; prefix: string; suffix: string }> = {
+    sql: { wrapper: "'", delimiter: ', ', prefix: '(', suffix: ')' },
+    json: { wrapper: '"', delimiter: ', ', prefix: '[', suffix: ']' },
+    python: { wrapper: "'", delimiter: ', ', prefix: '[', suffix: ']' },
+    csv: { wrapper: '', delimiter: ', ', prefix: '', suffix: '' },
+    custom: { wrapper: '', delimiter: ', ', prefix: '', suffix: '' },
+  };
+
+  function execute() {
+    const wrapper = (document.getElementById('wrapper') as HTMLInputElement).value;
+    const delimiter = (document.getElementById('delimiter') as HTMLInputElement).value;
+    const prefix = (document.getElementById('prefix') as HTMLInputElement).value;
+    const suffix = (document.getElementById('suffix') as HTMLInputElement).value;
+    const trim = (document.getElementById('trim') as HTMLInputElement).checked;
+    const skipEmpty = (document.getElementById('skip-empty') as HTMLInputElement).checked;
+
+    let lines = input.value.split('\n');
+    if (trim) lines = lines.map(l => l.trim());
+    if (skipEmpty) lines = lines.filter(l => l !== '');
+
+    const wrapped = lines.map(l => wrapper + l + wrapper);
+    output.value = prefix + wrapped.join(delimiter) + suffix;
+    outputCount!.textContent = `(${lines.length} items)`;
+  }
+
+  function updateInputCount() {
+    const lines = input.value.split('\n').filter(l => l.trim() !== '');
+    inputCount!.textContent = lines.length > 0 ? `(${lines.length} lines)` : '';
+  }
+
+  document.getElementById('preset')?.addEventListener('change', (e) => {
+    const preset = (e.target as HTMLSelectElement).value;
+    const p = presets[preset];
+    (document.getElementById('wrapper') as HTMLInputElement).value = p.wrapper;
+    (document.getElementById('delimiter') as HTMLInputElement).value = p.delimiter;
+    (document.getElementById('prefix') as HTMLInputElement).value = p.prefix;
+    (document.getElementById('suffix') as HTMLInputElement).value = p.suffix;
+  });
+
+  document.getElementById('execute-btn')?.addEventListener('click', execute);
+  document.getElementById('copy-btn')?.addEventListener('click', () => navigator.clipboard.writeText(output.value));
+  document.getElementById('clear-btn')?.addEventListener('click', () => {
+    input.value = '';
+    output.value = '';
+    inputCount!.textContent = '';
+    outputCount!.textContent = '';
+  });
+
+  input.addEventListener('input', updateInputCount);
+
+  ShareManager.register({
+    tool: 'join-lines',
+    actions: { execute: () => document.getElementById('execute-btn')?.click() }
+  });
+</script>

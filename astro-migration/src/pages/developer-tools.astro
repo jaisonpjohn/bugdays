@@ -1,0 +1,72 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const tools = [
+  { name: 'JSON Formatter', href: '/json-formatter', description: 'Format, validate, and beautify JSON data' },
+  { name: 'Schema Explorer', href: '/schema-explorer', description: 'ER diagram & data dictionary from database DDL — Postgres, MySQL, Oracle & more' },
+  { name: 'Remove Duplicate Lines', href: '/remove-duplicate-lines', description: 'Remove duplicate lines from text' },
+  { name: 'Compare Lists', href: '/list-compare', description: 'Intersection, union, and difference of text lines' },
+  { name: 'URL Encoder/Decoder', href: '/url-encoder', description: 'Encode and decode URL strings' },
+  { name: 'Base64 Encoder/Decoder', href: '/base64-encoder-decoder', description: 'Encode and decode Base64 strings' },
+  { name: 'GZip & Base64', href: '/gzip-base64', description: 'Compress with GZip and encode to Base64' },
+  { name: 'Text Extractor', href: '/text-extractor', description: 'Extract text patterns from data' },
+  { name: 'DBeaver Password Decrypt', href: '/dbeaver-password-decrypter', description: 'Decrypt DBeaver saved passwords' },
+  { name: 'DateTime Converter', href: '/datetime-converter', description: 'Convert between Unix epoch, ISO 8601, and human readable' },
+  { name: 'CIDR Calculator', href: '/cidr-calculator', description: 'Calculate IP ranges, subnet masks, and host counts' },
+  { name: 'XML Formatter', href: '/xml-formatter', description: 'Pretty print and validate XML documents' },
+  { name: 'XML ↔ JSON Converter', href: '/xml-json-converter', description: 'Bidirectional conversion between XML and JSON' },
+  { name: 'Image ↔ Base64', href: '/image-base64', description: 'Convert images to Base64 and vice versa' },
+  { name: 'UUID Generator', href: '/uuid-generator', description: 'Generate UUID v4 (random) and v7 (timestamp-based)' },
+  { name: 'JWT Decoder', href: '/jwt-decoder', description: 'Decode and inspect JSON Web Tokens' },
+  { name: 'Hash Generator', href: '/hash-generator', description: 'Generate MD5, SHA-1, SHA-256, SHA-512 hashes' },
+  { name: 'Regex Tester', href: '/regex-tester', description: 'Test regular expressions with live highlighting' },
+  { name: 'Color Converter', href: '/color-converter', description: 'Convert between HEX, RGB, and HSL color formats' },
+  { name: 'Text Diff', href: '/text-diff', description: 'Compare two text files line by line' },
+  { name: 'JSON Diff', href: '/json-diff', description: 'Compare JSON objects with semantic diff' },
+  { name: 'Cron Parser', href: '/cron-parser', description: 'Parse cron expressions to human readable format' },
+  { name: 'YAML ↔ JSON Converter', href: '/yaml-json-converter', description: 'Bidirectional conversion between YAML and JSON' },
+  { name: 'CSV ↔ JSON Converter', href: '/csv-json-converter', description: 'Convert between CSV and JSON formats' },
+  { name: 'Case Converter', href: '/case-converter', description: 'Convert between camelCase, snake_case, kebab-case, etc.' },
+  { name: 'QR Code Generator', href: '/qr-code', description: 'Generate and read QR codes' },
+  { name: 'Password Generator', href: '/password-generator', description: 'Generate strong, random passwords' },
+  { name: 'Unix Permissions', href: '/unix-permissions', description: 'Calculate chmod permissions (755 ↔ rwxr-xr-x)' },
+  { name: 'Protobuf Converter', href: '/protobuf-converter', description: 'Convert between JSON and Protocol Buffers' },
+  { name: 'Avro Converter', href: '/avro-converter', description: 'Convert between JSON and Apache Avro' },
+  { name: 'TOON Converter', href: '/toon-converter', description: 'Convert JSON/YAML to TOON for 30-60% LLM token savings' },
+  { name: 'API Client', href: '/api-client', description: 'Test REST APIs with custom headers and body' },
+  { name: 'WebSocket Client', href: '/websocket-client', description: 'Test WebSocket connections in real-time' },
+  { name: 'SSE Client', href: '/sse-client', description: 'Connect to Server-Sent Events streams' },
+];
+---
+
+<Layout
+  title="All Developer Tools"
+  description="Collection of 30+ free online developer tools. JSON formatter, Base64 encoder, URL encoder, UUID generator, hash generator, regex tester, and more. All tools run in your browser."
+  keywords="developer tools, online tools, free dev tools, JSON tools, encoding tools, text tools, web developer tools, programming utilities, code tools"
+  breadcrumb={[{ name: "All Developer Tools" }]}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-6">Developer Tools</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="block p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 hover:border-indigo-300 hover:shadow-md transition-all"
+        >
+          <h2 class="text-lg font-semibold text-indigo-600 mb-1">{tool.name}</h2>
+          <p class="text-sm text-gray-600 dark:text-slate-300">{tool.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <!-- Info section for SEO -->
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online Developer Tools</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        A collection of free online tools for developers. Format JSON, encode/decode URLs and Base64,
+        deduplicate text lines, and more. All tools run entirely in your browser - no data is sent to any server.
+      </p>
+    </div>
+  </div>
+</Layout>

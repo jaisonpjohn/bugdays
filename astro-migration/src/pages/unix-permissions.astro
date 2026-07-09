@@ -1,0 +1,302 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Unix Permissions Calculator - chmod"
+  description="Calculate Unix file permissions with chmod. Convert between numeric (755) and symbolic (rwxr-xr-x) notation. Free online chmod calculator for Linux and macOS."
+  keywords="chmod calculator, Unix permissions, file permissions calculator, chmod converter, rwx to numeric, 755 permissions, Linux permissions, chmod online"
+  breadcrumb={[{ name: "Converters", href: "/converter-tools" }, { name: "Unix Permissions" }]}
+  toolId="unix-permissions"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Unix Permissions Calculator</h1>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <!-- Numeric Input -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Numeric (Octal)</label>
+        <input
+          type="text"
+          id="numeric-input"
+          data-share-key="perms"
+          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-2xl text-center focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="755"
+          value="755"
+          maxlength="4"
+        />
+        <p class="text-xs text-gray-500 dark:text-slate-400 mt-2">Enter 3 or 4 digit octal number (e.g., 755, 0644)</p>
+      </div>
+
+      <!-- Symbolic Output -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Symbolic</label>
+        <input
+          type="text"
+          id="symbolic-output"
+          readonly
+          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-2xl text-center bg-gray-50 dark:bg-slate-900"
+          value="rwxr-xr-x"
+        />
+        <p class="text-xs text-gray-500 dark:text-slate-400 mt-2">Format: rwxrwxrwx (owner, group, others)</p>
+      </div>
+    </div>
+
+    <!-- Visual Permission Editor -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200 mb-4">Permission Grid</h3>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-gray-200 dark:border-slate-700">
+              <th class="text-left py-2 pr-4 font-medium text-gray-700 dark:text-slate-200"></th>
+              <th class="text-center py-2 px-4 font-medium text-gray-700 dark:text-slate-200">Read (r)</th>
+              <th class="text-center py-2 px-4 font-medium text-gray-700 dark:text-slate-200">Write (w)</th>
+              <th class="text-center py-2 px-4 font-medium text-gray-700 dark:text-slate-200">Execute (x)</th>
+              <th class="text-center py-2 px-4 font-medium text-gray-500 dark:text-slate-400">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-gray-100">
+              <td class="py-3 pr-4 font-medium text-gray-700 dark:text-slate-200">Owner</td>
+              <td class="text-center py-3 px-4">
+                <input type="checkbox" id="owner-r" checked class="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+              </td>
+              <td class="text-center py-3 px-4">
+                <input type="checkbox" id="owner-w" checked class="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+              </td>
+              <td class="text-center py-3 px-4">
+                <input type="checkbox" id="owner-x" checked class="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+              </td>
+              <td class="text-center py-3 px-4 font-mono text-gray-500 dark:text-slate-400" id="owner-value">7</td>
+            </tr>
+            <tr class="border-b border-gray-100">
+              <td class="py-3 pr-4 font-medium text-gray-700 dark:text-slate-200">Group</td>
+              <td class="text-center py-3 px-4">
+                <input type="checkbox" id="group-r" checked class="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+              </td>
+              <td class="text-center py-3 px-4">
+                <input type="checkbox" id="group-w" class="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+              </td>
+              <td class="text-center py-3 px-4">
+                <input type="checkbox" id="group-x" checked class="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+              </td>
+              <td class="text-center py-3 px-4 font-mono text-gray-500 dark:text-slate-400" id="group-value">5</td>
+            </tr>
+            <tr>
+              <td class="py-3 pr-4 font-medium text-gray-700 dark:text-slate-200">Others</td>
+              <td class="text-center py-3 px-4">
+                <input type="checkbox" id="others-r" checked class="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+              </td>
+              <td class="text-center py-3 px-4">
+                <input type="checkbox" id="others-w" class="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+              </td>
+              <td class="text-center py-3 px-4">
+                <input type="checkbox" id="others-x" checked class="w-5 h-5 rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+              </td>
+              <td class="text-center py-3 px-4 font-mono text-gray-500 dark:text-slate-400" id="others-value">5</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Command Output -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">chmod Command</label>
+      <div class="flex gap-3">
+        <input
+          type="text"
+          id="chmod-command"
+          readonly
+          class="flex-1 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900"
+          value="chmod 755 filename"
+        />
+        <button id="copy-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors">
+          Copy
+        </button>
+      </div>
+    </div>
+
+    <!-- Common Presets -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Common Presets</label>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <button class="preset-btn p-3 bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:bg-slate-700 rounded-lg text-left border border-gray-200 dark:border-slate-700" data-value="644">
+          <div class="font-mono font-medium">644</div>
+          <div class="text-xs text-gray-500 dark:text-slate-400">rw-r--r--</div>
+          <div class="text-xs text-gray-400 dark:text-slate-500">Files (default)</div>
+        </button>
+        <button class="preset-btn p-3 bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:bg-slate-700 rounded-lg text-left border border-gray-200 dark:border-slate-700" data-value="755">
+          <div class="font-mono font-medium">755</div>
+          <div class="text-xs text-gray-500 dark:text-slate-400">rwxr-xr-x</div>
+          <div class="text-xs text-gray-400 dark:text-slate-500">Directories/Scripts</div>
+        </button>
+        <button class="preset-btn p-3 bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:bg-slate-700 rounded-lg text-left border border-gray-200 dark:border-slate-700" data-value="700">
+          <div class="font-mono font-medium">700</div>
+          <div class="text-xs text-gray-500 dark:text-slate-400">rwx------</div>
+          <div class="text-xs text-gray-400 dark:text-slate-500">Private dir</div>
+        </button>
+        <button class="preset-btn p-3 bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:bg-slate-700 rounded-lg text-left border border-gray-200 dark:border-slate-700" data-value="600">
+          <div class="font-mono font-medium">600</div>
+          <div class="text-xs text-gray-500 dark:text-slate-400">rw-------</div>
+          <div class="text-xs text-gray-400 dark:text-slate-500">Private file</div>
+        </button>
+        <button class="preset-btn p-3 bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:bg-slate-700 rounded-lg text-left border border-gray-200 dark:border-slate-700" data-value="777">
+          <div class="font-mono font-medium">777</div>
+          <div class="text-xs text-gray-500 dark:text-slate-400">rwxrwxrwx</div>
+          <div class="text-xs text-gray-400 dark:text-slate-500">Full access</div>
+        </button>
+        <button class="preset-btn p-3 bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:bg-slate-700 rounded-lg text-left border border-gray-200 dark:border-slate-700" data-value="666">
+          <div class="font-mono font-medium">666</div>
+          <div class="text-xs text-gray-500 dark:text-slate-400">rw-rw-rw-</div>
+          <div class="text-xs text-gray-400 dark:text-slate-500">All read/write</div>
+        </button>
+        <button class="preset-btn p-3 bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:bg-slate-700 rounded-lg text-left border border-gray-200 dark:border-slate-700" data-value="444">
+          <div class="font-mono font-medium">444</div>
+          <div class="text-xs text-gray-500 dark:text-slate-400">r--r--r--</div>
+          <div class="text-xs text-gray-400 dark:text-slate-500">Read only</div>
+        </button>
+        <button class="preset-btn p-3 bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:bg-slate-700 rounded-lg text-left border border-gray-200 dark:border-slate-700" data-value="400">
+          <div class="font-mono font-medium">400</div>
+          <div class="text-xs text-gray-500 dark:text-slate-400">r--------</div>
+          <div class="text-xs text-gray-400 dark:text-slate-500">Owner read only</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online chmod Calculator</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Convert between numeric (octal) and symbolic Unix file permissions. Use the visual editor to toggle
+        individual permissions or select from common presets. Get the chmod command ready to copy.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const numericInput = document.getElementById('numeric-input') as HTMLInputElement;
+  const symbolicOutput = document.getElementById('symbolic-output') as HTMLInputElement;
+  const chmodCommand = document.getElementById('chmod-command') as HTMLInputElement;
+
+  const checkboxes = {
+    owner: {
+      r: document.getElementById('owner-r') as HTMLInputElement,
+      w: document.getElementById('owner-w') as HTMLInputElement,
+      x: document.getElementById('owner-x') as HTMLInputElement
+    },
+    group: {
+      r: document.getElementById('group-r') as HTMLInputElement,
+      w: document.getElementById('group-w') as HTMLInputElement,
+      x: document.getElementById('group-x') as HTMLInputElement
+    },
+    others: {
+      r: document.getElementById('others-r') as HTMLInputElement,
+      w: document.getElementById('others-w') as HTMLInputElement,
+      x: document.getElementById('others-x') as HTMLInputElement
+    }
+  };
+
+  const values = {
+    owner: document.getElementById('owner-value'),
+    group: document.getElementById('group-value'),
+    others: document.getElementById('others-value')
+  };
+
+  function getPermValue(category: 'owner' | 'group' | 'others'): number {
+    let val = 0;
+    if (checkboxes[category].r.checked) val += 4;
+    if (checkboxes[category].w.checked) val += 2;
+    if (checkboxes[category].x.checked) val += 1;
+    return val;
+  }
+
+  function setPermValue(category: 'owner' | 'group' | 'others', val: number) {
+    checkboxes[category].r.checked = (val & 4) !== 0;
+    checkboxes[category].w.checked = (val & 2) !== 0;
+    checkboxes[category].x.checked = (val & 1) !== 0;
+  }
+
+  function permToSymbolic(val: number): string {
+    let s = '';
+    s += (val & 4) ? 'r' : '-';
+    s += (val & 2) ? 'w' : '-';
+    s += (val & 1) ? 'x' : '-';
+    return s;
+  }
+
+  function updateFromCheckboxes() {
+    const owner = getPermValue('owner');
+    const group = getPermValue('group');
+    const others = getPermValue('others');
+
+    values.owner.textContent = owner.toString();
+    values.group.textContent = group.toString();
+    values.others.textContent = others.toString();
+
+    const numeric = `${owner}${group}${others}`;
+    numericInput.value = numeric;
+
+    const symbolic = permToSymbolic(owner) + permToSymbolic(group) + permToSymbolic(others);
+    symbolicOutput.value = symbolic;
+
+    chmodCommand.value = `chmod ${numeric} filename`;
+  }
+
+  function updateFromNumeric() {
+    let val = numericInput.value.replace(/[^0-7]/g, '');
+
+    // Handle 4-digit input (with leading 0)
+    if (val.length === 4 && val.startsWith('0')) {
+      val = val.slice(1);
+    }
+
+    if (val.length === 3) {
+      const owner = parseInt(val[0], 10);
+      const group = parseInt(val[1], 10);
+      const others = parseInt(val[2], 10);
+
+      if (owner <= 7 && group <= 7 && others <= 7) {
+        setPermValue('owner', owner);
+        setPermValue('group', group);
+        setPermValue('others', others);
+        updateFromCheckboxes();
+      }
+    }
+  }
+
+  // Event listeners for checkboxes
+  Object.values(checkboxes).forEach(category => {
+    Object.values(category).forEach(cb => {
+      cb.addEventListener('change', updateFromCheckboxes);
+    });
+  });
+
+  // Event listener for numeric input
+  numericInput.addEventListener('input', updateFromNumeric);
+
+  // Preset buttons
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      numericInput.value = (btn as HTMLElement).dataset.value || '755';
+      updateFromNumeric();
+    });
+  });
+
+  // Copy button
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(chmodCommand.value);
+  });
+
+  // Initialize
+  updateFromCheckboxes();
+
+  ShareManager.register({
+    tool: 'unix-permissions',
+    afterLoad: () => updateFromNumeric()
+  });
+</script>

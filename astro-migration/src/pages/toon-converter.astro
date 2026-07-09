@@ -1,0 +1,745 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "TOON Converter - Token-Oriented Object Notation",
+    "description": "Convert between TOON, JSON, and YAML formats. TOON reduces LLM token usage by 30-60% compared to JSON.",
+    "url": "https://bugdays.com/toon-converter",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": ["TOON to JSON", "JSON to TOON", "TOON to YAML", "YAML to TOON", "Token savings calculator"]
+  }
+];
+---
+
+<Layout
+  title="TOON Converter - Token-Oriented Object Notation to JSON/YAML"
+  description="Free online TOON converter. Convert between TOON, JSON, and YAML formats. TOON reduces LLM token usage by 30-60% with compact, human-readable syntax."
+  keywords="TOON converter, Token-Oriented Object Notation, TOON to JSON, JSON to TOON, TOON format, LLM token optimization, reduce tokens, TOON YAML converter"
+  breadcrumb={[{ name: "Data Format Tools", href: "/data-tools" }, { name: "TOON Converter" }]}
+  toolId="toon-converter"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">TOON Converter</h1>
+
+    <!-- Info Banner -->
+    <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-4 mb-4">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-indigo-600 dark:text-indigo-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div class="text-sm text-indigo-800 dark:text-indigo-200">
+          <strong>TOON</strong> (Token-Oriented Object Notation) reduces LLM token usage by <strong>30-60%</strong> compared to JSON.
+          Perfect for optimizing prompts and reducing API costs.
+          <a href="https://toonformat.dev" target="_blank" class="underline ml-1">Learn more</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <!-- Input -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Input</label>
+          <select id="input-format" class="text-sm border border-gray-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200">
+            <option value="json">JSON</option>
+            <option value="yaml">YAML</option>
+            <option value="toon">TOON</option>
+          </select>
+        </div>
+        <textarea
+          id="input"
+          data-share-key="input"
+          class="w-full h-72 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Paste JSON, YAML, or TOON here..."
+        ></textarea>
+        <div class="mt-2 text-xs text-gray-500 dark:text-slate-400">
+          <span id="input-tokens">0</span> tokens (estimated)
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Output</label>
+          <select id="output-format" class="text-sm border border-gray-300 dark:border-slate-600 rounded px-2 py-1 bg-white dark:bg-slate-700 text-gray-800 dark:text-slate-200">
+            <option value="toon">TOON</option>
+            <option value="json">JSON</option>
+            <option value="yaml">YAML</option>
+          </select>
+        </div>
+        <textarea
+          id="output"
+          readonly
+          class="w-full h-72 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Converted output will appear here..."
+        ></textarea>
+        <div class="mt-2 flex items-center justify-between text-xs">
+          <span class="text-gray-500 dark:text-slate-400">
+            <span id="output-tokens">0</span> tokens (estimated)
+          </span>
+          <span id="token-savings" class="text-green-600 dark:text-green-400 font-medium"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mb-4">
+      <button id="convert-btn" data-share-action="convert" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Convert
+      </button>
+      <button id="swap-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Swap
+      </button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Copy Output
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Clear
+      </button>
+      <button id="sample-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Sample
+      </button>
+    </div>
+
+    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-300"></div>
+    <div id="success-box" class="hidden mb-4 p-3 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-800 dark:text-green-300"></div>
+
+    <!-- Quick conversions -->
+    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-6">
+      <button data-from="json" data-to="toon" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        JSON → TOON
+      </button>
+      <button data-from="toon" data-to="json" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        TOON → JSON
+      </button>
+      <button data-from="yaml" data-to="toon" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        YAML → TOON
+      </button>
+      <button data-from="toon" data-to="yaml" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        TOON → YAML
+      </button>
+      <button data-from="json" data-to="yaml" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        JSON → YAML
+      </button>
+      <button data-from="yaml" data-to="json" class="quick-convert px-4 py-2 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+        YAML → JSON
+      </button>
+    </div>
+
+    <!-- TOON Syntax Reference -->
+    <details class="mb-6 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+      <summary class="px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 text-sm font-medium text-gray-700 dark:text-slate-200">
+        TOON Syntax Reference
+      </summary>
+      <div class="px-4 pb-4 text-sm text-gray-600 dark:text-slate-300 space-y-4">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100 mb-2">Objects</h4>
+            <pre class="bg-gray-900 text-green-400 p-3 rounded-lg text-xs overflow-x-auto">name: John
+age: 30
+address:
+  city: NYC
+  zip: 10001</pre>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100 mb-2">Primitive Arrays</h4>
+            <pre class="bg-gray-900 text-green-400 p-3 rounded-lg text-xs overflow-x-auto">tags[3]: api,rest,json
+numbers[4]: 1,2,3,4</pre>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100 mb-2">Tabular Arrays (Objects)</h4>
+            <pre class="bg-gray-900 text-green-400 p-3 rounded-lg text-xs overflow-x-auto">users[3]{"{id,name,active}"}:
+  1,Alice,true
+  2,Bob,false
+  3,Carol,true</pre>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100 mb-2">Strings</h4>
+            <pre class="bg-gray-900 text-green-400 p-3 rounded-lg text-xs overflow-x-auto"># No quotes needed usually
+title: Hello World
+
+# Quotes required for:
+value: "has: colon"
+num: "42"
+empty: ""</pre>
+          </div>
+        </div>
+      </div>
+    </details>
+
+    <div class="mt-8 space-y-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">What is TOON?</h2>
+        <p class="text-gray-600 dark:text-slate-300 mb-4">
+          <strong>Token-Oriented Object Notation (TOON)</strong> is a compact, human-readable format that encodes the same data as JSON
+          but uses 30-60% fewer tokens. It's designed specifically for LLM prompts and responses, helping reduce API costs
+          while maintaining the same data model with lossless round-trips.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Token Efficient</h3>
+          <p class="text-gray-600 dark:text-slate-300">Uses indentation instead of braces, minimizes quoting, and collapses uniform object arrays into tables.</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">LLM Optimized</h3>
+          <p class="text-gray-600 dark:text-slate-300">Explicit [N] lengths and {"{fields}"} headers give models clear schema to follow, improving parsing reliability.</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">JSON Compatible</h3>
+          <p class="text-gray-600 dark:text-slate-300">Same data model as JSON - objects, arrays, strings, numbers, booleans, null. Deterministic, lossless conversion.</p>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">JSON vs TOON Example</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div>
+            <p class="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">JSON (more tokens)</p>
+            <pre class="bg-gray-900 text-green-400 p-3 rounded-lg text-xs overflow-x-auto">{`{
+  "users": [
+    {"id": 1, "name": "Alice", "active": true},
+    {"id": 2, "name": "Bob", "active": false}
+  ]
+}`}</pre>
+          </div>
+          <div>
+            <p class="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">TOON (fewer tokens)</p>
+            <pre class="bg-gray-900 text-green-400 p-3 rounded-lg text-xs overflow-x-auto">{`users[2]{id,name,active}:
+  1,Alice,true
+  2,Bob,false`}</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+  import * as jsYaml from 'js-yaml';
+
+  const inputEl = document.getElementById('input') as HTMLTextAreaElement;
+  const outputEl = document.getElementById('output') as HTMLTextAreaElement;
+  const inputFormat = document.getElementById('input-format') as HTMLSelectElement;
+  const outputFormat = document.getElementById('output-format') as HTMLSelectElement;
+  const errorBox = document.getElementById('error-box')!;
+  const successBox = document.getElementById('success-box')!;
+  const inputTokens = document.getElementById('input-tokens')!;
+  const outputTokens = document.getElementById('output-tokens')!;
+  const tokenSavings = document.getElementById('token-savings')!;
+
+  ShareManager.register({
+    tool: 'toon-converter',
+    actions: {
+      convert: () => document.getElementById('convert-btn')?.click(),
+    }
+  });
+
+  // Simple token estimation (approximates GPT tokenization)
+  function estimateTokens(text: string): number {
+    if (!text) return 0;
+    // Rough estimate: ~4 chars per token for English text
+    // Punctuation and special chars often become separate tokens
+    const words = text.split(/\s+/).length;
+    const chars = text.length;
+    const punctuation = (text.match(/[{}\[\]:,"'\\]/g) || []).length;
+    return Math.ceil((chars / 4) + (punctuation * 0.3));
+  }
+
+  function updateTokenCounts() {
+    const inTokens = estimateTokens(inputEl.value);
+    const outTokens = estimateTokens(outputEl.value);
+    inputTokens.textContent = inTokens.toString();
+    outputTokens.textContent = outTokens.toString();
+
+    if (inTokens > 0 && outTokens > 0) {
+      const savings = ((inTokens - outTokens) / inTokens * 100).toFixed(0);
+      if (parseInt(savings) > 0) {
+        tokenSavings.textContent = `${savings}% fewer tokens`;
+        tokenSavings.className = 'text-green-600 dark:text-green-400 font-medium';
+      } else if (parseInt(savings) < 0) {
+        tokenSavings.textContent = `${Math.abs(parseInt(savings))}% more tokens`;
+        tokenSavings.className = 'text-red-600 dark:text-red-400 font-medium';
+      } else {
+        tokenSavings.textContent = '';
+      }
+    } else {
+      tokenSavings.textContent = '';
+    }
+  }
+
+  const sampleJson = `{
+  "context": {
+    "task": "Our favorite hikes together",
+    "location": "Boulder"
+  },
+  "friends": ["ana", "luis", "sam"],
+  "hikes": [
+    {"id": 1, "name": "Blue Lake Trail", "distanceKm": 7.5, "elevationGain": 320, "companion": "ana", "wasSunny": true},
+    {"id": 2, "name": "Ridge Overlook", "distanceKm": 9.2, "elevationGain": 540, "companion": "luis", "wasSunny": false},
+    {"id": 3, "name": "Summit Loop", "distanceKm": 12.1, "elevationGain": 890, "companion": "sam", "wasSunny": true}
+  ]
+}`;
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+    successBox.classList.add('hidden');
+  }
+
+  function showSuccess(msg: string) {
+    successBox.textContent = msg;
+    successBox.classList.remove('hidden');
+    errorBox.classList.add('hidden');
+  }
+
+  function hideMessages() {
+    errorBox.classList.add('hidden');
+    successBox.classList.add('hidden');
+  }
+
+  // TOON Parser
+  function parseToon(text: string): any {
+    const lines = text.split('\n');
+    let lineIndex = 0;
+
+    function parseValue(currentIndent: number): any {
+      if (lineIndex >= lines.length) return undefined;
+
+      const line = lines[lineIndex];
+      const trimmed = line.trimStart();
+      const indent = line.length - trimmed.length;
+
+      if (indent < currentIndent || !trimmed) {
+        return undefined;
+      }
+
+      // Array with header
+      const arrayMatch = trimmed.match(/^(\w+)\[(\d+)\](?:\{([^}]+)\})?:\s*(.*)$/);
+      if (arrayMatch) {
+        const [, key, countStr, fields, inlineValues] = arrayMatch;
+        const count = parseInt(countStr);
+        lineIndex++;
+
+        if (fields) {
+          // Tabular array
+          const fieldList = fields.split(',').map(f => f.trim());
+          const arr: any[] = [];
+          for (let i = 0; i < count; i++) {
+            if (lineIndex >= lines.length) break;
+            const rowLine = lines[lineIndex];
+            const rowTrimmed = rowLine.trimStart();
+            const rowIndent = rowLine.length - rowTrimmed.length;
+            if (rowIndent <= indent) break;
+            const values = parseCSVLine(rowTrimmed);
+            const obj: any = {};
+            fieldList.forEach((f, idx) => {
+              obj[f] = parseScalar(values[idx] || '');
+            });
+            arr.push(obj);
+            lineIndex++;
+          }
+          return { key, value: arr };
+        } else if (inlineValues.trim()) {
+          // Inline primitive array
+          const values = parseCSVLine(inlineValues).map(v => parseScalar(v));
+          return { key, value: values };
+        } else {
+          // Multi-line array or mixed array
+          const arr: any[] = [];
+          while (lineIndex < lines.length) {
+            const itemLine = lines[lineIndex];
+            const itemTrimmed = itemLine.trimStart();
+            const itemIndent = itemLine.length - itemTrimmed.length;
+            if (itemIndent <= indent) break;
+            if (itemTrimmed.startsWith('- ')) {
+              const itemContent = itemTrimmed.substring(2);
+              if (itemContent.includes(':')) {
+                // Object item
+                const obj = parseInlineObject(itemContent, itemIndent);
+                arr.push(obj);
+              } else {
+                arr.push(parseScalar(itemContent));
+              }
+              lineIndex++;
+            } else {
+              break;
+            }
+          }
+          return { key, value: arr };
+        }
+      }
+
+      // Key-value pair
+      const kvMatch = trimmed.match(/^([^:]+):\s*(.*)$/);
+      if (kvMatch) {
+        const [, key, value] = kvMatch;
+        const cleanKey = key.trim();
+
+        if (value.trim()) {
+          // Inline value
+          lineIndex++;
+          return { key: cleanKey, value: parseScalar(value.trim()) };
+        } else {
+          // Nested object
+          lineIndex++;
+          const obj: any = {};
+          while (lineIndex < lines.length) {
+            const nestedLine = lines[lineIndex];
+            const nestedTrimmed = nestedLine.trimStart();
+            const nestedIndent = nestedLine.length - nestedTrimmed.length;
+            if (nestedIndent <= indent || !nestedTrimmed) {
+              if (!nestedTrimmed) {
+                lineIndex++;
+                continue;
+              }
+              break;
+            }
+            const result = parseValue(nestedIndent);
+            if (result && result.key) {
+              obj[result.key] = result.value;
+            } else {
+              break;
+            }
+          }
+          return { key: cleanKey, value: obj };
+        }
+      }
+
+      lineIndex++;
+      return undefined;
+    }
+
+    function parseInlineObject(content: string, baseIndent: number): any {
+      const obj: any = {};
+      const match = content.match(/^([^:]+):\s*(.*)$/);
+      if (match) {
+        const [, key, value] = match;
+        obj[key.trim()] = parseScalar(value.trim());
+      }
+      // Check for continuation lines
+      while (lineIndex + 1 < lines.length) {
+        const nextLine = lines[lineIndex + 1];
+        const nextTrimmed = nextLine.trimStart();
+        const nextIndent = nextLine.length - nextTrimmed.length;
+        if (nextIndent <= baseIndent || nextTrimmed.startsWith('- ')) break;
+        lineIndex++;
+        const kvMatch = nextTrimmed.match(/^([^:]+):\s*(.*)$/);
+        if (kvMatch) {
+          obj[kvMatch[1].trim()] = parseScalar(kvMatch[2].trim());
+        }
+      }
+      return obj;
+    }
+
+    // Skip empty lines at start
+    while (lineIndex < lines.length && !lines[lineIndex].trim()) {
+      lineIndex++;
+    }
+
+    if (lineIndex >= lines.length) return {};
+
+    const firstLine = lines[lineIndex].trim();
+
+    // Check if root is array
+    if (firstLine.match(/^\[(\d+)\]/)) {
+      const result = parseValue(0);
+      return result?.value || [];
+    }
+
+    // Root object
+    const root: any = {};
+    while (lineIndex < lines.length) {
+      const line = lines[lineIndex];
+      if (!line.trim()) {
+        lineIndex++;
+        continue;
+      }
+      const result = parseValue(0);
+      if (result && result.key !== undefined) {
+        root[result.key] = result.value;
+      } else {
+        break;
+      }
+    }
+    return root;
+  }
+
+  function parseCSVLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  }
+
+  function parseScalar(value: string): any {
+    if (value === '' || value === '""') return '';
+    if (value === 'null') return null;
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+
+    // Quoted string
+    if (value.startsWith('"') && value.endsWith('"')) {
+      return value.slice(1, -1).replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\\\/g, '\\');
+    }
+
+    // Number
+    if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(value)) {
+      const num = parseFloat(value);
+      if (!isNaN(num)) return num;
+    }
+
+    return value;
+  }
+
+  // TOON Serializer
+  function stringifyToon(obj: any, indent: number = 0): string {
+    const pad = '  '.repeat(indent);
+    const lines: string[] = [];
+
+    if (Array.isArray(obj)) {
+      return stringifyArray('', obj, indent);
+    }
+
+    if (typeof obj === 'object' && obj !== null) {
+      for (const [key, value] of Object.entries(obj)) {
+        if (Array.isArray(value)) {
+          lines.push(pad + stringifyArray(key, value, indent));
+        } else if (typeof value === 'object' && value !== null) {
+          lines.push(pad + key + ':');
+          lines.push(stringifyToon(value, indent + 1));
+        } else {
+          lines.push(pad + key + ': ' + stringifyScalar(value));
+        }
+      }
+      return lines.join('\n');
+    }
+
+    return stringifyScalar(obj);
+  }
+
+  function stringifyArray(key: string, arr: any[], indent: number): string {
+    const pad = '  '.repeat(indent);
+    const innerPad = '  '.repeat(indent + 1);
+
+    if (arr.length === 0) {
+      return key ? `${key}[0]:` : '[0]:';
+    }
+
+    // Check if tabular (uniform objects with primitive values)
+    const isTabular = arr.every(item =>
+      typeof item === 'object' &&
+      item !== null &&
+      !Array.isArray(item) &&
+      Object.values(item).every(v => typeof v !== 'object' || v === null)
+    );
+
+    if (isTabular && arr.length > 0) {
+      const fields = Object.keys(arr[0]);
+      const sameFields = arr.every(item => {
+        const keys = Object.keys(item);
+        return keys.length === fields.length && fields.every(f => f in item);
+      });
+
+      if (sameFields) {
+        const header = key
+          ? `${key}[${arr.length}]{${fields.join(',')}}:`
+          : `[${arr.length}]{${fields.join(',')}}:`;
+        const rows = arr.map(item =>
+          innerPad + fields.map(f => stringifyScalar(item[f])).join(',')
+        );
+        return header + '\n' + rows.join('\n');
+      }
+    }
+
+    // Check if primitive array
+    const isPrimitive = arr.every(item => typeof item !== 'object' || item === null);
+    if (isPrimitive) {
+      const values = arr.map(v => stringifyScalar(v)).join(',');
+      return key ? `${key}[${arr.length}]: ${values}` : `[${arr.length}]: ${values}`;
+    }
+
+    // Mixed array
+    const header = key ? `${key}[${arr.length}]:` : `[${arr.length}]:`;
+    const items = arr.map(item => {
+      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+        const entries = Object.entries(item);
+        if (entries.length === 1) {
+          const [k, v] = entries[0];
+          return innerPad + '- ' + k + ': ' + stringifyScalar(v);
+        }
+        const firstLine = entries[0];
+        const rest = entries.slice(1).map(([k, v]) =>
+          innerPad + '  ' + k + ': ' + stringifyScalar(v)
+        ).join('\n');
+        return innerPad + '- ' + firstLine[0] + ': ' + stringifyScalar(firstLine[1]) +
+          (rest ? '\n' + rest : '');
+      }
+      return innerPad + '- ' + stringifyScalar(item);
+    });
+    return header + '\n' + items.join('\n');
+  }
+
+  function stringifyScalar(value: any): string {
+    if (value === null) return 'null';
+    if (value === true) return 'true';
+    if (value === false) return 'false';
+    if (typeof value === 'number') {
+      if (Number.isInteger(value)) return value.toString();
+      return value.toString();
+    }
+    if (typeof value === 'string') {
+      // Check if quoting needed
+      if (value === '') return '""';
+      if (value === 'true' || value === 'false' || value === 'null') return `"${value}"`;
+      if (/^-?\d+(\.\d+)?([eE][+-]?\d+)?$/.test(value)) return `"${value}"`;
+      if (/[:"\\\[\]{}]/.test(value) || value.includes(',') || value.includes('\n')) {
+        return '"' + value.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\t/g, '\\t') + '"';
+      }
+      if (value.trim() !== value) return `"${value}"`;
+      return value;
+    }
+    return String(value);
+  }
+
+  function parse(text: string, format: string): any {
+    switch (format) {
+      case 'toon':
+        return parseToon(text);
+      case 'json':
+        return JSON.parse(text);
+      case 'yaml':
+        return jsYaml.load(text);
+      default:
+        throw new Error('Unknown format: ' + format);
+    }
+  }
+
+  function stringify(obj: any, format: string): string {
+    switch (format) {
+      case 'toon':
+        return stringifyToon(obj);
+      case 'json':
+        return JSON.stringify(obj, null, 2);
+      case 'yaml':
+        return jsYaml.dump(obj, { indent: 2, lineWidth: -1 });
+      default:
+        throw new Error('Unknown format: ' + format);
+    }
+  }
+
+  function convert() {
+    hideMessages();
+    const text = inputEl.value.trim();
+    if (!text) {
+      showError('Please enter some content');
+      return;
+    }
+
+    const fromFormat = inputFormat.value;
+    const toFormat = outputFormat.value;
+
+    try {
+      const parsed = parse(text, fromFormat);
+      const result = stringify(parsed, toFormat);
+      outputEl.value = result;
+      updateTokenCounts();
+      showSuccess(`Converted ${fromFormat.toUpperCase()} → ${toFormat.toUpperCase()}`);
+    } catch (e: any) {
+      showError(`Error parsing ${fromFormat.toUpperCase()}: ${e.message}`);
+    }
+  }
+
+  document.getElementById('convert-btn')!.addEventListener('click', convert);
+
+  document.getElementById('swap-btn')!.addEventListener('click', () => {
+    const tempText = inputEl.value;
+    const tempFormat = inputFormat.value;
+    inputEl.value = outputEl.value;
+    inputFormat.value = outputFormat.value;
+    outputEl.value = tempText;
+    outputFormat.value = tempFormat;
+    hideMessages();
+    updateTokenCounts();
+  });
+
+  document.getElementById('copy-btn')!.addEventListener('click', () => {
+    navigator.clipboard.writeText(outputEl.value);
+    showSuccess('Copied to clipboard!');
+  });
+
+  document.getElementById('clear-btn')!.addEventListener('click', () => {
+    inputEl.value = '';
+    outputEl.value = '';
+    hideMessages();
+    updateTokenCounts();
+  });
+
+  document.getElementById('sample-btn')!.addEventListener('click', () => {
+    inputEl.value = sampleJson;
+    inputFormat.value = 'json';
+    outputFormat.value = 'toon';
+    hideMessages();
+    updateTokenCounts();
+  });
+
+  // Quick convert buttons
+  document.querySelectorAll('.quick-convert').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const from = (btn as HTMLElement).dataset.from!;
+      const to = (btn as HTMLElement).dataset.to!;
+      inputFormat.value = from;
+      outputFormat.value = to;
+      if (inputEl.value.trim()) {
+        convert();
+      }
+    });
+  });
+
+  // Auto-convert on format change
+  inputFormat.addEventListener('change', () => {
+    if (inputEl.value.trim() && outputEl.value.trim()) {
+      convert();
+    }
+  });
+
+  outputFormat.addEventListener('change', () => {
+    if (inputEl.value.trim()) {
+      convert();
+    }
+  });
+
+  // Update token counts on input
+  inputEl.addEventListener('input', () => {
+    updateTokenCounts();
+  });
+</script>

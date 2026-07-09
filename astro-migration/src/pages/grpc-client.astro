@@ -1,0 +1,831 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+// Code samples stored as strings to avoid Astro template parsing issues
+const envoyConfig = `static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address: { address: 0.0.0.0, port_value: 8080 }
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          codec_type: auto
+          stat_prefix: ingress_http
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: local_service
+              domains: ["*"]
+              routes:
+              - match: { prefix: "/" }
+                route: { cluster: grpc_service }
+              cors:
+                allow_origin_string_match:
+                - prefix: "*"
+                allow_methods: GET, PUT, DELETE, POST, OPTIONS
+                allow_headers: "*"
+                expose_headers: grpc-status, grpc-message
+          http_filters:
+          - name: envoy.filters.http.grpc_web
+          - name: envoy.filters.http.cors
+          - name: envoy.filters.http.router
+  clusters:
+  - name: grpc_service
+    connect_timeout: 0.25s
+    type: logical_dns
+    http2_protocol_options: {}
+    lb_policy: round_robin
+    load_assignment:
+      cluster_name: grpc_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address: { address: localhost, port_value: 9090 }`;
+
+const grpcwebproxyConfig = `# Install
+go install github.com/nicksrandall/grpcwebproxy@latest
+
+# Run (proxies localhost:9090 to localhost:8080)
+grpcwebproxy \\
+  --backend_addr=localhost:9090 \\
+  --run_tls_server=false \\
+  --allow_all_origins`;
+
+const sampleProtoCode = `syntax = "proto3";
+
+package helloworld;
+
+service Greeter {
+  // Unary RPC
+  rpc SayHello (HelloRequest) returns (HelloReply);
+
+  // Server streaming RPC
+  rpc SayHelloServerStream (HelloRequest) returns (stream HelloReply);
+
+  // Client streaming RPC
+  rpc SayHelloClientStream (stream HelloRequest) returns (HelloReply);
+
+  // Bidirectional streaming RPC
+  rpc SayHelloBidiStream (stream HelloRequest) returns (stream HelloReply);
+}
+
+message HelloRequest {
+  string name = 1;
+  int32 count = 2;
+  repeated string tags = 3;
+}
+
+message HelloReply {
+  string message = 1;
+  int64 timestamp = 2;
+}`;
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "gRPC Client - Online Protobuf Tester",
+    "description": "Free online gRPC client and Protobuf tester. Parse .proto files, build request messages, test gRPC services via grpc-web.",
+    "url": "https://bugdays.com/grpc-client",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": ["Proto file parsing", "gRPC service testing", "Protobuf message builder", "grpc-web support", "Streaming RPC support"]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is gRPC?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "gRPC is a high-performance RPC (Remote Procedure Call) framework developed by Google. It uses Protocol Buffers (protobuf) for serialization and HTTP/2 for transport, enabling efficient bi-directional streaming."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I test gRPC from a browser?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Direct gRPC requires HTTP/2, which browsers don't fully support for client requests. You need grpc-web, a proxy that translates between gRPC-Web (browser-compatible) and native gRPC."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is a .proto file?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "A .proto file defines the structure of your gRPC services and messages using Protocol Buffers language. It specifies service methods, request/response message types, and field definitions."
+        }
+      }
+    ]
+  }
+];
+---
+
+<Layout
+  title="gRPC Client - Online Protobuf & gRPC-Web Tester"
+  description="Free online gRPC client and Protocol Buffers tester. Parse .proto files, build request messages, test gRPC services via grpc-web. Support for unary and streaming RPCs."
+  keywords="gRPC client, protobuf tester, grpc-web client, online gRPC tester, protocol buffers, proto file parser, gRPC testing tool, test gRPC API, gRPC request builder, protobuf message builder"
+  breadcrumb={[{ name: "Network Tools", href: "/network-tools" }, { name: "gRPC Client" }]}
+  toolId="grpc-client"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">gRPC Client</h1>
+
+    <!-- Info Banner -->
+    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div class="text-sm text-blue-800 dark:text-blue-200">
+          <strong>Browser Limitation:</strong> Native gRPC requires HTTP/2, which browsers don't fully support for requests.
+          This tool works with <strong>grpc-web</strong> enabled services. See setup instructions below.
+        </div>
+      </div>
+    </div>
+
+    <!-- Proto File Input -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">1. Load Proto Definition</h3>
+
+      <div class="flex items-center gap-4 mb-4">
+        <label class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer font-medium text-sm">
+          Upload .proto File
+          <input type="file" id="proto-file" accept=".proto" class="hidden">
+        </label>
+        <span id="file-name" class="text-sm text-gray-500 dark:text-slate-400"></span>
+      </div>
+
+      <div class="text-xs text-gray-500 dark:text-slate-400 mb-2">Or paste proto definition:</div>
+
+      <textarea
+        id="proto-input"
+        data-share-key="proto"
+        class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 resize-y"
+        placeholder="Paste your .proto definition here or use 'Load Sample' below..."
+      ></textarea>
+
+      <button id="parse-proto-btn" class="mt-3 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Parse Proto
+      </button>
+    </div>
+
+    <!-- Services & Methods (shown after parse) -->
+    <div id="services-section" class="hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">2. Select Service Method</h3>
+      <div id="services-list" class="space-y-2"></div>
+    </div>
+
+    <!-- Request Builder -->
+    <div id="request-section" class="hidden">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+        <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">3. Build Request</h3>
+
+        <!-- Endpoint -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-1">gRPC-Web Endpoint</label>
+          <input
+            type="text"
+            id="endpoint-url"
+            data-share-key="endpoint"
+            class="w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+            placeholder="https://your-grpc-web-server:8080"
+          />
+        </div>
+
+        <!-- Method Info -->
+        <div class="mb-4 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
+          <div class="flex items-center gap-4 text-sm">
+            <span class="text-gray-500 dark:text-slate-400">Method:</span>
+            <span id="selected-method" class="font-mono text-indigo-600 dark:text-indigo-400"></span>
+            <span id="method-type" class="px-2 py-0.5 rounded text-xs font-medium"></span>
+          </div>
+        </div>
+
+        <!-- Request Message (JSON) -->
+        <div class="mb-4">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-sm font-medium text-gray-700 dark:text-slate-200">Request Message (JSON)</label>
+            <button id="format-request-btn" class="text-xs text-indigo-600 hover:text-indigo-800">Format JSON</button>
+          </div>
+          <textarea
+            id="request-json"
+            data-share-key="request"
+            class="w-full h-40 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 resize-y"
+            placeholder="{}"
+          ></textarea>
+        </div>
+
+        <!-- Metadata -->
+        <details class="mb-4">
+          <summary class="text-sm font-medium text-gray-700 dark:text-slate-200 cursor-pointer">Metadata Headers (optional)</summary>
+          <div id="metadata-list" class="mt-2 space-y-2">
+            <div class="metadata-row flex gap-2">
+              <input type="text" class="metadata-key flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Key" />
+              <input type="text" class="metadata-value flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Value" />
+              <button class="remove-metadata-btn p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">×</button>
+            </div>
+          </div>
+          <button id="add-metadata-btn" class="mt-2 text-sm text-indigo-600 hover:text-indigo-800">+ Add Metadata</button>
+        </details>
+
+        <button id="send-btn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+          Send Request
+        </button>
+      </div>
+    </div>
+
+    <!-- Response -->
+    <div id="response-section" class="hidden">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200">Response</h3>
+          <div class="flex items-center gap-4 text-sm">
+            <span id="status-badge" class="px-2 py-1 rounded font-medium"></span>
+            <span id="response-time" class="text-gray-500 dark:text-slate-400"></span>
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 mb-2">
+          <button id="copy-response-btn" class="text-xs px-2 py-1 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 rounded text-gray-700 dark:text-slate-200">Copy</button>
+        </div>
+        <pre id="response-body" class="p-3 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-200 dark:border-slate-700 font-mono text-sm overflow-auto max-h-96 text-gray-900 dark:text-slate-100"></pre>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="error-box" class="hidden mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-200"></div>
+
+    <!-- Loading -->
+    <div id="loading" class="hidden mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
+      <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      <span id="loading-text">Loading...</span>
+    </div>
+
+    <!-- gRPC-Web Setup -->
+    <details class="mt-6 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+      <summary class="px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 text-sm font-medium text-gray-700 dark:text-slate-200">
+        gRPC-Web Setup Instructions
+      </summary>
+      <div class="px-4 pb-4 text-sm text-gray-600 dark:text-slate-300 space-y-4">
+        <p>
+          To test gRPC services from a browser, you need to set up a gRPC-Web proxy. Here are the options:
+        </p>
+
+        <div>
+          <h4 class="font-medium text-gray-800 dark:text-slate-100 mb-2">Option 1: Envoy Proxy</h4>
+          <pre class="bg-gray-900 dark:bg-slate-950 text-green-400 p-3 rounded-lg text-xs overflow-x-auto"><code># envoy.yaml
+{envoyConfig}</code></pre>
+        </div>
+
+        <div>
+          <h4 class="font-medium text-gray-800 dark:text-slate-100 mb-2">Option 2: grpcwebproxy (simpler)</h4>
+          <pre class="bg-gray-900 dark:bg-slate-950 text-green-400 p-3 rounded-lg text-xs overflow-x-auto"><code>{grpcwebproxyConfig}</code></pre>
+        </div>
+
+        <div>
+          <h4 class="font-medium text-gray-800 dark:text-slate-100 mb-2">Option 3: Connect-Go (native support)</h4>
+          <p class="text-gray-500 dark:text-slate-400">
+            If using Go, <a href="https://connectrpc.com" class="text-indigo-600 dark:text-indigo-400 hover:underline" target="_blank" rel="noopener">Connect-Go</a> provides native browser support without a separate proxy.
+          </p>
+        </div>
+
+        <div>
+          <h4 class="font-medium text-gray-800 dark:text-slate-100 mb-2">Option 4: Holy CORS (for gRPC-Web endpoints)</h4>
+          <p class="text-gray-500 dark:text-slate-400 mb-2">
+            If your gRPC server already supports gRPC-Web but has CORS issues, use <a href="https://github.com/bugdays-com/holy-cors" class="text-indigo-600 dark:text-indigo-400 hover:underline" target="_blank" rel="noopener">Holy CORS</a>:
+          </p>
+          <pre class="bg-gray-900 dark:bg-slate-950 text-green-400 p-3 rounded-lg text-xs overflow-x-auto"><code># macOS
+brew install bugdays-com/tap/holy-cors && holy-cors
+
+# Docker
+docker run -p 2345:2345 ghcr.io/bugdays-com/holy-cors</code></pre>
+        </div>
+      </div>
+    </details>
+
+    <!-- Sample Proto -->
+    <details class="mt-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+      <summary class="px-4 py-3 cursor-pointer hover:bg-gray-50 dark:hover:bg-slate-700 text-sm font-medium text-gray-700 dark:text-slate-200">
+        Sample Proto Definition
+      </summary>
+      <div class="px-4 pb-4">
+        <button id="load-sample-btn" class="mb-3 text-sm text-indigo-600 hover:text-indigo-800">Load Sample</button>
+        <pre class="bg-gray-900 dark:bg-slate-950 text-green-400 p-3 rounded-lg text-xs overflow-x-auto"><code id="sample-proto">{sampleProtoCode}</code></pre>
+      </div>
+    </details>
+
+    <!-- Info Section -->
+    <div class="mt-8 space-y-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Online gRPC Client & Protobuf Tester</h2>
+        <p class="text-gray-600 dark:text-slate-300">
+          Test gRPC services directly from your browser using gRPC-Web. This tool parses .proto files, generates request templates, and invokes gRPC methods. Perfect for API testing, debugging, and learning gRPC.
+        </p>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">Features</h3>
+        <ul class="list-disc list-inside text-gray-600 dark:text-slate-300 space-y-1">
+          <li>Parse .proto files to discover services and methods</li>
+          <li>Auto-generate request message templates</li>
+          <li>Support for unary, server streaming, client streaming, and bidirectional streaming RPCs</li>
+          <li>Custom metadata headers</li>
+          <li>JSON-based request building</li>
+          <li>Works with gRPC-Web enabled servers</li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">gRPC vs REST</h3>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm border border-gray-200 dark:border-slate-700">
+            <thead class="bg-gray-50 dark:bg-slate-900">
+              <tr>
+                <th class="px-4 py-2 text-left border-b border-gray-200 dark:border-slate-700">Feature</th>
+                <th class="px-4 py-2 text-left border-b border-gray-200 dark:border-slate-700">gRPC</th>
+                <th class="px-4 py-2 text-left border-b border-gray-200 dark:border-slate-700">REST</th>
+              </tr>
+            </thead>
+            <tbody class="text-gray-600 dark:text-slate-300">
+              <tr>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">Protocol</td>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">HTTP/2</td>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">HTTP/1.1 or HTTP/2</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">Format</td>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">Protocol Buffers (binary)</td>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">JSON/XML (text)</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">Streaming</td>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">Bi-directional built-in</td>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">Limited (SSE, WebSocket)</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">Contract</td>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">Strict (.proto files)</td>
+                <td class="px-4 py-2 border-b border-gray-200 dark:border-slate-700">Optional (OpenAPI/Swagger)</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-2">Performance</td>
+                <td class="px-4 py-2">Higher (binary, multiplexing)</td>
+                <td class="px-4 py-2">Lower (text, no multiplexing)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  // DOM Elements
+  const protoFileInput = document.getElementById('proto-file') as HTMLInputElement;
+  const protoInput = document.getElementById('proto-input') as HTMLTextAreaElement;
+  const parseProtoBtn = document.getElementById('parse-proto-btn');
+  const fileNameEl = document.getElementById('file-name');
+  const servicesSection = document.getElementById('services-section');
+  const servicesList = document.getElementById('services-list');
+  const requestSection = document.getElementById('request-section');
+  const selectedMethodEl = document.getElementById('selected-method');
+  const methodTypeEl = document.getElementById('method-type');
+  const endpointUrlInput = document.getElementById('endpoint-url') as HTMLInputElement;
+  const requestJsonInput = document.getElementById('request-json') as HTMLTextAreaElement;
+  const sendBtn = document.getElementById('send-btn');
+  const responseSection = document.getElementById('response-section');
+  const responseBody = document.getElementById('response-body');
+  const statusBadge = document.getElementById('status-badge');
+  const responseTime = document.getElementById('response-time');
+  const errorBox = document.getElementById('error-box');
+  const loadingEl = document.getElementById('loading');
+  const loadingText = document.getElementById('loading-text');
+  const loadSampleBtn = document.getElementById('load-sample-btn');
+  const sampleProto = document.getElementById('sample-proto');
+
+  interface ParsedProto {
+    package: string;
+    services: Service[];
+    messages: { [name: string]: Message };
+  }
+
+  interface Service {
+    name: string;
+    methods: Method[];
+  }
+
+  interface Method {
+    name: string;
+    inputType: string;
+    outputType: string;
+    clientStreaming: boolean;
+    serverStreaming: boolean;
+  }
+
+  interface Message {
+    name: string;
+    fields: Field[];
+  }
+
+  interface Field {
+    name: string;
+    type: string;
+    repeated: boolean;
+    number: number;
+  }
+
+  let parsedProto: ParsedProto | null = null;
+  let selectedMethod: { service: string; method: Method } | null = null;
+
+  // File upload
+  protoFileInput?.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    fileNameEl!.textContent = file.name;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      protoInput.value = e.target?.result as string;
+    };
+    reader.readAsText(file);
+  });
+
+  // Load sample
+  loadSampleBtn?.addEventListener('click', () => {
+    protoInput.value = sampleProto?.textContent || '';
+  });
+
+  // Parse proto
+  parseProtoBtn?.addEventListener('click', () => {
+    const proto = protoInput.value.trim();
+    if (!proto) {
+      showError('Please enter a proto definition');
+      return;
+    }
+
+    try {
+      parsedProto = parseProto(proto);
+      displayServices();
+      hideError();
+    } catch (err) {
+      showError(`Failed to parse proto: ${(err as Error).message}`);
+    }
+  });
+
+  function parseProto(proto: string): ParsedProto {
+    const result: ParsedProto = {
+      package: '',
+      services: [],
+      messages: {}
+    };
+
+    // Extract package
+    const packageMatch = proto.match(/package\s+([\w.]+)\s*;/);
+    if (packageMatch) {
+      result.package = packageMatch[1];
+    }
+
+    // Extract messages
+    const messageRegex = /message\s+(\w+)\s*\{([^}]*)\}/g;
+    let messageMatch;
+    while ((messageMatch = messageRegex.exec(proto)) !== null) {
+      const messageName = messageMatch[1];
+      const messageBody = messageMatch[2];
+      const fields: Field[] = [];
+
+      const fieldRegex = /(repeated\s+)?(\w+)\s+(\w+)\s*=\s*(\d+)/g;
+      let fieldMatch;
+      while ((fieldMatch = fieldRegex.exec(messageBody)) !== null) {
+        fields.push({
+          repeated: !!fieldMatch[1],
+          type: fieldMatch[2],
+          name: fieldMatch[3],
+          number: parseInt(fieldMatch[4])
+        });
+      }
+
+      result.messages[messageName] = { name: messageName, fields };
+    }
+
+    // Extract services
+    const serviceRegex = /service\s+(\w+)\s*\{([^}]*)\}/g;
+    let serviceMatch;
+    while ((serviceMatch = serviceRegex.exec(proto)) !== null) {
+      const serviceName = serviceMatch[1];
+      const serviceBody = serviceMatch[2];
+      const methods: Method[] = [];
+
+      const methodRegex = /rpc\s+(\w+)\s*\(\s*(stream\s+)?(\w+)\s*\)\s*returns\s*\(\s*(stream\s+)?(\w+)\s*\)/g;
+      let methodMatch;
+      while ((methodMatch = methodRegex.exec(serviceBody)) !== null) {
+        methods.push({
+          name: methodMatch[1],
+          clientStreaming: !!methodMatch[2],
+          inputType: methodMatch[3],
+          serverStreaming: !!methodMatch[4],
+          outputType: methodMatch[5]
+        });
+      }
+
+      result.services.push({ name: serviceName, methods });
+    }
+
+    if (result.services.length === 0) {
+      throw new Error('No services found in proto definition');
+    }
+
+    return result;
+  }
+
+  function displayServices() {
+    if (!parsedProto || !servicesList) return;
+
+    let html = '';
+    parsedProto.services.forEach(service => {
+      html += `<div class="mb-4">
+        <h4 class="text-sm font-medium text-gray-800 dark:text-slate-100 mb-2">${service.name}</h4>
+        <div class="space-y-1">`;
+
+      service.methods.forEach(method => {
+        const methodType = getMethodType(method);
+        html += `
+          <button class="method-btn w-full text-left p-2 hover:bg-gray-50 dark:hover:bg-slate-700 rounded border border-gray-200 dark:border-slate-600 transition-colors"
+                  data-service="${service.name}" data-method="${method.name}">
+            <span class="font-mono text-sm text-gray-800 dark:text-slate-100">${method.name}</span>
+            <span class="ml-2 px-1.5 py-0.5 text-xs rounded ${getMethodTypeClass(methodType)}">${methodType}</span>
+            <span class="text-xs text-gray-500 dark:text-slate-400 ml-2">(${method.inputType}) → ${method.outputType}</span>
+          </button>`;
+      });
+
+      html += '</div></div>';
+    });
+
+    servicesList.innerHTML = html;
+
+    // Add click handlers
+    document.querySelectorAll('.method-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const serviceName = (btn as HTMLElement).dataset.service || '';
+        const methodName = (btn as HTMLElement).dataset.method || '';
+        selectMethod(serviceName, methodName);
+      });
+    });
+
+    servicesSection?.classList.remove('hidden');
+
+    // Auto-select first method
+    if (parsedProto.services.length > 0 && parsedProto.services[0].methods.length > 0) {
+      selectMethod(parsedProto.services[0].name, parsedProto.services[0].methods[0].name);
+    }
+  }
+
+  function getMethodType(method: Method): string {
+    if (method.clientStreaming && method.serverStreaming) return 'bidi';
+    if (method.clientStreaming) return 'client-stream';
+    if (method.serverStreaming) return 'server-stream';
+    return 'unary';
+  }
+
+  function getMethodTypeClass(type: string): string {
+    switch (type) {
+      case 'unary': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      case 'server-stream': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400';
+      case 'client-stream': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400';
+      case 'bidi': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400';
+    }
+  }
+
+  function selectMethod(serviceName: string, methodName: string) {
+    const service = parsedProto?.services.find(s => s.name === serviceName);
+    const method = service?.methods.find(m => m.name === methodName);
+    if (!service || !method) return;
+
+    selectedMethod = { service: serviceName, method };
+
+    const fullMethodName = `/${parsedProto!.package}.${serviceName}/${methodName}`;
+    selectedMethodEl!.textContent = fullMethodName;
+
+    const methodType = getMethodType(method);
+    methodTypeEl!.textContent = methodType;
+    methodTypeEl!.className = `px-2 py-0.5 rounded text-xs font-medium ${getMethodTypeClass(methodType)}`;
+
+    // Generate sample request
+    const message = parsedProto!.messages[method.inputType];
+    const sampleRequest = generateSampleRequest(message);
+    requestJsonInput.value = JSON.stringify(sampleRequest, null, 2);
+
+    requestSection?.classList.remove('hidden');
+  }
+
+  function generateSampleRequest(message: Message | undefined): any {
+    if (!message) return {};
+
+    const obj: any = {};
+    message.fields.forEach(field => {
+      let value: any;
+      switch (field.type) {
+        case 'string': value = ''; break;
+        case 'int32': case 'int64': case 'uint32': case 'uint64': value = 0; break;
+        case 'float': case 'double': value = 0.0; break;
+        case 'bool': value = false; break;
+        case 'bytes': value = ''; break;
+        default:
+          // Nested message
+          const nestedMessage = parsedProto?.messages[field.type];
+          value = nestedMessage ? generateSampleRequest(nestedMessage) : {};
+      }
+
+      obj[field.name] = field.repeated ? [value] : value;
+    });
+
+    return obj;
+  }
+
+  // Format JSON
+  document.getElementById('format-request-btn')?.addEventListener('click', () => {
+    try {
+      const json = JSON.parse(requestJsonInput.value);
+      requestJsonInput.value = JSON.stringify(json, null, 2);
+    } catch (err) {
+      showError('Invalid JSON');
+    }
+  });
+
+  // Send request
+  sendBtn?.addEventListener('click', async () => {
+    const endpoint = endpointUrlInput.value.trim();
+    if (!endpoint) {
+      showError('Please enter a gRPC-Web endpoint URL');
+      return;
+    }
+
+    if (!selectedMethod) {
+      showError('Please select a method');
+      return;
+    }
+
+    let requestData: any;
+    try {
+      requestData = JSON.parse(requestJsonInput.value);
+    } catch (err) {
+      showError('Invalid JSON in request body');
+      return;
+    }
+
+    showLoading('Sending gRPC request...');
+    hideError();
+    responseSection?.classList.add('hidden');
+
+    const methodPath = `/${parsedProto!.package}.${selectedMethod.service}/${selectedMethod.method.name}`;
+    const url = endpoint.replace(/\/$/, '') + methodPath;
+
+    // Collect metadata
+    const metadata: { [key: string]: string } = {};
+    document.querySelectorAll('.metadata-row').forEach(row => {
+      const key = (row.querySelector('.metadata-key') as HTMLInputElement)?.value.trim();
+      const value = (row.querySelector('.metadata-value') as HTMLInputElement)?.value.trim();
+      if (key && value) {
+        metadata[key] = value;
+      }
+    });
+
+    const startTime = performance.now();
+
+    try {
+      // gRPC-Web uses application/grpc-web+proto or application/grpc-web+json
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/grpc-web+json',
+          'X-Grpc-Web': '1',
+          ...metadata
+        },
+        body: JSON.stringify(requestData)
+      });
+
+      const elapsed = Math.round(performance.now() - startTime);
+      const responseText = await response.text();
+
+      // Try to parse as JSON
+      let displayText = responseText;
+      try {
+        const json = JSON.parse(responseText);
+        displayText = JSON.stringify(json, null, 2);
+      } catch {
+        // Keep as-is if not JSON
+      }
+
+      responseBody!.textContent = displayText;
+      responseTime!.textContent = `${elapsed}ms`;
+
+      // Check grpc-status header
+      const grpcStatus = response.headers.get('grpc-status');
+      const grpcMessage = response.headers.get('grpc-message');
+
+      if (grpcStatus === '0' || response.ok) {
+        statusBadge!.textContent = grpcStatus === '0' ? 'OK (0)' : `${response.status}`;
+        statusBadge!.className = 'px-2 py-1 rounded font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+      } else {
+        statusBadge!.textContent = grpcStatus ? `Error (${grpcStatus})` : `${response.status}`;
+        statusBadge!.className = 'px-2 py-1 rounded font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+        if (grpcMessage) {
+          responseBody!.textContent = `gRPC Error: ${decodeURIComponent(grpcMessage)}\n\n${displayText}`;
+        }
+      }
+
+      responseSection?.classList.remove('hidden');
+
+    } catch (err) {
+      const errorMsg = (err as Error).message;
+      const isCorsLikely = errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || errorMsg.includes('Load failed');
+
+      if (isCorsLikely) {
+        showError(
+          `CORS Error: The gRPC-Web server blocked this cross-origin request.\n\n` +
+          `Ensure your gRPC server has gRPC-Web + CORS enabled, or use a proxy like Envoy.\n` +
+          `Alternatively, use Holy CORS: brew install bugdays-com/tap/holy-cors`
+        );
+      } else {
+        showError(`Request failed: ${errorMsg}`);
+      }
+    } finally {
+      hideLoading();
+    }
+  });
+
+  // Copy response
+  document.getElementById('copy-response-btn')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(responseBody!.textContent || '');
+  });
+
+  // Add metadata row
+  document.getElementById('add-metadata-btn')?.addEventListener('click', () => {
+    const metadataList = document.getElementById('metadata-list');
+    const row = document.createElement('div');
+    row.className = 'metadata-row flex gap-2';
+    row.innerHTML = `
+      <input type="text" class="metadata-key flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Key" />
+      <input type="text" class="metadata-value flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Value" />
+      <button class="remove-metadata-btn p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">×</button>
+    `;
+    metadataList?.appendChild(row);
+
+    row.querySelector('.remove-metadata-btn')?.addEventListener('click', () => row.remove());
+  });
+
+  // Initial remove button handler
+  document.querySelector('.remove-metadata-btn')?.addEventListener('click', (e) => {
+    (e.target as HTMLElement).closest('.metadata-row')?.remove();
+  });
+
+  function showError(msg: string) {
+    errorBox!.textContent = msg;
+    errorBox?.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox?.classList.add('hidden');
+  }
+
+  function showLoading(msg: string) {
+    loadingText!.textContent = msg;
+    loadingEl?.classList.remove('hidden');
+  }
+
+  function hideLoading() {
+    loadingEl?.classList.add('hidden');
+  }
+
+  // Share functionality
+  ShareManager.register({
+    tool: 'grpc-client',
+    afterLoad: () => {
+      // Auto-parse if proto is loaded from share
+      if (protoInput.value.trim()) {
+        parseProtoBtn?.click();
+      }
+    }
+  });
+</script>

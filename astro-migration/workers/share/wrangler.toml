@@ -1,0 +1,18 @@
+name = "bugdays-share"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Custom domain setup:
+# 1. In Cloudflare DNS, add: CNAME api -> bugdays-share.<account>.workers.dev
+# 2. Or use the routes config below (requires zone to be on Cloudflare)
+routes = [
+  { pattern = "api.bugdays.com/*", zone_name = "bugdays.com" }
+]
+
+[[kv_namespaces]]
+binding = "DATA_STORE"
+id = "0196786cf2664fdfb2dd2bedfdf56850"
+
+[vars]
+ALLOWED_ORIGIN = "https://bugdays.com"
+TTL_DAYS = "30"

@@ -1,0 +1,227 @@
+---
+interface Props {
+  toolId?: string;
+}
+const { toolId } = Astro.props;
+---
+
+<!-- Feedback Button -->
+<button
+  id="feedback-btn"
+  class="fixed bottom-4 right-4 z-40 flex items-center gap-2 px-3 py-2 bg-slate-800 dark:bg-slate-700 text-white text-sm rounded-full shadow-lg hover:bg-slate-700 dark:hover:bg-slate-600 transition-all hover:scale-105"
+  data-tool-id={toolId}
+>
+  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+  </svg>
+  <span class="hidden sm:inline">Feedback</span>
+</button>
+
+<!-- Feedback Modal -->
+<div id="feedback-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/50" id="feedback-backdrop"></div>
+
+  <!-- Modal Content -->
+  <div class="relative bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto">
+    <button id="feedback-close" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-200">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+
+    <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-4">Send Feedback</h3>
+
+    <form id="feedback-form" class="space-y-4">
+      <!-- Feedback Type -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-2">Type</label>
+        <div class="flex flex-wrap gap-2">
+          <label class="inline-flex items-center">
+            <input type="radio" name="type" value="bug" class="text-indigo-600 focus:ring-indigo-500" checked />
+            <span class="ml-2 text-sm text-gray-700 dark:text-slate-300">Bug Report</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="radio" name="type" value="feature" class="text-indigo-600 focus:ring-indigo-500" />
+            <span class="ml-2 text-sm text-gray-700 dark:text-slate-300">Feature Request</span>
+          </label>
+          <label class="inline-flex items-center">
+            <input type="radio" name="type" value="feedback" class="text-indigo-600 focus:ring-indigo-500" />
+            <span class="ml-2 text-sm text-gray-700 dark:text-slate-300">General Feedback</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Tool Context (auto-filled, shown as read-only) -->
+      <div id="tool-context" class="hidden">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Tool</label>
+        <div class="text-sm text-gray-600 dark:text-slate-400 bg-gray-50 dark:bg-slate-900 rounded px-3 py-2 font-mono" id="tool-display"></div>
+      </div>
+
+      <!-- Message -->
+      <div>
+        <label for="feedback-message" class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+          Description <span class="text-red-500">*</span>
+        </label>
+        <textarea
+          id="feedback-message"
+          name="message"
+          rows="4"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+          placeholder="Describe the issue or suggestion..."
+          required
+        ></textarea>
+      </div>
+
+      <!-- Email (optional) -->
+      <div>
+        <label for="feedback-email" class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+          Email <span class="text-gray-400 dark:text-slate-500">(optional, for follow-up)</span>
+        </label>
+        <input
+          type="email"
+          id="feedback-email"
+          name="email"
+          class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          placeholder="you@example.com"
+        />
+      </div>
+
+      <!-- Submit -->
+      <div class="flex gap-3">
+        <button
+          type="submit"
+          id="feedback-submit"
+          class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Submit
+        </button>
+        <button
+          type="button"
+          id="feedback-cancel"
+          class="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors text-sm"
+        >
+          Cancel
+        </button>
+      </div>
+
+      <!-- Status Messages -->
+      <div id="feedback-status" class="hidden text-sm rounded-lg p-3"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const FEEDBACK_API = 'https://bugdays-contact.jaisonpjohn.workers.dev';
+
+  function initFeedback() {
+    const feedbackBtn = document.getElementById('feedback-btn');
+    const feedbackModal = document.getElementById('feedback-modal');
+    const feedbackBackdrop = document.getElementById('feedback-backdrop');
+    const feedbackClose = document.getElementById('feedback-close');
+    const feedbackCancel = document.getElementById('feedback-cancel');
+    const feedbackForm = document.getElementById('feedback-form') as HTMLFormElement;
+    const feedbackStatus = document.getElementById('feedback-status');
+    const feedbackSubmit = document.getElementById('feedback-submit') as HTMLButtonElement;
+    const toolContext = document.getElementById('tool-context');
+    const toolDisplay = document.getElementById('tool-display');
+
+    const toolId = feedbackBtn?.dataset.toolId;
+
+    function openModal() {
+      feedbackModal?.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+
+      // Show tool context if on a tool page
+      if (toolId && toolContext && toolDisplay) {
+        toolContext.classList.remove('hidden');
+        toolDisplay.textContent = toolId;
+      }
+
+      // Reset form
+      feedbackForm?.reset();
+      feedbackStatus?.classList.add('hidden');
+      feedbackSubmit.disabled = false;
+      feedbackSubmit.textContent = 'Submit';
+    }
+
+    function closeModal() {
+      feedbackModal?.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    feedbackBtn?.addEventListener('click', openModal);
+    feedbackBackdrop?.addEventListener('click', closeModal);
+    feedbackClose?.addEventListener('click', closeModal);
+    feedbackCancel?.addEventListener('click', closeModal);
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !feedbackModal?.classList.contains('hidden')) {
+        closeModal();
+      }
+    });
+
+    // Form submission
+    feedbackForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(feedbackForm);
+      const type = formData.get('type') as string;
+      const message = formData.get('message') as string;
+      const email = formData.get('email') as string;
+
+      if (!message || message.trim().length < 10) {
+        showStatus('error', 'Please provide more details (at least 10 characters)');
+        return;
+      }
+
+      feedbackSubmit.disabled = true;
+      feedbackSubmit.textContent = 'Submitting...';
+
+      try {
+        const response = await fetch(FEEDBACK_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type,
+            message: message.trim(),
+            email: email?.trim() || '',
+            name: 'Feedback User',
+            tool: toolId || window.location.pathname,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          showStatus('success', result.message);
+          feedbackForm.reset();
+          setTimeout(closeModal, 2000);
+        } else {
+          showStatus('error', result.error || 'Failed to submit feedback');
+          feedbackSubmit.disabled = false;
+          feedbackSubmit.textContent = 'Submit';
+        }
+      } catch (err) {
+        showStatus('error', 'Network error. Please try again.');
+        feedbackSubmit.disabled = false;
+        feedbackSubmit.textContent = 'Submit';
+      }
+    });
+
+    function showStatus(type: 'success' | 'error', message: string) {
+      if (!feedbackStatus) return;
+      feedbackStatus.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'dark:bg-green-900/30', 'dark:text-green-300', 'dark:bg-red-900/30', 'dark:text-red-300');
+      if (type === 'success') {
+        feedbackStatus.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-900/30', 'dark:text-green-300');
+      } else {
+        feedbackStatus.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900/30', 'dark:text-red-300');
+      }
+      feedbackStatus.textContent = message;
+    }
+  }
+
+  initFeedback();
+  document.addEventListener('astro:after-swap', initFeedback);
+</script>

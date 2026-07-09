@@ -1,0 +1,45 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const tools = [
+  { name: 'DateTime Converter', href: '/datetime-converter', description: 'Convert between Unix epoch, ISO 8601, and human readable formats' },
+  { name: 'Color Converter', href: '/color-converter', description: 'Convert between HEX, RGB, HSL, and other color formats' },
+  { name: 'Protobuf Converter', href: '/protobuf-converter', description: 'Convert between JSON and Protocol Buffers format' },
+  { name: 'Avro Converter', href: '/avro-converter', description: 'Convert between JSON and Apache Avro binary format' },
+  { name: 'TOON Converter', href: '/toon-converter', description: 'Convert JSON/YAML to TOON format for 30-60% LLM token savings' },
+  { name: 'Unix Permissions', href: '/unix-permissions', description: 'Calculate chmod permissions (755 ↔ rwxr-xr-x)' },
+];
+---
+
+<Layout
+  title="Converter Tools"
+  description="Free online converter tools for developers. DateTime, color, Protobuf, Avro, TOON (LLM token optimizer), and Unix permissions converters. Convert between formats quickly and easily."
+  keywords="datetime converter, color converter, protobuf converter, avro converter, toon converter, llm token optimizer, unix permissions, chmod calculator, online converters"
+  breadcrumb={[{ name: "Converter Tools" }]}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-2">Converter Tools</h1>
+    <p class="text-gray-600 dark:text-slate-400 mb-6">Convert between formats and representations</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="block p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all"
+        >
+          <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{tool.name}</h2>
+          <p class="text-sm text-gray-600 dark:text-slate-300">{tool.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About Converter Tools</h2>
+      <p class="text-gray-600 dark:text-slate-300 text-sm">
+        Developers constantly need to convert between different data representations. Our converter tools handle
+        timestamps across time zones, color formats for CSS and design, binary serialization formats like Protobuf
+        and Avro, and Unix file permissions. All conversions happen instantly in your browser.
+      </p>
+    </div>
+  </div>
+</Layout>

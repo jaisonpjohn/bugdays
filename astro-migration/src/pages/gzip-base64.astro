@@ -1,0 +1,98 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="GZip Compress & Base64 Encode"
+  description="Compress text with GZip and encode to Base64, or decode and decompress. Free online tool for reducing data size in URLs, localStorage, and API payloads."
+  keywords="GZip compress, GZip Base64, compress text online, GZip encoder, decompress GZip, Base64 GZip, data compression, text compression"
+  breadcrumb={[{ name: "Encoding Tools", href: "/encoding-tools" }, { name: "GZip & Base64" }]}
+  toolId="gzip-base64"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">GZip & Base64</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Input</label>
+        <textarea id="input" data-share-key="input" class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none" placeholder="Enter text to compress..."></textarea>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Output</label>
+        <textarea id="output" readonly class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none" placeholder="Result..."></textarea>
+      </div>
+    </div>
+
+    <div id="stats" class="hidden mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800"></div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="compress-btn" data-share-action="compress" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Compress (GZip + Base64)</button>
+      <button id="decompress-btn" data-share-action="decompress" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Decompress</button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 font-medium">Clear</button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 font-medium">Copy Output</button>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online GZip Compression Tool</h2>
+      <p class="text-gray-600 dark:text-slate-300">Compress text using GZip and encode as Base64.</p>
+    </div>
+  </div>
+</Layout>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const stats = document.getElementById('stats');
+
+  document.getElementById('compress-btn').addEventListener('click', () => {
+    try {
+      const inputBytes = new TextEncoder().encode(input.value);
+      const compressed = (window as any).pako.gzip(inputBytes);
+      const base64 = btoa(String.fromCharCode.apply(null, compressed));
+      output.value = base64;
+      const ratio = ((1 - compressed.length / inputBytes.length) * 100).toFixed(1);
+      stats.textContent = `Original: ${inputBytes.length} bytes → Compressed: ${compressed.length} bytes (${ratio}% reduction)`;
+      stats.classList.remove('hidden');
+    } catch (e) {
+      output.value = 'Error: ' + e.message;
+      stats.classList.add('hidden');
+    }
+  });
+
+  document.getElementById('decompress-btn').addEventListener('click', () => {
+    try {
+      const binaryString = atob(input.value);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+      const decompressed = (window as any).pako.ungzip(bytes);
+      output.value = new TextDecoder().decode(decompressed);
+      stats.textContent = `Compressed: ${bytes.length} bytes → Decompressed: ${decompressed.length} bytes`;
+      stats.classList.remove('hidden');
+    } catch (e) {
+      output.value = 'Error: Invalid data';
+      stats.classList.add('hidden');
+    }
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    input.value = '';
+    output.value = '';
+    stats.classList.add('hidden');
+  });
+
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(output.value);
+  });
+
+  ShareManager.register({
+    tool: 'gzip-base64',
+    actions: {
+      compress: () => document.getElementById('compress-btn')!.click(),
+      decompress: () => document.getElementById('decompress-btn')!.click()
+    }
+  });
+</script>

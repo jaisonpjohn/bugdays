@@ -1,0 +1,218 @@
+---
+import Layout from '../layouts/Layout.astro';
+import MagicBox from '../components/MagicBox.astro';
+
+const categories = [
+  {
+    name: 'JSON Tools',
+    icon: '{ }',
+    tools: [
+      { name: 'JSON Formatter', href: '/json-formatter', desc: 'Beautify, validate & minify' },
+      { name: 'JSON Diff', href: '/json-diff', desc: 'Compare JSON objects' },
+      { name: 'YAML ↔ JSON', href: '/yaml-json-converter', desc: 'Bidirectional conversion' },
+      { name: 'CSV ↔ JSON', href: '/csv-json-converter', desc: 'Spreadsheet to JSON' },
+    ]
+  },
+  {
+    name: 'Text Tools',
+    icon: 'Aa',
+    tools: [
+      { name: 'Text Diff', href: '/text-diff', desc: 'Compare text side-by-side' },
+      { name: 'Join Lines', href: '/join-lines', desc: 'Lines to SQL IN, JSON array' },
+      { name: 'Sort Lines', href: '/sort-lines', desc: 'Alphabetical, numeric, shuffle' },
+      { name: 'Remove Duplicates', href: '/remove-duplicate-lines', desc: 'Dedupe with report' },
+      { name: 'Compare Lists', href: '/list-compare', desc: 'Find common & different items' },
+      { name: 'Case Converter', href: '/case-converter', desc: 'camelCase, snake_case, etc' },
+    ]
+  },
+  {
+    name: 'Encoding',
+    icon: '01',
+    tools: [
+      { name: 'Base64', href: '/base64-encoder-decoder', desc: 'Encode & decode Base64' },
+      { name: 'URL Encoder', href: '/url-encoder', desc: 'Encode & decode URLs' },
+      { name: 'Hash Generator', href: '/hash-generator', desc: 'MD5, SHA-1, SHA-256, SHA-512' },
+      { name: 'JWT Decoder', href: '/jwt-decoder', desc: 'Decode JSON Web Tokens' },
+      { name: 'GZip + Base64', href: '/gzip-base64', desc: 'Compress & encode' },
+    ]
+  },
+  {
+    name: 'Generators',
+    icon: '⚡',
+    tools: [
+      { name: 'UUID Generator', href: '/uuid-generator', desc: 'UUID v4 & v7' },
+      { name: 'Password Generator', href: '/password-generator', desc: 'Strong & secure passwords' },
+      { name: 'QR Code', href: '/qr-code', desc: 'Generate & read QR codes' },
+      { name: 'Cron Parser', href: '/cron-parser', desc: 'Parse & generate cron' },
+    ]
+  },
+  {
+    name: 'Converters',
+    icon: '⇄',
+    tools: [
+      { name: 'DateTime', href: '/datetime-converter', desc: 'Unix timestamp & ISO 8601' },
+      { name: 'Color', href: '/color-converter', desc: 'HEX, RGB, HSL conversion' },
+      { name: 'XML ↔ JSON', href: '/xml-json-converter', desc: 'XML to JSON & back' },
+      { name: 'Image → Base64', href: '/image-base64', desc: 'Images to data URLs' },
+    ]
+  },
+  {
+    name: 'Database',
+    icon: '⛁',
+    tools: [
+      { name: 'Schema Explorer', href: '/schema-explorer', desc: 'ER diagram from DDL — Postgres, MySQL, Oracle & more' },
+      { name: 'DBeaver Password Decrypt', href: '/dbeaver-password-decrypter', desc: 'Recover saved DB passwords' },
+      { name: 'Join Lines', href: '/join-lines', desc: 'Lines to SQL IN clause' },
+    ]
+  },
+  {
+    name: 'Developer',
+    icon: '</>',
+    tools: [
+      { name: 'Regex Tester', href: '/regex-tester', desc: 'Test regular expressions' },
+      { name: 'XML Formatter', href: '/xml-formatter', desc: 'Beautify XML' },
+      { name: 'SVG Optimizer', href: '/svg-optimizer', desc: 'Minify SVG files' },
+      { name: 'Unix Permissions', href: '/unix-permissions', desc: 'chmod calculator' },
+      { name: 'CIDR Calculator', href: '/cidr-calculator', desc: 'Subnet & IP ranges' },
+    ]
+  },
+];
+---
+
+<Layout
+  title="Free Online Developer Tools"
+  description="Free browser-based developer tools. JSON formatter, Base64 encoder, text diff, hash generator, and 30+ more tools. All processing happens locally - your data never leaves your browser."
+  keywords="developer tools, online tools, JSON formatter, Base64 encoder, text diff, hash generator, free dev tools, browser tools"
+>
+  <div class="max-w-6xl mx-auto">
+    <!-- Hero Section -->
+    <div class="text-center mb-10">
+      <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-slate-100 mb-4">
+        Developer Tools That Respect Your Privacy
+      </h1>
+      <p class="text-lg text-gray-600 dark:text-slate-300 mb-6 max-w-2xl mx-auto">
+        30+ free tools for JSON, text, encoding, and more. Everything runs in your browser — your data never touches our servers.
+      </p>
+
+      <!-- Paste Anything magic box -->
+      <div class="mb-8">
+        <MagicBox />
+      </div>
+
+      <!-- Privacy Badges -->
+      <div class="flex flex-wrap justify-center gap-3 mb-8">
+        <div class="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-sm font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+          100% Client-Side
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-full text-sm font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          Instant Results
+        </div>
+        <div class="flex items-center gap-2 px-4 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded-full text-sm font-medium">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+          </svg>
+          Shareable Links
+        </div>
+      </div>
+
+      <!-- Quick Access -->
+      <div class="flex flex-wrap justify-center gap-2">
+        <a href="/json-formatter" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
+          JSON Formatter
+        </a>
+        <a href="/schema-explorer" class="px-4 py-2 bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border border-indigo-400 dark:border-indigo-500 rounded-lg hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+          Schema Explorer <span class="ml-1 text-[10px] font-bold uppercase tracking-wide text-indigo-500 dark:text-indigo-400">New</span>
+        </a>
+        <a href="/json-diff" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+          JSON Diff
+        </a>
+        <a href="/text-diff" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+          Text Diff
+        </a>
+        <a href="/gzip-base64" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+          GZip + Base64
+        </a>
+      </div>
+    </div>
+
+    <!-- Tool Categories -->
+    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+      {categories.map((cat) => (
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-5">
+          <div class="flex items-center gap-3 mb-4">
+            <span class="w-10 h-10 flex items-center justify-center bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg font-mono font-bold text-sm">
+              {cat.icon}
+            </span>
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100">{cat.name}</h2>
+          </div>
+          <ul class="space-y-2">
+            {cat.tools.map((tool) => (
+              <li>
+                <a href={tool.href} class="group flex justify-between items-center py-1.5 px-2 -mx-2 rounded hover:bg-gray-50 dark:hover:bg-slate-700/50 transition-colors">
+                  <span class="text-gray-700 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 font-medium text-sm">{tool.name}</span>
+                  <span class="text-gray-400 dark:text-slate-500 text-xs">{tool.desc}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+
+    <!-- Features Section -->
+    <div class="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-6 md:p-8 mb-8">
+      <h2 class="text-xl font-bold text-gray-800 dark:text-slate-100 mb-6 text-center">Why Bug Days?</h2>
+      <div class="grid md:grid-cols-3 gap-6">
+        <div class="text-center">
+          <div class="w-12 h-12 mx-auto mb-3 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Privacy First</h3>
+          <p class="text-sm text-gray-600 dark:text-slate-400">
+            All processing happens in your browser. Your data never leaves your machine unless you explicitly share it.
+          </p>
+        </div>
+        <div class="text-center">
+          <div class="w-12 h-12 mx-auto mb-3 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Smart Sharing</h3>
+          <p class="text-sm text-gray-600 dark:text-slate-400">
+            Share your work with a URL. Small data is compressed in the link itself — no server storage needed.
+          </p>
+        </div>
+        <div class="text-center">
+          <div class="w-12 h-12 mx-auto mb-3 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+            <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">No Bloat</h3>
+          <p class="text-sm text-gray-600 dark:text-slate-400">
+            No accounts, no tracking, no ads interrupting your work. Just fast, focused tools that do one thing well.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- All Tools Link -->
+    <div class="text-center">
+      <a href="/developer-tools" class="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium">
+        View all tools
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+      </a>
+    </div>
+  </div>
+</Layout>

@@ -1,0 +1,1232 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Database Schema Explorer",
+    "description": "Free online database schema explorer and ER diagram generator. Paste DDL from PostgreSQL, MySQL, Oracle, SQL Server or DB2 and visualize table relationships, annotate tables and columns, and export a data dictionary.",
+    "url": "https://bugdays.com/schema-explorer",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+    "featureList": [
+      "ER diagram from SQL DDL",
+      "Works with PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, DB2",
+      "Table relationship visualization",
+      "Annotate tables and columns with comments",
+      "Export data dictionary as Markdown",
+      "Export Mermaid ER diagram",
+      "Generate COMMENT ON / extended property SQL",
+      "100% in-browser - schema never leaves your machine"
+    ]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I visualize my database schema online?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Export your schema as DDL (e.g. pg_dump --schema-only, mysqldump --no-data, or your IDE's 'Generate DDL'), paste it into the Schema Explorer or open the .sql file, and click Explore. An interactive ER diagram with all table relationships is drawn instantly in your browser."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Is it safe to paste my database schema here?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. The DDL is parsed entirely in your browser with JavaScript. Your schema is never uploaded to any server."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Which databases are supported?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, DB2 and SQLite - the parser understands the common CREATE TABLE, ALTER TABLE ADD CONSTRAINT and COMMENT ON syntax emitted by each engine's dump tools."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I add comments to tables and columns?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Click any table or column in the diagram to annotate it. Annotations are kept in your browser and can be exported as COMMENT ON statements (PostgreSQL, Oracle, DB2), ALTER TABLE statements (MySQL), sp_addextendedproperty calls (SQL Server), or as a Markdown data dictionary."
+        }
+      }
+    ]
+  }
+];
+---
+
+<Layout
+  title="Database Schema Explorer - ER Diagram from DDL Online Free"
+  description="Visualize your database schema as an interactive ER diagram. Paste DDL from PostgreSQL, MySQL, Oracle, SQL Server or DB2 — see table relationships, annotate columns, export a data dictionary. 100% in your browser."
+  keywords="database schema explorer, ER diagram generator, erd online, visualize database schema, ddl to diagram, table relationships, data dictionary generator, postgres schema diagram, mysql er diagram, oracle schema visualization, database documentation tool"
+  breadcrumb={[{ name: "Database", href: "/database-tools" }, { name: "Schema Explorer" }]}
+  toolId="schema-explorer"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-7xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-1">Database Schema Explorer</h1>
+    <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
+      Paste your DDL, get an interactive ER diagram. Works with PostgreSQL, MySQL, Oracle, SQL Server, DB2 &amp; SQLite —
+      <span class="text-green-600 dark:text-green-400 font-medium">your schema never leaves your browser</span>.
+    </p>
+
+    <!-- Input card -->
+    <div id="input-card" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 mb-4">
+      <div class="flex flex-wrap items-center gap-2 p-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 rounded-t-lg">
+        <button id="explore-btn" data-share-action="explore" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+          Explore Schema
+        </button>
+        <button id="open-file-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+          Open File…
+        </button>
+        <input id="file-input" type="file" accept=".sql,.ddl,.txt,.dump" class="hidden" />
+        <button id="sample-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+          Load Sample
+        </button>
+        <button id="clear-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors text-sm font-medium">
+          Clear
+        </button>
+        <div class="flex-1"></div>
+        <button id="howto-toggle" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">
+          How do I get my DDL?
+        </button>
+      </div>
+
+      <!-- How to get DDL -->
+      <div id="howto-panel" class="hidden p-4 border-b border-gray-200 dark:border-slate-700 bg-indigo-50/50 dark:bg-indigo-900/10 text-sm">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-3">
+          <div>
+            <p class="font-semibold text-slate-700 dark:text-slate-200">PostgreSQL</p>
+            <code class="block text-xs bg-white dark:bg-slate-900 rounded p-2 mt-1 overflow-x-auto">pg_dump --schema-only -t 'public.*' mydb</code>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-700 dark:text-slate-200">MySQL / MariaDB</p>
+            <code class="block text-xs bg-white dark:bg-slate-900 rounded p-2 mt-1 overflow-x-auto">mysqldump --no-data --skip-comments mydb</code>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-700 dark:text-slate-200">Oracle</p>
+            <code class="block text-xs bg-white dark:bg-slate-900 rounded p-2 mt-1 overflow-x-auto">SELECT DBMS_METADATA.GET_DDL('TABLE', table_name) FROM user_tables;</code>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-700 dark:text-slate-200">SQL Server</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">SSMS → right-click database → Tasks → Generate Scripts (schema only)</p>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-700 dark:text-slate-200">DB2</p>
+            <code class="block text-xs bg-white dark:bg-slate-900 rounded p-2 mt-1 overflow-x-auto">db2look -d MYDB -e -t</code>
+          </div>
+          <div>
+            <p class="font-semibold text-slate-700 dark:text-slate-200">SQLite</p>
+            <code class="block text-xs bg-white dark:bg-slate-900 rounded p-2 mt-1 overflow-x-auto">sqlite3 my.db .schema</code>
+          </div>
+        </div>
+      </div>
+
+      <textarea
+        id="ddl-input"
+        data-share-key="ddl"
+        rows="8"
+        spellcheck="false"
+        placeholder="-- Paste CREATE TABLE statements here (or use Open File…), e.g.
+CREATE TABLE users (
+  id BIGINT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE orders (
+  id BIGINT PRIMARY KEY,
+  user_id BIGINT NOT NULL REFERENCES users (id)
+);"
+        class="w-full p-4 font-mono text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset resize-y"
+      ></textarea>
+    </div>
+
+    <!-- Error box -->
+    <div id="error-box" class="hidden bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4 mb-4 rounded">
+      <p class="text-red-700 dark:text-red-300 text-sm" id="error-text"></p>
+    </div>
+
+    <!-- Diagram section -->
+    <div id="diagram-section" class="hidden">
+      <div id="diagram-card" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col">
+        <!-- Diagram toolbar -->
+        <div class="flex flex-wrap items-center gap-2 p-2.5 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 rounded-t-lg shrink-0">
+          <span id="schema-stats" class="text-sm text-slate-600 dark:text-slate-300 font-medium px-1"></span>
+          <button id="warnings-toggle" class="hidden text-xs text-amber-600 dark:text-amber-400 hover:underline"></button>
+          <div class="flex-1"></div>
+          <button id="ddl-toggle" class="px-2 h-8 flex items-center justify-center rounded text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-xs font-medium" title="Show / hide the raw DDL editor">
+            Edit DDL
+          </button>
+          <div class="flex items-center gap-1">
+            <button id="zoom-out-btn" title="Zoom out (⌘−)" class="w-8 h-8 flex items-center justify-center rounded text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-lg font-bold">−</button>
+            <button id="zoom-in-btn" title="Zoom in (⌘+)" class="w-8 h-8 flex items-center justify-center rounded text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-lg font-bold">+</button>
+            <button id="zoom-fit-btn" title="Fit to view (⌘0)" class="px-2 h-8 flex items-center justify-center rounded text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-xs font-medium">Fit</button>
+            <button id="arrange-btn" title="Re-arrange tables" class="px-2 h-8 flex items-center justify-center rounded text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-xs font-medium">Arrange</button>
+            <button id="focus-btn" title="Focus mode - hide navigation (Esc to exit)" class="w-8 h-8 flex items-center justify-center rounded text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">
+              <svg id="focus-expand-icon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+              </svg>
+              <svg id="focus-compress-icon" class="w-4 h-4 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 9V4.5M9 9H4.5M9 9L3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5l5.25 5.25" />
+              </svg>
+            </button>
+          </div>
+          <button id="export-btn" class="px-3 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Export
+          </button>
+        </div>
+
+        <!-- Warnings -->
+        <div id="warnings-panel" class="hidden p-3 border-b border-gray-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/20 text-xs text-amber-800 dark:text-amber-300 max-h-32 overflow-y-auto shrink-0"></div>
+
+        <!-- Canvas + floating detail panel -->
+        <div id="svg-wrap" class="relative min-w-0">
+          <svg
+            id="erd-svg"
+            class="w-full bg-slate-50 dark:bg-slate-900/60 select-none rounded-b-lg"
+            style="height: 68vh; min-height: 380px; cursor: grab; touch-action: none;"
+          >
+            <defs>
+              <marker id="erd-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" class="fill-slate-400 dark:fill-slate-500"></path>
+              </marker>
+            </defs>
+            <g id="erd-canvas"></g>
+          </svg>
+          <p class="absolute bottom-2 left-3 text-[11px] text-slate-400 dark:text-slate-500 pointer-events-none">
+            drag tables · scroll to pan · pinch / ⌘+scroll or ⌘±  to zoom · click to inspect &amp; annotate
+          </p>
+
+          <!-- Floating detail / annotation panel (appears on selection) -->
+          <div id="detail-panel" class="hidden absolute top-3 right-3 w-72 max-w-[85%] max-h-[calc(100%-1.5rem)] overflow-y-auto bg-white/95 dark:bg-slate-800/95 backdrop-blur rounded-lg shadow-xl border border-slate-200 dark:border-slate-600 p-4 text-sm">
+            <button id="detail-close" class="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700" title="Close (Esc)">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+            <p class="text-[10px] uppercase tracking-wider text-slate-400 dark:text-slate-500" id="detail-kind"></p>
+            <h3 class="font-semibold text-slate-800 dark:text-slate-100 break-all pr-5" id="detail-title"></h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 break-all" id="detail-subtitle"></p>
+            <div id="detail-badges" class="flex flex-wrap gap-1 mt-2"></div>
+
+            <label class="block mt-3 text-xs font-medium text-slate-600 dark:text-slate-300">
+              Comment / annotation
+            </label>
+            <textarea
+              id="annotation-input"
+              rows="3"
+              placeholder="Describe what this is for…"
+              class="mt-1 w-full px-2.5 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+            ></textarea>
+            <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+              Saved in your browser. Export as SQL/Markdown when done.
+            </p>
+
+            <button id="view-ddl-btn" class="hidden mt-3 w-full px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+              View table DDL
+            </button>
+
+            <div id="detail-relations" class="mt-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table DDL modal -->
+  <div id="ddl-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-3xl w-full p-5 flex flex-col" style="max-height: 85vh;">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100" id="ddl-modal-title">Table DDL</h3>
+        <div class="flex items-center gap-2">
+          <button id="ddl-copy" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">Copy</button>
+          <button id="ddl-close" class="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 text-xl leading-none px-1">&times;</button>
+        </div>
+      </div>
+      <pre id="ddl-output" class="flex-1 overflow-auto text-xs font-mono bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 whitespace-pre text-gray-800 dark:text-slate-200"></pre>
+    </div>
+  </div>
+
+  <!-- Export modal -->
+  <div id="export-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-3xl w-full p-5 flex flex-col" style="max-height: 85vh;">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100">Export schema documentation</h3>
+        <button id="export-close" class="text-gray-400 hover:text-gray-600 dark:hover:text-slate-200 text-xl leading-none">&times;</button>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 mb-3">
+        <div class="flex rounded-lg overflow-hidden border border-gray-200 dark:border-slate-600 text-sm">
+          <button data-format="markdown" class="export-tab px-3 py-1.5">Markdown</button>
+          <button data-format="mermaid" class="export-tab px-3 py-1.5">Mermaid</button>
+          <button data-format="sql" class="export-tab px-3 py-1.5">Comment SQL</button>
+          <button data-format="json" class="export-tab px-3 py-1.5">JSON</button>
+        </div>
+        <select id="export-dialect" class="hidden text-sm border border-gray-300 dark:border-slate-600 rounded-lg px-2 py-1.5 bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-200">
+          <option value="postgres">PostgreSQL / Oracle / DB2</option>
+          <option value="mysql">MySQL / MariaDB</option>
+          <option value="sqlserver">SQL Server</option>
+        </select>
+        <div class="flex-1"></div>
+        <button id="export-copy" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">Copy</button>
+        <button id="export-download" class="px-3 py-1.5 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors text-sm font-medium">Download</button>
+      </div>
+
+      <pre id="export-output" class="flex-1 overflow-auto text-xs font-mono bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 whitespace-pre text-gray-800 dark:text-slate-200"></pre>
+    </div>
+  </div>
+</Layout>
+
+<style is:global>
+  /* Relationship highlight: animated marching dashes on active edges */
+  @keyframes erd-dash {
+    to { stroke-dashoffset: -20; }
+  }
+  #erd-canvas .erd-edge-g path.erd-edge-active {
+    stroke: #6366f1;
+    stroke-width: 2.5;
+    stroke-dasharray: 7 5;
+    animation: erd-dash 0.5s linear infinite;
+  }
+  #erd-canvas g[data-table],
+  #erd-canvas .erd-edge-g {
+    transition: opacity 0.3s ease;
+  }
+  #erd-canvas .erd-dim { opacity: 0.15; }
+  #erd-canvas .erd-edge-g { cursor: pointer; }
+
+  /* Focus mode: diagram card fills the viewport above everything */
+  #diagram-card.erd-focus {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    border-radius: 0;
+    margin: 0;
+    border: none;
+  }
+  #diagram-card.erd-focus #svg-wrap {
+    flex: 1 1 0%;
+    min-height: 0;
+  }
+  #diagram-card.erd-focus #erd-svg {
+    height: 100% !important;
+    min-height: 0 !important;
+    border-radius: 0;
+  }
+</style>
+
+<script>
+  import { parseSchema, type ParsedSchema, type ParsedTable } from '../lib/schema-parser';
+  import {
+    toMarkdown, toMermaid, toCommentSql, toJson,
+    effectiveTableComment, effectiveColumnComment,
+    type Annotations, type CommentDialect,
+  } from '../lib/schema-export';
+  import { ShareManager } from '../lib/share';
+
+  // ---------- State ----------
+  let schema: ParsedSchema | null = null;
+  let annotations: Annotations = { tables: {}, columns: {} };
+  let positions = new Map<string, { x: number; y: number }>();
+  let selection: { kind: 'table' | 'column'; table: string; column?: string } | null = null;
+  let view = { x: 40, y: 40, k: 1 };
+  let exportFormat = 'markdown';
+  let focusMode = false;
+  let panAnim: number | null = null;
+
+  // ---------- Geometry ----------
+  const BOX_W = 220;
+  const HEADER_H = 30;
+  const ROW_H = 21;
+  const PAD_B = 6;
+
+  const boxHeight = (t: ParsedTable) => HEADER_H + t.columns.length * ROW_H + PAD_B;
+
+  // ---------- DOM ----------
+  const $ = (id: string) => document.getElementById(id)!;
+  const svg = $('erd-svg') as unknown as SVGSVGElement;
+  const canvas = $('erd-canvas') as unknown as SVGGElement;
+
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  function svgEl<T extends SVGElement>(tag: string, attrs: Record<string, string> = {}): T {
+    const el = document.createElementNS(SVG_NS, tag) as unknown as T;
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    return el;
+  }
+
+  // ---------- Annotations persistence ----------
+  function annKey() { return `bd-schema-ann:${schema?.fingerprint ?? ''}`; }
+  function loadAnnotations() {
+    try {
+      annotations = JSON.parse(localStorage.getItem(annKey()) || '') || { tables: {}, columns: {} };
+      if (!annotations.tables) annotations.tables = {};
+      if (!annotations.columns) annotations.columns = {};
+    } catch { annotations = { tables: {}, columns: {} }; }
+  }
+  function saveAnnotations() {
+    try { localStorage.setItem(annKey(), JSON.stringify(annotations)); } catch {}
+  }
+
+  // ---------- Layout (hub-and-spoke) ----------
+  // The most-connected table of each cluster becomes the hub at the center;
+  // related tables ring around it, their dependents fan outward in sectors.
+  // Unconnected tables go into a strip below the clusters.
+  function autoLayout() {
+    if (!schema) return;
+    positions.clear();
+    const tables = schema.tables;
+    if (!tables.length) return;
+    const byKey = new Map(tables.map(t => [t.key, t]));
+
+    // Undirected FK adjacency (self-references excluded — they don't affect placement)
+    const adj = new Map<string, Set<string>>();
+    for (const t of tables) adj.set(t.key, new Set());
+    for (const t of tables) {
+      for (const fk of t.foreignKeys) {
+        if (fk.refTable !== t.key && adj.has(fk.refTable)) {
+          adj.get(t.key)!.add(fk.refTable);
+          adj.get(fk.refTable)!.add(t.key);
+        }
+      }
+    }
+    const degree = (k: string) => adj.get(k)!.size;
+
+    const isolated = tables.filter(t => degree(t.key) === 0).map(t => t.key);
+    const visited = new Set<string>(isolated);
+
+    // Connected components, biggest hubs first
+    const components: string[][] = [];
+    for (const t of [...tables].sort((a, b) => degree(b.key) - degree(a.key))) {
+      if (visited.has(t.key)) continue;
+      const comp: string[] = [];
+      const queue = [t.key];
+      visited.add(t.key);
+      while (queue.length) {
+        const k = queue.shift()!;
+        comp.push(k);
+        for (const nb of adj.get(k)!) if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
+      }
+      components.push(comp);
+    }
+
+    let offsetX = 0;
+    let clustersMaxY = 0;
+    const COMP_GAP = 180;
+
+    for (const comp of components) {
+      const hub = comp.reduce((a, b) => (degree(b) > degree(a) ? b : a));
+
+      // BFS tree from the hub → concentric rings
+      const children = new Map<string, string[]>(comp.map(k => [k, []]));
+      const levels = new Map<string, number>([[hub, 0]]);
+      const q = [hub];
+      const seen = new Set([hub]);
+      while (q.length) {
+        const k = q.shift()!;
+        for (const nb of [...adj.get(k)!].sort((a, b) => degree(b) - degree(a))) {
+          if (seen.has(nb)) continue;
+          seen.add(nb);
+          children.get(k)!.push(nb);
+          levels.set(nb, levels.get(k)! + 1);
+          q.push(nb);
+        }
+      }
+
+      // Angular span of each subtree ∝ its leaf count
+      const weight = new Map<string, number>();
+      const calcWeight = (k: string): number => {
+        const kids = children.get(k)!;
+        const w = kids.length ? kids.reduce((s, c) => s + calcWeight(c), 0) : 1;
+        weight.set(k, w);
+        return w;
+      };
+      calcWeight(hub);
+
+      // Ring radii: each ring needs enough circumference for its tables
+      const maxLevel = Math.max(...comp.map(k => levels.get(k)!));
+      const perLevel = new Array(maxLevel + 1).fill(0);
+      comp.forEach(k => perLevel[levels.get(k)!]++);
+      const SLOT = BOX_W + 110;
+      const RING_GAP = 260;
+      const radii = [0];
+      for (let l = 1; l <= maxLevel; l++) {
+        radii[l] = Math.max(radii[l - 1] + RING_GAP, (perLevel[l] * SLOT) / (2 * Math.PI));
+      }
+
+      // Place each node at the middle of its sector, children within it
+      const centers = new Map<string, { x: number; y: number }>();
+      const place = (k: string, a0: number, a1: number) => {
+        const r = radii[levels.get(k)!];
+        const ang = (a0 + a1) / 2;
+        centers.set(k, { x: r * Math.cos(ang), y: r * Math.sin(ang) });
+        const kids = children.get(k)!;
+        const total = kids.reduce((s, c) => s + weight.get(c)!, 0) || 1;
+        let a = a0;
+        for (const c of kids) {
+          const span = ((a1 - a0) * weight.get(c)!) / total;
+          place(c, a, a + span);
+          a += span;
+        }
+      };
+      place(hub, -Math.PI / 2, Math.PI * 1.5); // start at 12 o'clock
+
+      // Centers → top-left corners
+      const local = new Map<string, { x: number; y: number }>();
+      for (const k of comp) {
+        const c = centers.get(k)!;
+        local.set(k, { x: c.x - BOX_W / 2, y: c.y - boxHeight(byKey.get(k)!) / 2 });
+      }
+
+      // Push apart any residual overlaps (varying box heights)
+      const PAD = 26;
+      for (let iter = 0; iter < 40; iter++) {
+        let moved = false;
+        for (let i = 0; i < comp.length; i++) {
+          for (let j = i + 1; j < comp.length; j++) {
+            const a = local.get(comp[i])!, b = local.get(comp[j])!;
+            const ah = boxHeight(byKey.get(comp[i])!), bh = boxHeight(byKey.get(comp[j])!);
+            const ox = Math.min(a.x + BOX_W + PAD, b.x + BOX_W + PAD) - Math.max(a.x - PAD, b.x - PAD);
+            const oy = Math.min(a.y + ah + PAD, b.y + bh + PAD) - Math.max(a.y - PAD, b.y - PAD);
+            if (ox <= 0 || oy <= 0) continue;
+            moved = true;
+            if (ox < oy) {
+              const push = ox / 2 + 1;
+              if (a.x < b.x) { a.x -= push; b.x += push; } else { a.x += push; b.x -= push; }
+            } else {
+              const push = oy / 2 + 1;
+              if (a.y < b.y) { a.y -= push; b.y += push; } else { a.y += push; b.y -= push; }
+            }
+          }
+        }
+        if (!moved) break;
+      }
+
+      // Normalize the cluster to its bounding box and append to the right
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      for (const k of comp) {
+        const p = local.get(k)!;
+        minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+        maxX = Math.max(maxX, p.x + BOX_W); maxY = Math.max(maxY, p.y + boxHeight(byKey.get(k)!));
+      }
+      for (const k of comp) {
+        const p = local.get(k)!;
+        positions.set(k, { x: p.x - minX + offsetX, y: p.y - minY });
+      }
+      clustersMaxY = Math.max(clustersMaxY, maxY - minY);
+      offsetX += (maxX - minX) + COMP_GAP;
+    }
+
+    // Isolated tables: compact strip below the clusters
+    if (isolated.length) {
+      const GAP_X = 60, GAP_Y = 40;
+      const perRow = Math.max(3, Math.ceil(Math.sqrt(isolated.length)));
+      let x = 0, y = clustersMaxY ? clustersMaxY + 120 : 0, rowH = 0, col = 0;
+      for (const k of isolated) {
+        const h = boxHeight(byKey.get(k)!);
+        positions.set(k, { x, y });
+        rowH = Math.max(rowH, h);
+        col++;
+        if (col >= perRow) { col = 0; x = 0; y += rowH + GAP_Y; rowH = 0; }
+        else x += BOX_W + GAP_X;
+      }
+    }
+  }
+
+  function fitToView() {
+    if (!schema || !positions.size) return;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const t of schema.tables) {
+      const p = positions.get(t.key)!;
+      minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x + BOX_W); maxY = Math.max(maxY, p.y + boxHeight(t));
+    }
+    const rect = svg.getBoundingClientRect();
+    const pad = 30;
+    const k = Math.min(1.25, (rect.width - pad * 2) / (maxX - minX || 1), (rect.height - pad * 2) / (maxY - minY || 1));
+    view.k = Math.max(0.1, k);
+    view.x = pad + (rect.width - pad * 2 - (maxX - minX) * view.k) / 2 - minX * view.k;
+    view.y = pad + (rect.height - pad * 2 - (maxY - minY) * view.k) / 2 - minY * view.k;
+    applyView();
+  }
+
+  function applyView() {
+    canvas.setAttribute('transform', `translate(${view.x},${view.y}) scale(${view.k})`);
+  }
+
+  function zoomBy(factor: number, cx?: number, cy?: number) {
+    const rect = svg.getBoundingClientRect();
+    const mx = cx ?? rect.width / 2;
+    const my = cy ?? rect.height / 2;
+    const newK = Math.min(3, Math.max(0.1, view.k * factor));
+    view.x = mx - (mx - view.x) * (newK / view.k);
+    view.y = my - (my - view.y) * (newK / view.k);
+    view.k = newK;
+    applyView();
+  }
+
+  /** Smoothly pan so the given table is centered */
+  function centerOn(key: string) {
+    if (!schema) return;
+    const t = schema.tables.find(x => x.key === key);
+    const p = positions.get(key);
+    if (!t || !p) return;
+    const rect = svg.getBoundingClientRect();
+    const targetX = rect.width / 2 - (p.x + BOX_W / 2) * view.k;
+    const targetY = rect.height / 2 - (p.y + boxHeight(t) / 2) * view.k;
+    const fromX = view.x, fromY = view.y;
+    const start = performance.now();
+    const DUR = 350;
+    if (panAnim) cancelAnimationFrame(panAnim);
+    const step = (now: number) => {
+      const raw = Math.min(1, (now - start) / DUR);
+      const ease = 1 - Math.pow(1 - raw, 3); // ease-out cubic
+      view.x = fromX + (targetX - fromX) * ease;
+      view.y = fromY + (targetY - fromY) * ease;
+      applyView();
+      if (raw < 1) panAnim = requestAnimationFrame(step);
+      else panAnim = null;
+    };
+    panAnim = requestAnimationFrame(step);
+  }
+
+  // ---------- Rendering ----------
+  const isFkColumn = (t: ParsedTable, colName: string) =>
+    t.foreignKeys.some(fk => fk.columns.includes(colName.toLowerCase()));
+
+  /** Tables connected to the current selection (for fade/highlight) */
+  function neighborKeys(): Set<string> | null {
+    if (!selection || !schema) return null;
+    const set = new Set<string>([selection.table]);
+    for (const t of schema.tables) {
+      for (const fk of t.foreignKeys) {
+        if (t.key === selection.table) set.add(fk.refTable);
+        if (fk.refTable === selection.table) set.add(t.key);
+      }
+    }
+    return set;
+  }
+
+  function render() {
+    if (!schema) return;
+    canvas.innerHTML = '';
+
+    const edgesGroup = svgEl<SVGGElement>('g');
+    const tablesGroup = svgEl<SVGGElement>('g');
+    canvas.appendChild(edgesGroup);
+    canvas.appendChild(tablesGroup);
+
+    // Tables
+    for (const t of schema.tables) {
+      const p = positions.get(t.key)!;
+      const h = boxHeight(t);
+      const g = svgEl<SVGGElement>('g', { transform: `translate(${p.x},${p.y})`, 'data-table': t.key });
+      (g as any).style.cursor = 'move';
+
+      const isSelected = selection?.table === t.key && selection.kind === 'table';
+
+      const box = svgEl('rect', {
+        width: String(BOX_W), height: String(h), rx: '8',
+        class: `fill-white dark:fill-slate-800 ${isSelected ? 'stroke-indigo-500' : 'stroke-slate-300 dark:stroke-slate-600'}`,
+        'stroke-width': isSelected ? '2.5' : '1.25',
+      });
+      g.appendChild(box);
+
+      const header = svgEl('path', {
+        d: `M 8 0 H ${BOX_W - 8} Q ${BOX_W} 0 ${BOX_W} 8 V ${HEADER_H} H 0 V 8 Q 0 0 8 0 Z`,
+        class: 'fill-indigo-600',
+      });
+      g.appendChild(header);
+
+      const title = svgEl('text', {
+        x: '10', y: String(HEADER_H / 2 + 4),
+        class: 'fill-white',
+        'font-size': '12', 'font-weight': '600', 'font-family': 'ui-monospace, monospace',
+      });
+      title.textContent = t.name.length > 26 ? t.name.slice(0, 25) + '…' : t.name;
+      g.appendChild(title);
+
+      if (effectiveTableComment(t, annotations)) {
+        const dot = svgEl('circle', { cx: String(BOX_W - 12), cy: String(HEADER_H / 2), r: '3.5', class: 'fill-amber-300' });
+        const tip = svgEl('title'); tip.textContent = effectiveTableComment(t, annotations);
+        dot.appendChild(tip);
+        g.appendChild(dot);
+      }
+
+      t.columns.forEach((c, i) => {
+        const y = HEADER_H + i * ROW_H;
+        const rowSelected = selection?.kind === 'column' && selection.table === t.key && selection.column === c.name.toLowerCase();
+        const row = svgEl<SVGGElement>('g', { 'data-table': t.key, 'data-column': c.name.toLowerCase() });
+        (row as any).style.cursor = 'pointer';
+
+        const bg = svgEl('rect', {
+          x: '1', y: String(y), width: String(BOX_W - 2), height: String(ROW_H),
+          class: rowSelected ? 'fill-indigo-100 dark:fill-indigo-500/25' : 'fill-transparent',
+        });
+        row.appendChild(bg);
+
+        const fk = isFkColumn(t, c.name);
+        let xOffset = 10;
+        if (c.isPrimaryKey || fk) {
+          const badge = svgEl('text', {
+            x: String(xOffset), y: String(y + ROW_H / 2 + 3.5),
+            'font-size': '8', 'font-weight': '700',
+            class: c.isPrimaryKey ? 'fill-amber-500' : 'fill-sky-500',
+          });
+          badge.textContent = c.isPrimaryKey ? 'PK' : 'FK';
+          row.appendChild(badge);
+          xOffset += 16;
+        }
+
+        const nameEl = svgEl('text', {
+          x: String(xOffset), y: String(y + ROW_H / 2 + 3.5),
+          'font-size': '11', 'font-family': 'ui-monospace, monospace',
+          class: c.nullable ? 'fill-slate-600 dark:fill-slate-300' : 'fill-slate-800 dark:fill-slate-100',
+          'font-weight': c.isPrimaryKey ? '600' : '400',
+        });
+        const maxName = 17 - (xOffset > 10 ? 2 : 0);
+        nameEl.textContent = c.name.length > maxName ? c.name.slice(0, maxName - 1) + '…' : c.name;
+        row.appendChild(nameEl);
+
+        const typeEl = svgEl('text', {
+          x: String(BOX_W - 10), y: String(y + ROW_H / 2 + 3.5),
+          'font-size': '9', 'text-anchor': 'end', 'font-family': 'ui-monospace, monospace',
+          class: 'fill-slate-400 dark:fill-slate-500',
+        });
+        const shortType = c.type.length > 14 ? c.type.slice(0, 13) + '…' : c.type;
+        typeEl.textContent = shortType.toLowerCase();
+        row.appendChild(typeEl);
+
+        if (effectiveColumnComment(t, c.name, annotations)) {
+          const dot = svgEl('circle', { cx: String(BOX_W - 4), cy: String(y + ROW_H / 2), r: '2.5', class: 'fill-amber-400' });
+          row.appendChild(dot);
+        }
+
+        const tip = svgEl('title');
+        tip.textContent = `${c.name} ${c.type}${c.nullable ? '' : ' NOT NULL'}${effectiveColumnComment(t, c.name, annotations) ? ' — ' + effectiveColumnComment(t, c.name, annotations) : ''}`;
+        row.appendChild(tip);
+
+        g.appendChild(row);
+      });
+
+      tablesGroup.appendChild(g);
+    }
+
+    // Edges (grouped so path + source dot fade/highlight together)
+    const byKey = new Map(schema.tables.map(t => [t.key, t]));
+    for (const t of schema.tables) {
+      for (const fk of t.foreignKeys) {
+        const target = byKey.get(fk.refTable);
+        if (!target) continue;
+
+        const sp = positions.get(t.key)!;
+        const tp = positions.get(target.key)!;
+        const colIdx = t.columns.findIndex(c => fk.columns.includes(c.name.toLowerCase()));
+        const sy = sp.y + (colIdx >= 0 ? HEADER_H + colIdx * ROW_H + ROW_H / 2 : HEADER_H / 2);
+        const ty = tp.y + HEADER_H / 2;
+
+        const sourceRight = tp.x + BOX_W / 2 >= sp.x + BOX_W / 2;
+        const sx = sourceRight ? sp.x + BOX_W : sp.x;
+        const tx = sourceRight ? tp.x : tp.x + BOX_W;
+        const dx = Math.max(35, Math.abs(tx - sx) / 2);
+        const c1x = sourceRight ? sx + dx : sx - dx;
+        const c2x = sourceRight ? tx - dx : tx + dx;
+
+        const eg = svgEl<SVGGElement>('g', {
+          class: 'erd-edge-g',
+          'data-from': t.key,
+          'data-to': target.key,
+        });
+
+        // Invisible fat path to make edges easy to click
+        const hit = svgEl('path', {
+          d: `M ${sx} ${sy} C ${c1x} ${sy}, ${c2x} ${ty}, ${tx} ${ty}`,
+          fill: 'none', stroke: 'transparent', 'stroke-width': '12',
+        });
+        eg.appendChild(hit);
+
+        const path = svgEl('path', {
+          d: `M ${sx} ${sy} C ${c1x} ${sy}, ${c2x} ${ty}, ${tx} ${ty}`,
+          fill: 'none',
+          class: 'erd-edge stroke-slate-300 dark:stroke-slate-600',
+          'stroke-width': '1.5',
+          'marker-end': 'url(#erd-arrow)',
+        });
+        const tip = svgEl('title');
+        tip.textContent = `${t.name}.${fk.columns.join(',')} → ${target.name}${fk.refColumns.length ? '.' + fk.refColumns.join(',') : ''} (click to follow)`;
+        path.appendChild(tip);
+        eg.appendChild(path);
+
+        const dotEl = svgEl('circle', { cx: String(sx), cy: String(sy), r: '3', class: 'fill-slate-300 dark:fill-slate-600' });
+        eg.appendChild(dotEl);
+
+        edgesGroup.appendChild(eg);
+      }
+    }
+
+    applyView();
+    // Apply fade/highlight on the next frame so opacity transitions animate
+    requestAnimationFrame(applyHighlight);
+  }
+
+  function applyHighlight() {
+    const neighbors = neighborKeys();
+    canvas.querySelectorAll<SVGGElement>(':scope > g > g[data-table]').forEach(g => {
+      const key = g.getAttribute('data-table')!;
+      g.classList.toggle('erd-dim', !!neighbors && !neighbors.has(key));
+    });
+    canvas.querySelectorAll<SVGGElement>('.erd-edge-g').forEach(eg => {
+      const from = eg.getAttribute('data-from');
+      const to = eg.getAttribute('data-to');
+      const involved = !!selection && (from === selection.table || to === selection.table);
+      eg.classList.toggle('erd-dim', !!neighbors && !involved);
+      eg.querySelector('.erd-edge')?.classList.toggle('erd-edge-active', involved);
+    });
+  }
+
+  // ---------- Detail panel (floating) ----------
+  function renderDetail() {
+    const panel = $('detail-panel');
+    if (!selection || !schema) {
+      panel.classList.add('hidden');
+      return;
+    }
+    const t = schema.tables.find(x => x.key === selection!.table);
+    if (!t) { panel.classList.add('hidden'); return; }
+    panel.classList.remove('hidden');
+
+    const badges = $('detail-badges');
+    const relations = $('detail-relations');
+    const input = $('annotation-input') as HTMLTextAreaElement;
+    const ddlBtn = $('view-ddl-btn');
+    badges.innerHTML = '';
+    relations.innerHTML = '';
+
+    const badge = (text: string, cls: string) => {
+      const span = document.createElement('span');
+      span.className = `text-[10px] font-semibold px-1.5 py-0.5 rounded ${cls}`;
+      span.textContent = text;
+      badges.appendChild(span);
+    };
+
+    const relationButton = (label: string, gotoKey: string) => {
+      const btn = document.createElement('button');
+      btn.className = 'block w-full text-left text-xs font-mono px-2 py-1 rounded text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors truncate';
+      btn.textContent = label;
+      btn.title = 'Follow relationship';
+      btn.addEventListener('click', () => followTo(gotoKey));
+      return btn;
+    };
+
+    if (selection.kind === 'table') {
+      $('detail-kind').textContent = 'Table';
+      $('detail-title').textContent = t.name;
+      $('detail-subtitle').textContent = `${t.columns.length} columns${t.schema ? ` · schema: ${t.schema}` : ''}`;
+      if (t.primaryKey.length) badge(`PK: ${t.primaryKey.join(', ')}`, 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300');
+      input.value = effectiveTableComment(t, annotations);
+      ddlBtn.classList.remove('hidden');
+
+      const rows: HTMLElement[] = [];
+      for (const fk of t.foreignKeys) {
+        if (schema.tables.some(x => x.key === fk.refTable)) {
+          rows.push(relationButton(`→ ${fk.refTable} (${fk.columns.join(',')})`, fk.refTable));
+        }
+      }
+      for (const other of schema.tables) {
+        for (const fk of other.foreignKeys) {
+          if (fk.refTable === t.key) rows.push(relationButton(`← ${other.name}.${fk.columns.join(',')}`, other.key));
+        }
+      }
+      if (rows.length) {
+        const head = document.createElement('p');
+        head.className = 'text-xs font-medium text-slate-600 dark:text-slate-300 mb-1';
+        head.textContent = 'Relationships — click to follow';
+        relations.appendChild(head);
+        rows.forEach(r => relations.appendChild(r));
+      }
+    } else {
+      const c = t.columns.find(x => x.name.toLowerCase() === selection!.column);
+      if (!c) return;
+      $('detail-kind').textContent = 'Column';
+      $('detail-title').textContent = `${t.name}.${c.name}`;
+      $('detail-subtitle').textContent = c.type + (c.defaultValue ? ` · default ${c.defaultValue}` : '');
+      if (c.isPrimaryKey) badge('PRIMARY KEY', 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300');
+      if (isFkColumn(t, c.name)) badge('FOREIGN KEY', 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300');
+      if (c.isUnique) badge('UNIQUE', 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300');
+      badge(c.nullable ? 'NULLABLE' : 'NOT NULL', 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300');
+      input.value = effectiveColumnComment(t, c.name, annotations);
+      ddlBtn.classList.add('hidden');
+
+      const fk = t.foreignKeys.find(f => f.columns.includes(c.name.toLowerCase()));
+      if (fk && schema.tables.some(x => x.key === fk.refTable)) {
+        const head = document.createElement('p');
+        head.className = 'text-xs font-medium text-slate-600 dark:text-slate-300 mb-1';
+        head.textContent = 'References — click to follow';
+        relations.appendChild(head);
+        relations.appendChild(relationButton(`→ ${fk.refTable}${fk.refColumns.length ? ` (${fk.refColumns.join(',')})` : ''}`, fk.refTable));
+      }
+    }
+  }
+
+  function followTo(key: string) {
+    selection = { kind: 'table', table: key };
+    render();
+    renderDetail();
+    centerOn(key);
+  }
+
+  function clearSelection() {
+    selection = null;
+    render();
+    renderDetail();
+  }
+
+  // ---------- Explore ----------
+  function explore() {
+    const input = ($('ddl-input') as HTMLTextAreaElement).value;
+    const errorBox = $('error-box');
+    const section = $('diagram-section');
+
+    if (!input.trim()) {
+      errorBox.classList.remove('hidden');
+      $('error-text').textContent = 'Paste some DDL first (CREATE TABLE statements), or use Open File.';
+      section.classList.add('hidden');
+      return;
+    }
+
+    const parsed = parseSchema(input);
+    if (!parsed.tables.length) {
+      errorBox.classList.remove('hidden');
+      $('error-text').textContent = 'No CREATE TABLE statements found. Check that your DDL contains table definitions (see "How do I get my DDL?").';
+      section.classList.add('hidden');
+      return;
+    }
+
+    errorBox.classList.add('hidden');
+    schema = parsed;
+    selection = null;
+    loadAnnotations();
+    autoLayout();
+    section.classList.remove('hidden');
+
+    // Reclaim real estate: hide the editor once the diagram is up
+    $('input-card').classList.add('hidden');
+
+    const nFks = parsed.tables.reduce((s, t) => s + t.foreignKeys.filter(fk => parsed.tables.some(x => x.key === fk.refTable)).length, 0);
+    $('schema-stats').textContent = `${parsed.tables.length} tables · ${nFks} relationships`;
+
+    const wToggle = $('warnings-toggle');
+    const wPanel = $('warnings-panel');
+    if (parsed.warnings.length) {
+      wToggle.classList.remove('hidden');
+      wToggle.textContent = `${parsed.warnings.length} warning${parsed.warnings.length > 1 ? 's' : ''}`;
+      wPanel.innerHTML = parsed.warnings.map(w => `<p>• ${w.replace(/</g, '&lt;')}</p>`).join('');
+    } else {
+      wToggle.classList.add('hidden');
+      wPanel.classList.add('hidden');
+    }
+
+    render();
+    renderDetail();
+    requestAnimationFrame(fitToView);
+  }
+
+  // ---------- Interaction: drag / pan / zoom / select ----------
+  let drag: { mode: 'pan' | 'table'; key?: string; startX: number; startY: number; origX: number; origY: number; moved: boolean } | null = null;
+
+  svg.addEventListener('pointerdown', (e) => {
+    const target = e.target as Element;
+    if (target.closest('.erd-edge-g')) return; // edge clicks handled on pointerup, no drag
+    const tableG = target.closest('[data-table]') as SVGGElement | null;
+    svg.setPointerCapture(e.pointerId);
+    if (tableG) {
+      const key = tableG.getAttribute('data-table')!;
+      const p = positions.get(key)!;
+      drag = { mode: 'table', key, startX: e.clientX, startY: e.clientY, origX: p.x, origY: p.y, moved: false };
+    } else {
+      drag = { mode: 'pan', startX: e.clientX, startY: e.clientY, origX: view.x, origY: view.y, moved: false };
+      (svg as any).style.cursor = 'grabbing';
+    }
+  });
+
+  svg.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+    if (!drag.moved) return;
+    if (drag.mode === 'pan') {
+      view.x = drag.origX + dx;
+      view.y = drag.origY + dy;
+      applyView();
+    } else if (drag.key) {
+      positions.set(drag.key, { x: drag.origX + dx / view.k, y: drag.origY + dy / view.k });
+      render();
+    }
+  });
+
+  svg.addEventListener('pointerup', (e) => {
+    const wasDrag = drag?.moved;
+    const mode = drag?.mode;
+    drag = null;
+    (svg as any).style.cursor = 'grab';
+    if (wasDrag) return;
+
+    const target = e.target as Element;
+
+    // Follow an edge: jump to whichever end isn't currently selected
+    const edgeG = target.closest('.erd-edge-g');
+    if (edgeG) {
+      const from = edgeG.getAttribute('data-from')!;
+      const to = edgeG.getAttribute('data-to')!;
+      followTo(selection?.table === to ? from : to);
+      return;
+    }
+
+    const colG = target.closest('[data-column]');
+    const tableG = target.closest('g[data-table]');
+    if (colG) {
+      selection = { kind: 'column', table: colG.getAttribute('data-table')!, column: colG.getAttribute('data-column')! };
+    } else if (tableG) {
+      selection = { kind: 'table', table: tableG.getAttribute('data-table')! };
+    } else if (mode === 'pan') {
+      selection = null;
+    }
+    render();
+    renderDetail();
+  });
+
+  // Natural scrolling: wheel/trackpad pans; pinch (ctrl) or ⌘+wheel zooms
+  svg.addEventListener('wheel', (e) => {
+    if (!schema) return;
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) {
+      const factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+      const rect = svg.getBoundingClientRect();
+      zoomBy(factor, e.clientX - rect.left, e.clientY - rect.top);
+    } else {
+      view.x -= e.deltaX;
+      view.y -= e.deltaY;
+      applyView();
+    }
+  }, { passive: false });
+
+  // Keyboard: ⌘/Ctrl +/−/0 zoom the diagram instead of the page
+  document.addEventListener('keydown', (e) => {
+    const target = e.target as HTMLElement;
+    const typing = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
+    if ((e.metaKey || e.ctrlKey) && schema && !$('diagram-section').classList.contains('hidden') && !typing) {
+      if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomBy(1.25); return; }
+      if (e.key === '-') { e.preventDefault(); zoomBy(1 / 1.25); return; }
+      if (e.key === '0') { e.preventDefault(); fitToView(); return; }
+    }
+
+    if (e.key === 'Escape' && !typing) {
+      // Priority: modals > detail panel > focus mode
+      if (!$('ddl-modal').classList.contains('hidden')) { $('ddl-modal').classList.add('hidden'); return; }
+      if (!$('export-modal').classList.contains('hidden')) { $('export-modal').classList.add('hidden'); return; }
+      if (selection) { clearSelection(); return; }
+      if (focusMode) { toggleFocus(); return; }
+    }
+  });
+
+  // ---------- Annotation input ----------
+  $('annotation-input').addEventListener('input', (e) => {
+    if (!selection || !schema) return;
+    const value = (e.target as HTMLTextAreaElement).value;
+    if (selection.kind === 'table') {
+      if (value) annotations.tables[selection.table] = value;
+      else delete annotations.tables[selection.table];
+    } else {
+      const key = `${selection.table}.${selection.column}`;
+      if (value) annotations.columns[key] = value;
+      else delete annotations.columns[key];
+    }
+    saveAnnotations();
+    render();
+  });
+
+  $('detail-close').addEventListener('click', clearSelection);
+
+  // ---------- Table DDL modal ----------
+  $('view-ddl-btn').addEventListener('click', () => {
+    if (!selection || !schema) return;
+    const t = schema.tables.find(x => x.key === selection!.table);
+    if (!t) return;
+    $('ddl-modal-title').textContent = `DDL — ${t.name}`;
+    $('ddl-output').textContent = t.ddl.length ? t.ddl.join('\n\n') : '-- No source statements captured for this table.';
+    $('ddl-modal').classList.remove('hidden');
+  });
+  $('ddl-close').addEventListener('click', () => $('ddl-modal').classList.add('hidden'));
+  $('ddl-modal').addEventListener('click', (e) => { if (e.target === $('ddl-modal')) $('ddl-modal').classList.add('hidden'); });
+  $('ddl-copy').addEventListener('click', async () => {
+    await navigator.clipboard.writeText($('ddl-output').textContent || '');
+    const btn = $('ddl-copy');
+    const old = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  });
+
+  // ---------- Focus mode ----------
+  function toggleFocus() {
+    focusMode = !focusMode;
+    $('diagram-card').classList.toggle('erd-focus', focusMode);
+    document.body.style.overflow = focusMode ? 'hidden' : '';
+    $('focus-expand-icon').classList.toggle('hidden', focusMode);
+    $('focus-compress-icon').classList.toggle('hidden', !focusMode);
+    requestAnimationFrame(fitToView);
+  }
+  $('focus-btn').addEventListener('click', toggleFocus);
+
+  // ---------- Toolbar ----------
+  $('explore-btn').addEventListener('click', explore);
+  $('ddl-toggle').addEventListener('click', () => {
+    const card = $('input-card');
+    const nowHidden = card.classList.toggle('hidden');
+    if (!nowHidden && !focusMode) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!nowHidden && focusMode) toggleFocus(); // editor lives outside the focus card
+  });
+  $('clear-btn').addEventListener('click', () => {
+    ($('ddl-input') as HTMLTextAreaElement).value = '';
+    $('diagram-section').classList.add('hidden');
+    $('error-box').classList.add('hidden');
+    if (focusMode) toggleFocus();
+    schema = null;
+  });
+  $('howto-toggle').addEventListener('click', () => $('howto-panel').classList.toggle('hidden'));
+  $('warnings-toggle').addEventListener('click', () => $('warnings-panel').classList.toggle('hidden'));
+  $('zoom-in-btn').addEventListener('click', () => zoomBy(1.25));
+  $('zoom-out-btn').addEventListener('click', () => zoomBy(1 / 1.25));
+  $('zoom-fit-btn').addEventListener('click', fitToView);
+  $('arrange-btn').addEventListener('click', () => { autoLayout(); render(); fitToView(); });
+
+  // ---------- Open file ----------
+  $('open-file-btn').addEventListener('click', () => ($('file-input') as HTMLInputElement).click());
+  $('file-input').addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      ($('ddl-input') as HTMLTextAreaElement).value = String(reader.result || '');
+      ($('file-input') as HTMLInputElement).value = '';
+      explore();
+    };
+    reader.readAsText(file);
+  });
+
+  // ---------- Export ----------
+  const exportModal = $('export-modal');
+  const exportOutput = $('export-output');
+  const dialectSelect = $('export-dialect') as HTMLSelectElement;
+
+  function renderExport() {
+    if (!schema) return;
+    dialectSelect.classList.toggle('hidden', exportFormat !== 'sql');
+    document.querySelectorAll('.export-tab').forEach(tab => {
+      const active = (tab as HTMLElement).dataset.format === exportFormat;
+      tab.className = `export-tab px-3 py-1.5 ${active
+        ? 'bg-indigo-600 text-white'
+        : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700'}`;
+    });
+    if (exportFormat === 'markdown') exportOutput.textContent = toMarkdown(schema, annotations);
+    else if (exportFormat === 'mermaid') exportOutput.textContent = toMermaid(schema, annotations);
+    else if (exportFormat === 'sql') exportOutput.textContent = toCommentSql(schema, annotations, dialectSelect.value as CommentDialect);
+    else exportOutput.textContent = toJson(schema, annotations);
+  }
+
+  $('export-btn').addEventListener('click', () => { exportModal.classList.remove('hidden'); renderExport(); });
+  $('export-close').addEventListener('click', () => exportModal.classList.add('hidden'));
+  exportModal.addEventListener('click', (e) => { if (e.target === exportModal) exportModal.classList.add('hidden'); });
+  document.querySelectorAll('.export-tab').forEach(tab => {
+    tab.addEventListener('click', () => { exportFormat = (tab as HTMLElement).dataset.format!; renderExport(); });
+  });
+  dialectSelect.addEventListener('change', renderExport);
+
+  $('export-copy').addEventListener('click', async () => {
+    await navigator.clipboard.writeText(exportOutput.textContent || '');
+    const btn = $('export-copy');
+    const old = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.textContent = old; }, 1500);
+  });
+
+  $('export-download').addEventListener('click', () => {
+    const ext = exportFormat === 'markdown' ? 'md' : exportFormat === 'mermaid' ? 'mmd' : exportFormat === 'sql' ? 'sql' : 'json';
+    const blob = new Blob([exportOutput.textContent || ''], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `schema-docs.${ext}`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // ---------- Sample ----------
+  const SAMPLE = `-- Sample e-commerce schema (PostgreSQL flavor)
+CREATE TABLE customers (
+  id           BIGSERIAL PRIMARY KEY,
+  email        VARCHAR(255) NOT NULL UNIQUE,
+  full_name    VARCHAR(120) NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+COMMENT ON TABLE customers IS 'Registered shoppers';
+COMMENT ON COLUMN customers.email IS 'Login identifier, verified via magic link';
+
+CREATE TABLE categories (
+  id         SERIAL PRIMARY KEY,
+  parent_id  INT REFERENCES categories (id),
+  name       VARCHAR(80) NOT NULL
+);
+
+CREATE TABLE products (
+  id           BIGSERIAL PRIMARY KEY,
+  category_id  INT NOT NULL REFERENCES categories (id),
+  sku          VARCHAR(40) NOT NULL UNIQUE,
+  title        VARCHAR(200) NOT NULL,
+  price_cents  INT NOT NULL,
+  active       BOOLEAN NOT NULL DEFAULT true
+);
+COMMENT ON COLUMN products.price_cents IS 'Always stored in cents to avoid float rounding';
+CREATE INDEX idx_products_category ON products (category_id);
+
+CREATE TABLE orders (
+  id           BIGSERIAL PRIMARY KEY,
+  customer_id  BIGINT NOT NULL,
+  status       VARCHAR(20) NOT NULL DEFAULT 'pending',
+  placed_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+ALTER TABLE orders ADD CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES customers (id);
+
+CREATE TABLE order_items (
+  order_id    BIGINT NOT NULL REFERENCES orders (id),
+  product_id  BIGINT NOT NULL REFERENCES products (id),
+  quantity    INT NOT NULL DEFAULT 1,
+  unit_price_cents INT NOT NULL,
+  PRIMARY KEY (order_id, product_id)
+);
+
+CREATE TABLE payments (
+  id          BIGSERIAL PRIMARY KEY,
+  order_id    BIGINT NOT NULL REFERENCES orders (id),
+  provider    VARCHAR(30) NOT NULL,
+  amount_cents INT NOT NULL,
+  captured_at TIMESTAMPTZ
+);
+COMMENT ON TABLE payments IS 'One row per payment attempt; captured_at is null until settled';`;
+
+  $('sample-btn').addEventListener('click', () => {
+    ($('ddl-input') as HTMLTextAreaElement).value = SAMPLE;
+    explore();
+  });
+
+  // ---------- Share integration ----------
+  ShareManager.register({
+    tool: 'schema-explorer',
+    actions: { explore },
+  });
+</script>

@@ -1,0 +1,776 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Text Extractor - Data Extraction Pipeline"
+  description="Extract patterns from text using chainable operations. Build extraction pipelines with regex, split, filter, and transform operations. Free online text processing tool."
+  keywords="text extractor, data extraction, regex extraction, text pipeline, pattern extraction, text processing, extract data from text, text transformation"
+  breadcrumb={[{ name: "Text Tools", href: "/text-tools" }, { name: "Text Extractor" }]}
+  toolId="text-extractor"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Text Extractor Pipeline</h1>
+
+    <div class="grid lg:grid-cols-2 gap-4">
+      <!-- Input -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex items-center justify-between mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Input</label>
+          <div class="flex gap-2">
+            <button id="input-text-btn" class="px-2 py-1 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200">Text</button>
+            <button id="input-file-btn" class="px-2 py-1 text-xs rounded bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-gray-200">File</button>
+          </div>
+        </div>
+        <div id="text-input-area">
+          <textarea id="input" data-share-key="input" class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none" placeholder="Enter text to process..."></textarea>
+        </div>
+        <div id="file-input-area" class="hidden">
+          <div class="h-48 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg flex flex-col items-center justify-center">
+            <input type="file" id="file-input" class="hidden" />
+            <label for="file-input" class="cursor-pointer text-center">
+              <div class="text-3xl text-gray-400 mb-2">📄</div>
+              <div class="text-sm text-gray-600 dark:text-slate-300">Click to select file</div>
+              <div class="text-xs text-gray-400 dark:text-slate-500 mt-1">or drag and drop</div>
+            </label>
+            <div id="file-info" class="hidden mt-3 text-sm text-gray-600 dark:text-slate-300"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Output -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <div class="flex justify-between items-center mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-200">Output <span id="output-count" class="text-gray-400 dark:text-slate-500 font-normal"></span></label>
+          <button id="copy-btn" class="text-sm text-indigo-600 hover:text-indigo-800">Copy</button>
+        </div>
+        <textarea id="output" readonly class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none" placeholder="Result..."></textarea>
+      </div>
+    </div>
+
+    <!-- Pipeline -->
+    <div class="mt-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-sm font-medium text-gray-700 dark:text-slate-200">Pipeline</h2>
+        <div class="flex gap-2">
+          <button id="run-btn" class="px-4 py-1.5 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm font-medium">Run Pipeline</button>
+          <button id="clear-pipeline-btn" class="px-4 py-1.5 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded hover:bg-gray-300 text-sm">Clear All</button>
+        </div>
+      </div>
+
+      <div id="pipeline" class="space-y-2 mb-4">
+        <!-- Operations will be added here -->
+      </div>
+
+      <div class="flex flex-wrap gap-2 pt-4 border-t border-gray-200 dark:border-slate-700">
+        <span class="text-xs text-gray-500 dark:text-slate-400 self-center mr-2">Add:</span>
+        <button data-op="delimiters" class="add-op-btn px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">Between Delimiters</button>
+        <button data-op="regex" class="add-op-btn px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200">Regex</button>
+        <button data-op="pattern" class="add-op-btn px-3 py-1 bg-green-100 text-green-700 rounded text-xs hover:bg-green-200">Pattern (Email/URL/IP)</button>
+        <button data-op="lines-containing" class="add-op-btn px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-xs hover:bg-yellow-200">Lines Containing</button>
+        <button data-op="lines-not-containing" class="add-op-btn px-3 py-1 bg-yellow-100 text-yellow-700 rounded text-xs hover:bg-yellow-200">Lines Not Containing</button>
+        <button data-op="split-select" class="add-op-btn px-3 py-1 bg-purple-100 text-purple-700 rounded text-xs hover:bg-purple-200">Split & Select</button>
+        <button data-op="replace" class="add-op-btn px-3 py-1 bg-pink-100 text-pink-700 rounded text-xs hover:bg-pink-200">Replace</button>
+        <button data-op="take" class="add-op-btn px-3 py-1 bg-orange-100 text-orange-700 rounded text-xs hover:bg-orange-200">Take First/Last N</button>
+        <button data-op="transform" class="add-op-btn px-3 py-1 bg-teal-100 text-teal-700 rounded text-xs hover:bg-teal-200">Transform</button>
+        <button data-op="wrap" class="add-op-btn px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-xs hover:bg-indigo-200">Wrap (Prepend/Append)</button>
+        <button data-op="dedupe" class="add-op-btn px-3 py-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded text-xs hover:bg-gray-200 dark:bg-slate-600">Dedupe</button>
+        <button data-op="sort" class="add-op-btn px-3 py-1 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded text-xs hover:bg-gray-200 dark:bg-slate-600">Sort</button>
+        <button data-op="join" class="add-op-btn px-3 py-1 bg-indigo-100 text-indigo-700 rounded text-xs hover:bg-indigo-200">Join Lines</button>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Text Extraction Pipeline</h2>
+      <p class="text-gray-600 dark:text-slate-300">Chain multiple operations to extract and transform text. Each operation's output becomes the next operation's input.</p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const outputCount = document.getElementById('output-count');
+  const pipeline = document.getElementById('pipeline');
+
+  // File input elements
+  const inputTextBtn = document.getElementById('input-text-btn') as HTMLButtonElement;
+  const inputFileBtn = document.getElementById('input-file-btn') as HTMLButtonElement;
+  const textInputArea = document.getElementById('text-input-area');
+  const fileInputArea = document.getElementById('file-input-area');
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const fileInfo = document.getElementById('file-info');
+
+  interface Operation {
+    id: string;
+    type: string;
+    config: Record<string, string>;
+  }
+
+  let operations: Operation[] = [];
+  let opCounter = 0;
+  let inputMode: 'text' | 'file' = 'text';
+  let selectedFile: File | null = null;
+  let fileContent: string = '';
+
+  // Operation definitions
+  const opConfigs: Record<string, { label: string; fields: Array<{ key: string; label: string; placeholder: string; type?: string; options?: Array<{ value: string; label: string }> }> }> = {
+    'delimiters': {
+      label: 'Between Delimiters',
+      fields: [
+        { key: 'start', label: 'Start', placeholder: 'e.g., <td>' },
+        { key: 'end', label: 'End', placeholder: 'e.g., </td>' }
+      ]
+    },
+    'regex': {
+      label: 'Regex Extract',
+      fields: [
+        { key: 'pattern', label: 'Pattern', placeholder: 'e.g., id="(\\d+)"' },
+        { key: 'group', label: 'Group', placeholder: '0 = full match, 1+ = groups' }
+      ]
+    },
+    'pattern': {
+      label: 'Common Pattern',
+      fields: [
+        { key: 'type', label: 'Type', type: 'select', placeholder: '', options: [
+          { value: 'email', label: 'Email addresses' },
+          { value: 'url', label: 'URLs' },
+          { value: 'ipv4', label: 'IPv4 addresses' },
+          { value: 'ipv6', label: 'IPv6 addresses' },
+          { value: 'phone', label: 'Phone numbers' },
+          { value: 'number', label: 'Numbers' },
+          { value: 'word', label: 'Words' },
+          { value: 'hex', label: 'Hex values' }
+        ]}
+      ]
+    },
+    'lines-containing': {
+      label: 'Lines Containing',
+      fields: [
+        { key: 'text', label: 'Text', placeholder: 'Text to match' },
+        { key: 'caseSensitive', label: 'Case sensitive', type: 'checkbox', placeholder: '' }
+      ]
+    },
+    'lines-not-containing': {
+      label: 'Lines Not Containing',
+      fields: [
+        { key: 'text', label: 'Text', placeholder: 'Text to exclude' },
+        { key: 'caseSensitive', label: 'Case sensitive', type: 'checkbox', placeholder: '' }
+      ]
+    },
+    'split-select': {
+      label: 'Split & Select',
+      fields: [
+        { key: 'delimiter', label: 'Delimiter', placeholder: 'e.g., , or :' },
+        { key: 'index', label: 'Index', placeholder: '0, 1, 2... or -1 for last' }
+      ]
+    },
+    'replace': {
+      label: 'Replace',
+      fields: [
+        { key: 'find', label: 'Find', placeholder: 'Text or regex' },
+        { key: 'replace', label: 'Replace', placeholder: 'Replacement' },
+        { key: 'isRegex', label: 'Regex', type: 'checkbox', placeholder: '' }
+      ]
+    },
+    'take': {
+      label: 'Take First/Last N',
+      fields: [
+        { key: 'position', label: 'Position', type: 'select', placeholder: '', options: [
+          { value: 'first', label: 'First N lines' },
+          { value: 'last', label: 'Last N lines' }
+        ]},
+        { key: 'count', label: 'Count', placeholder: 'Number of lines' }
+      ]
+    },
+    'transform': {
+      label: 'Transform',
+      fields: [
+        { key: 'type', label: 'Type', type: 'select', placeholder: '', options: [
+          { value: 'trim', label: 'Trim whitespace' },
+          { value: 'uppercase', label: 'UPPERCASE' },
+          { value: 'lowercase', label: 'lowercase' },
+          { value: 'reverse-lines', label: 'Reverse line order' },
+          { value: 'reverse-chars', label: 'Reverse characters' },
+          { value: 'remove-empty', label: 'Remove empty lines' }
+        ]}
+      ]
+    },
+    'dedupe': {
+      label: 'Deduplicate',
+      fields: [
+        { key: 'caseSensitive', label: 'Case sensitive', type: 'checkbox', placeholder: '' }
+      ]
+    },
+    'sort': {
+      label: 'Sort',
+      fields: [
+        { key: 'order', label: 'Order', type: 'select', placeholder: '', options: [
+          { value: 'asc', label: 'A → Z' },
+          { value: 'desc', label: 'Z → A' },
+          { value: 'numeric-asc', label: '1 → 9' },
+          { value: 'numeric-desc', label: '9 → 1' }
+        ]}
+      ]
+    },
+    'wrap': {
+      label: 'Wrap (Prepend/Append)',
+      fields: [
+        { key: 'prepend', label: 'Prepend', placeholder: 'e.g., "' },
+        { key: 'append', label: 'Append', placeholder: 'e.g., ",' }
+      ]
+    },
+    'join': {
+      label: 'Join Lines',
+      fields: [
+        { key: 'separator', label: 'Separator', type: 'select', placeholder: '', options: [
+          { value: ', ', label: 'Comma (,)' },
+          { value: '; ', label: 'Semicolon (;)' },
+          { value: ' ', label: 'Space' },
+          { value: '\t', label: 'Tab' },
+          { value: '\\n', label: 'Newline' },
+          { value: 'custom', label: 'Custom...' }
+        ]},
+        { key: 'customSep', label: 'Custom', placeholder: 'e.g., |' }
+      ]
+    }
+  };
+
+  // Patterns for common extractions
+  const patterns: Record<string, RegExp> = {
+    email: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+    url: /https?:\/\/[^\s<>"{}|\\^`\[\]]+/g,
+    ipv4: /\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g,
+    ipv6: /(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}/g,
+    phone: /(?:\+?1[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?)?\d{3}[-.\s]?\d{4}/g,
+    number: /-?\d+\.?\d*/g,
+    word: /\b[a-zA-Z]+\b/g,
+    hex: /(?:0x)?[0-9a-fA-F]+/g
+  };
+
+  function addOperation(type: string) {
+    const id = `op-${opCounter++}`;
+    const config: Record<string, string> = {};
+
+    // Set defaults
+    opConfigs[type].fields.forEach(f => {
+      if (f.type === 'select' && f.options) {
+        config[f.key] = f.options[0].value;
+      } else if (f.type === 'checkbox') {
+        config[f.key] = 'false';
+      } else {
+        config[f.key] = '';
+      }
+    });
+
+    operations.push({ id, type, config });
+    renderPipeline();
+  }
+
+  function removeOperation(id: string) {
+    operations = operations.filter(op => op.id !== id);
+    renderPipeline();
+    runPipeline();
+  }
+
+  function moveOperation(id: string, direction: 'up' | 'down') {
+    const idx = operations.findIndex(op => op.id === id);
+    if (direction === 'up' && idx > 0) {
+      [operations[idx - 1], operations[idx]] = [operations[idx], operations[idx - 1]];
+    } else if (direction === 'down' && idx < operations.length - 1) {
+      [operations[idx], operations[idx + 1]] = [operations[idx + 1], operations[idx]];
+    }
+    renderPipeline();
+    runPipeline();
+  }
+
+  function renderPipeline() {
+    if (operations.length === 0) {
+      pipeline.innerHTML = '<div class="text-sm text-gray-400 dark:text-slate-500 italic py-4 text-center">No operations added. Click buttons below to add operations to the pipeline.</div>';
+      return;
+    }
+
+    pipeline.innerHTML = operations.map((op, idx) => {
+      const config = opConfigs[op.type];
+      const fieldsHtml = config.fields.map(f => {
+        if (f.type === 'select') {
+          const optionsHtml = f.options!.map(o =>
+            `<option value="${o.value}" ${op.config[f.key] === o.value ? 'selected' : ''}>${o.label}</option>`
+          ).join('');
+          return `
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-gray-500 dark:text-slate-400 w-16">${f.label}</label>
+              <select data-id="${op.id}" data-key="${f.key}" class="op-input flex-1 px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm">
+                ${optionsHtml}
+              </select>
+            </div>
+          `;
+        } else if (f.type === 'checkbox') {
+          return `
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" data-id="${op.id}" data-key="${f.key}" class="op-checkbox w-4 h-4" ${op.config[f.key] === 'true' ? 'checked' : ''}>
+              <span class="text-xs text-gray-600 dark:text-slate-300">${f.label}</span>
+            </label>
+          `;
+        } else {
+          return `
+            <div class="flex items-center gap-2">
+              <label class="text-xs text-gray-500 dark:text-slate-400 w-16">${f.label}</label>
+              <input type="text" data-id="${op.id}" data-key="${f.key}" value="${escapeAttr(op.config[f.key])}" placeholder="${f.placeholder}" class="op-input flex-1 px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm font-mono">
+            </div>
+          `;
+        }
+      }).join('');
+
+      return `
+        <div class="flex items-start gap-2 p-3 bg-gray-50 dark:bg-slate-900 rounded border border-gray-200 dark:border-slate-700" data-op-id="${op.id}">
+          <div class="flex flex-col gap-1">
+            <button data-move-up="${op.id}" class="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:text-slate-300 ${idx === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${idx === 0 ? 'disabled' : ''}>▲</button>
+            <button data-move-down="${op.id}" class="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:text-slate-300 ${idx === operations.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${idx === operations.length - 1 ? 'disabled' : ''}>▼</button>
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-xs font-medium text-gray-700 dark:text-slate-200 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border">${idx + 1}</span>
+              <span class="text-sm font-medium text-gray-800 dark:text-slate-100">${config.label}</span>
+            </div>
+            <div class="grid gap-2 sm:grid-cols-2">
+              ${fieldsHtml}
+            </div>
+          </div>
+          <button data-remove="${op.id}" class="text-red-400 hover:text-red-600 p-1">✕</button>
+        </div>
+      `;
+    }).join('');
+
+    // Attach event listeners
+    pipeline.querySelectorAll('.op-input').forEach(el => {
+      el.addEventListener('change', handleConfigChange);
+      el.addEventListener('input', handleConfigChange);
+    });
+    pipeline.querySelectorAll('.op-checkbox').forEach(el => {
+      el.addEventListener('change', handleCheckboxChange);
+    });
+    pipeline.querySelectorAll('[data-remove]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = (e.currentTarget as HTMLElement).dataset.remove!;
+        removeOperation(id);
+      });
+    });
+    pipeline.querySelectorAll('[data-move-up]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = (e.currentTarget as HTMLElement).dataset.moveUp!;
+        moveOperation(id, 'up');
+      });
+    });
+    pipeline.querySelectorAll('[data-move-down]').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = (e.currentTarget as HTMLElement).dataset.moveDown!;
+        moveOperation(id, 'down');
+      });
+    });
+  }
+
+  function escapeAttr(s: string): string {
+    return s.replace(/"/g, '&quot;');
+  }
+
+  function handleConfigChange(e: Event) {
+    const el = e.target as HTMLInputElement | HTMLSelectElement;
+    const id = el.dataset.id!;
+    const key = el.dataset.key!;
+    const op = operations.find(o => o.id === id);
+    if (op) {
+      op.config[key] = el.value;
+      runPipeline();
+    }
+  }
+
+  function handleCheckboxChange(e: Event) {
+    const el = e.target as HTMLInputElement;
+    const id = el.dataset.id!;
+    const key = el.dataset.key!;
+    const op = operations.find(o => o.id === id);
+    if (op) {
+      op.config[key] = el.checked ? 'true' : 'false';
+      runPipeline();
+    }
+  }
+
+  function runPipeline() {
+    const inputText = inputMode === 'file' ? fileContent : input.value;
+    let data = inputText;
+    let lines = data.split('\n');
+
+    for (const op of operations) {
+      try {
+        switch (op.type) {
+          case 'delimiters': {
+            const results: string[] = [];
+            const start = op.config.start;
+            const end = op.config.end;
+            if (!start || !end) break;
+            let idx = 0;
+            while (true) {
+              const startIdx = data.indexOf(start, idx);
+              if (startIdx === -1) break;
+              const valueStart = startIdx + start.length;
+              const endIdx = data.indexOf(end, valueStart);
+              if (endIdx === -1) break;
+              results.push(data.substring(valueStart, endIdx));
+              idx = endIdx + end.length;
+            }
+            lines = results;
+            data = lines.join('\n');
+            break;
+          }
+
+          case 'regex': {
+            const pattern = op.config.pattern;
+            if (!pattern) break;
+            const group = parseInt(op.config.group || '0', 10);
+            const regex = new RegExp(pattern, 'g');
+            const results: string[] = [];
+            let match;
+            while ((match = regex.exec(data)) !== null) {
+              if (group === 0) {
+                results.push(match[0]);
+              } else if (match[group] !== undefined) {
+                results.push(match[group]);
+              }
+            }
+            lines = results;
+            data = lines.join('\n');
+            break;
+          }
+
+          case 'pattern': {
+            const patternType = op.config.type;
+            const regex = patterns[patternType];
+            if (regex) {
+              const results = data.match(regex) || [];
+              lines = results;
+              data = lines.join('\n');
+            }
+            break;
+          }
+
+          case 'lines-containing': {
+            const text = op.config.text;
+            if (!text) break;
+            const caseSensitive = op.config.caseSensitive === 'true';
+            lines = lines.filter(line =>
+              caseSensitive ? line.includes(text) : line.toLowerCase().includes(text.toLowerCase())
+            );
+            data = lines.join('\n');
+            break;
+          }
+
+          case 'lines-not-containing': {
+            const text = op.config.text;
+            if (!text) break;
+            const caseSensitive = op.config.caseSensitive === 'true';
+            lines = lines.filter(line =>
+              caseSensitive ? !line.includes(text) : !line.toLowerCase().includes(text.toLowerCase())
+            );
+            data = lines.join('\n');
+            break;
+          }
+
+          case 'split-select': {
+            const delimiter = op.config.delimiter;
+            const index = parseInt(op.config.index || '0', 10);
+            if (!delimiter) break;
+            lines = lines.map(line => {
+              const parts = line.split(delimiter);
+              const idx = index < 0 ? parts.length + index : index;
+              return parts[idx] ?? '';
+            }).filter(l => l !== '');
+            data = lines.join('\n');
+            break;
+          }
+
+          case 'replace': {
+            const find = op.config.find;
+            const replace = op.config.replace || '';
+            const isRegex = op.config.isRegex === 'true';
+            if (!find) break;
+            if (isRegex) {
+              const regex = new RegExp(find, 'g');
+              data = data.replace(regex, replace);
+            } else {
+              data = data.split(find).join(replace);
+            }
+            lines = data.split('\n');
+            break;
+          }
+
+          case 'take': {
+            const position = op.config.position;
+            const count = parseInt(op.config.count || '10', 10);
+            if (position === 'first') {
+              lines = lines.slice(0, count);
+            } else {
+              lines = lines.slice(-count);
+            }
+            data = lines.join('\n');
+            break;
+          }
+
+          case 'transform': {
+            const type = op.config.type;
+            switch (type) {
+              case 'trim':
+                lines = lines.map(l => l.trim());
+                break;
+              case 'uppercase':
+                lines = lines.map(l => l.toUpperCase());
+                break;
+              case 'lowercase':
+                lines = lines.map(l => l.toLowerCase());
+                break;
+              case 'reverse-lines':
+                lines = lines.reverse();
+                break;
+              case 'reverse-chars':
+                lines = lines.map(l => l.split('').reverse().join(''));
+                break;
+              case 'remove-empty':
+                lines = lines.filter(l => l.trim() !== '');
+                break;
+            }
+            data = lines.join('\n');
+            break;
+          }
+
+          case 'dedupe': {
+            const caseSensitive = op.config.caseSensitive === 'true';
+            if (caseSensitive) {
+              lines = [...new Set(lines)];
+            } else {
+              const seen = new Set<string>();
+              lines = lines.filter(l => {
+                const lower = l.toLowerCase();
+                if (seen.has(lower)) return false;
+                seen.add(lower);
+                return true;
+              });
+            }
+            data = lines.join('\n');
+            break;
+          }
+
+          case 'sort': {
+            const order = op.config.order;
+            switch (order) {
+              case 'asc':
+                lines.sort((a, b) => a.localeCompare(b));
+                break;
+              case 'desc':
+                lines.sort((a, b) => b.localeCompare(a));
+                break;
+              case 'numeric-asc':
+                lines.sort((a, b) => parseFloat(a) - parseFloat(b));
+                break;
+              case 'numeric-desc':
+                lines.sort((a, b) => parseFloat(b) - parseFloat(a));
+                break;
+            }
+            data = lines.join('\n');
+            break;
+          }
+
+          case 'wrap': {
+            const prepend = op.config.prepend || '';
+            const append = op.config.append || '';
+            lines = lines.map(line => prepend + line + append);
+            data = lines.join('\n');
+            break;
+          }
+
+          case 'join': {
+            let separator = op.config.separator;
+            if (separator === 'custom') {
+              separator = op.config.customSep || '';
+            } else if (separator === '\\n') {
+              separator = '\n';
+            }
+            data = lines.join(separator);
+            lines = [data];
+            break;
+          }
+        }
+      } catch (err) {
+        console.error(`Error in operation ${op.type}:`, err);
+      }
+    }
+
+    output.value = data;
+    outputCount.textContent = lines.length > 0 && data ? `(${lines.filter(l => l).length} lines)` : '';
+  }
+
+  // Add operation buttons
+  document.querySelectorAll('.add-op-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const op = (btn as HTMLElement).dataset.op!;
+      addOperation(op);
+      runPipeline();
+    });
+  });
+
+  // Run button
+  document.getElementById('run-btn').addEventListener('click', runPipeline);
+
+  // Clear pipeline
+  document.getElementById('clear-pipeline-btn').addEventListener('click', () => {
+    operations = [];
+    renderPipeline();
+    output.value = '';
+    outputCount.textContent = '';
+  });
+
+  // Copy button
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(output.value);
+  });
+
+  // Auto-run on input change
+  input.addEventListener('input', runPipeline);
+
+  // Input mode switching
+  inputTextBtn.addEventListener('click', () => {
+    inputMode = 'text';
+    inputTextBtn.classList.replace('bg-gray-100', 'bg-indigo-100');
+    inputTextBtn.classList.replace('text-gray-600', 'text-indigo-700');
+    inputTextBtn.classList.add('dark:bg-indigo-900', 'dark:text-indigo-200');
+    inputTextBtn.classList.remove('dark:bg-slate-700', 'dark:text-slate-300');
+    inputFileBtn.classList.replace('bg-indigo-100', 'bg-gray-100');
+    inputFileBtn.classList.replace('text-indigo-700', 'text-gray-600');
+    inputFileBtn.classList.remove('dark:bg-indigo-900', 'dark:text-indigo-200');
+    inputFileBtn.classList.add('dark:bg-slate-700', 'dark:text-slate-300');
+    textInputArea.classList.remove('hidden');
+    fileInputArea.classList.add('hidden');
+    runPipeline();
+  });
+
+  inputFileBtn.addEventListener('click', () => {
+    inputMode = 'file';
+    inputFileBtn.classList.replace('bg-gray-100', 'bg-indigo-100');
+    inputFileBtn.classList.replace('text-gray-600', 'text-indigo-700');
+    inputFileBtn.classList.add('dark:bg-indigo-900', 'dark:text-indigo-200');
+    inputFileBtn.classList.remove('dark:bg-slate-700', 'dark:text-slate-300');
+    inputTextBtn.classList.replace('bg-indigo-100', 'bg-gray-100');
+    inputTextBtn.classList.replace('text-indigo-700', 'text-gray-600');
+    inputTextBtn.classList.remove('dark:bg-indigo-900', 'dark:text-indigo-200');
+    inputTextBtn.classList.add('dark:bg-slate-700', 'dark:text-slate-300');
+    textInputArea.classList.add('hidden');
+    fileInputArea.classList.remove('hidden');
+    runPipeline();
+  });
+
+  // File input handling with streaming
+  fileInput.addEventListener('change', async (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    selectedFile = file;
+    await processFileStreaming(file);
+  });
+
+  async function processFileStreaming(file: File) {
+    fileInfo.classList.remove('hidden');
+    fileInfo.textContent = `Reading: ${file.name} (${formatFileSize(file.size)})`;
+    fileContent = '';
+
+    const stream = file.stream();
+    const reader = stream.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let totalChars = 0;
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        fileContent += chunk;
+        totalChars += chunk.length;
+
+        // Update progress
+        fileInfo.textContent = `Reading: ${file.name} (${formatFileSize(totalChars)} read)`;
+
+        // Run pipeline incrementally for large files
+        if (totalChars > 100000) {
+          runPipeline();
+        }
+      }
+
+      // Final decode
+      fileContent += decoder.decode();
+      fileInfo.textContent = `Loaded: ${file.name} (${formatFileSize(file.size)})`;
+      runPipeline();
+    } catch (err) {
+      console.error('Error reading file:', err);
+      fileInfo.textContent = `Error reading file: ${err}`;
+    }
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  // Drag and drop
+  const dropZone = fileInputArea?.querySelector('div');
+  if (dropZone) {
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20');
+    });
+
+    dropZone.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-indigo-500', 'bg-indigo-50', 'dark:bg-indigo-900/20');
+      const file = e.dataTransfer?.files?.[0];
+      if (file) {
+        selectedFile = file;
+        await processFileStreaming(file);
+      }
+    });
+  }
+
+  // Initial render
+  renderPipeline();
+
+  ShareManager.register({
+    tool: 'text-extractor',
+    customCollect: () => {
+      return {
+        input: input.value,
+        operations: operations.map(op => ({ type: op.type, config: op.config }))
+      };
+    },
+    customRestore: (data) => {
+      // Restore input
+      if (data.input) {
+        input.value = data.input;
+      }
+      // Restore operations
+      if (data.operations && Array.isArray(data.operations)) {
+        operations = [];
+        opCounter = 0;
+        for (const op of data.operations) {
+          const id = `op-${opCounter++}`;
+          operations.push({ id, type: op.type, config: op.config || {} });
+        }
+        renderPipeline();
+      }
+    },
+    afterLoad: () => runPipeline()
+  });
+</script>

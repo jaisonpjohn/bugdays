@@ -1,0 +1,66 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#1e293b"/>
+
+  <!-- Subtle gradient overlay -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0" y1="0" x2="1200" y2="630">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+
+  <!-- Bug Logo (scaled up from favicon) -->
+  <g transform="translate(280, 165) scale(7.5)">
+    <!-- Bug body (ladybug shell) -->
+    <ellipse cx="20" cy="23" rx="14" ry="12" fill="#6366f1"/>
+    <!-- Center line on shell -->
+    <line x1="20" y1="12" x2="20" y2="35" stroke="#1e293b" stroke-width="1.5"/>
+    <!-- Spots on shell -->
+    <circle cx="14" cy="19" r="2.5" fill="#1e293b"/>
+    <circle cx="26" cy="19" r="2.5" fill="#1e293b"/>
+    <circle cx="13" cy="27" r="2" fill="#1e293b"/>
+    <circle cx="27" cy="27" r="2" fill="#1e293b"/>
+    <circle cx="20" cy="25" r="2" fill="#1e293b"/>
+    <!-- Bug head -->
+    <circle cx="20" cy="10" r="6" fill="#1e293b"/>
+    <!-- Antennae -->
+    <path d="M16 6 Q14 2, 11 3" stroke="#1e293b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <path d="M24 6 Q26 2, 29 3" stroke="#1e293b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <circle cx="11" cy="3" r="1.5" fill="#334155"/>
+    <circle cx="29" cy="3" r="1.5" fill="#334155"/>
+    <!-- Cool sunglasses -->
+    <rect x="13" y="8" width="5" height="3.5" rx="0.8" fill="#a78bfa"/>
+    <rect x="22" y="8" width="5" height="3.5" rx="0.8" fill="#a78bfa"/>
+    <rect x="18" y="9" width="4" height="1" fill="#a78bfa"/>
+    <!-- Lens shine -->
+    <rect x="14" y="8.5" width="1.5" height="1" rx="0.3" fill="#ddd6fe"/>
+    <rect x="23" y="8.5" width="1.5" height="1" rx="0.3" fill="#ddd6fe"/>
+    <!-- Little smile -->
+    <path d="M18 13 Q20 14.5, 22 13" stroke="#475569" stroke-width="1" stroke-linecap="round" fill="none"/>
+    <!-- Tiny legs -->
+    <path d="M8 20 Q5 21, 4 24" stroke="#1e293b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <path d="M8 26 Q5 27, 3 29" stroke="#1e293b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <path d="M32 20 Q35 21, 36 24" stroke="#1e293b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <path d="M32 26 Q35 27, 37 29" stroke="#1e293b" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- Text: Tagline -->
+  <text x="600" y="270" font-family="system-ui, -apple-system, sans-serif" font-size="52" font-weight="600" fill="#f1f5f9" text-anchor="left">
+    Safe. Clean. Shareable.
+  </text>
+
+  <!-- Text: Site Name -->
+  <text x="600" y="350" font-family="system-ui, -apple-system, sans-serif" font-size="36" font-weight="500" fill="#94a3b8" text-anchor="left">
+    Bug Days - Free Developer Tools
+  </text>
+
+  <!-- Subtle accent line -->
+  <rect x="600" y="380" width="120" height="4" rx="2" fill="#6366f1"/>
+
+  <!-- URL -->
+  <text x="600" y="430" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#64748b" text-anchor="left">
+    bugdays.com
+  </text>
+</svg>

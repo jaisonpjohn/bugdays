@@ -1,0 +1,68 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const tools = [
+  { name: 'TOML Viewer', href: '/toml-viewer', description: 'Interactive tree view with collapsible nodes, path extraction, and validation' },
+  { name: 'TOML Diff', href: '/toml-diff', description: 'Compare TOML files with semantic diff and visual highlighting' },
+  { name: 'TOML Converter', href: '/toml-converter', description: 'Convert between TOML, JSON, and YAML formats' },
+];
+---
+
+<Layout
+  title="TOML Tools"
+  description="Free online TOML tools for developers. View, validate, compare, and convert TOML data. TOML viewer, TOML diff, TOML to JSON converter."
+  keywords="TOML tools, TOML viewer, TOML diff, TOML to JSON, TOML validator, TOML converter, Cargo.toml, pyproject.toml"
+  breadcrumb={[{ name: "TOML Tools" }]}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-2">TOML Tools</h1>
+    <p class="text-gray-600 dark:text-slate-400 mb-6">View, validate, compare, and convert TOML data</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="block p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all"
+        >
+          <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{tool.name}</h2>
+          <p class="text-sm text-gray-600 dark:text-slate-300">{tool.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About TOML</h2>
+      <p class="text-gray-600 dark:text-slate-300 text-sm mb-3">
+        TOML (Tom's Obvious Minimal Language) is a configuration file format designed to be easy to read
+        and write. It maps unambiguously to a hash table and is used by many modern tools and frameworks.
+      </p>
+      <p class="text-gray-600 dark:text-slate-300 text-sm">
+        Popular uses include Rust's Cargo.toml, Python's pyproject.toml, Hugo static site configs, and
+        many other configuration files. All processing happens in your browser - no data is sent to any server.
+      </p>
+    </div>
+
+    <div class="mt-6 grid md:grid-cols-2 gap-4 text-sm">
+      <div class="p-4 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+        <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Common TOML Files</h3>
+        <ul class="text-gray-600 dark:text-slate-300 space-y-1">
+          <li><code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">Cargo.toml</code> - Rust package manifest</li>
+          <li><code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">pyproject.toml</code> - Python project config</li>
+          <li><code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">hugo.toml</code> - Hugo site config</li>
+          <li><code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">netlify.toml</code> - Netlify build config</li>
+          <li><code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">rustfmt.toml</code> - Rust formatter config</li>
+        </ul>
+      </div>
+      <div class="p-4 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+        <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Why TOML?</h3>
+        <ul class="text-gray-600 dark:text-slate-300 space-y-1">
+          <li>Minimal and readable syntax</li>
+          <li>Supports comments (unlike JSON)</li>
+          <li>Clear data types (strings, integers, dates)</li>
+          <li>Nested tables for complex configs</li>
+          <li>Growing ecosystem adoption</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</Layout>

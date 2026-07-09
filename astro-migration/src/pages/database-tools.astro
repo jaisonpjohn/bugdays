@@ -1,0 +1,42 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const tools = [
+  { name: 'Schema Explorer', href: '/schema-explorer', description: 'Visualize table relationships from DDL as an interactive ER diagram, annotate tables and columns, export a data dictionary' },
+  { name: 'DBeaver Password Decrypt', href: '/dbeaver-password-decrypter', description: 'Recover database passwords saved in DBeaver' },
+];
+---
+
+<Layout
+  title="Database Tools"
+  description="Free online database tools. Schema explorer with ER diagrams for PostgreSQL, MySQL, Oracle, SQL Server and DB2, data dictionary generator, and more. All tools run locally in your browser."
+  keywords="database tools, schema explorer, ER diagram, data dictionary, table relationships, postgres, mysql, oracle, db2, sql server"
+  breadcrumb={[{ name: "Database Tools" }]}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-2">Database Tools</h1>
+    <p class="text-gray-600 dark:text-slate-400 mb-6">Explore, document, and work with database schemas</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="block p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all"
+        >
+          <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{tool.name}</h2>
+          <p class="text-sm text-gray-600 dark:text-slate-300">{tool.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About Database Tools</h2>
+      <p class="text-gray-600 dark:text-slate-300 text-sm">
+        Understand and document any database without installing anything. The Schema Explorer parses DDL from
+        PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, DB2 and SQLite, draws the table relationships as an
+        interactive ER diagram, and lets you annotate tables and columns before exporting a data dictionary.
+        All parsing happens entirely in your browser — your schema never leaves your device.
+      </p>
+    </div>
+  </div>
+</Layout>

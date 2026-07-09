@@ -1,0 +1,326 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="CSV to JSON Converter"
+  description="Convert CSV to JSON and JSON to CSV instantly. Free online bidirectional converter with automatic header detection. Export data for APIs, databases, and spreadsheets."
+  keywords="CSV to JSON, JSON to CSV, CSV converter, convert CSV online, CSV JSON converter, Excel to JSON, spreadsheet converter"
+  breadcrumb={[{ name: "JSON Tools", href: "/json-tools" }, { name: "CSV ↔ JSON" }]}
+  toolId="csv-json-converter"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">CSV ↔ JSON Converter</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Input</label>
+        <textarea
+          id="input"
+          data-share-key="input"
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+          placeholder="Paste CSV or JSON here..."
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Output</label>
+        <textarea
+          id="output"
+          readonly
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none"
+          placeholder="Converted output will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mt-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 dark:text-slate-200">Delimiter:</label>
+          <select id="delimiter" class="p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm">
+            <option value=",">Comma (,)</option>
+            <option value="&#9;">Tab</option>
+            <option value=";">Semicolon (;)</option>
+            <option value="|">Pipe (|)</option>
+            <option value="auto">Auto-detect</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="has-headers" checked class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+          <label for="has-headers" class="text-sm text-gray-700 dark:text-slate-200">First row is header</label>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="skip-empty" checked class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+          <label for="skip-empty" class="text-sm text-gray-700 dark:text-slate-200">Skip empty rows</label>
+        </div>
+      </div>
+    </div>
+
+    <div id="error-box" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="csv-to-json-btn" data-share-action="csvToJson" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        CSV → JSON
+      </button>
+      <button id="json-to-csv-btn" data-share-action="jsonToCsv" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        JSON → CSV
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Clear
+      </button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Copy Output
+      </button>
+      <button id="swap-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Swap ↔
+      </button>
+      <button id="sample-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Load Sample
+      </button>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online CSV to JSON Converter</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Convert between CSV and JSON formats. Supports multiple delimiters (comma, tab, semicolon, pipe) with auto-detection.
+        Convert CSV to JSON objects (with headers) or arrays. All processing happens in your browser.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const delimiterSelect = document.getElementById('delimiter') as HTMLSelectElement;
+  const hasHeadersCheck = document.getElementById('has-headers') as HTMLInputElement;
+  const skipEmptyCheck = document.getElementById('skip-empty') as HTMLInputElement;
+  const errorBox = document.getElementById('error-box');
+
+  const sampleCsv = `name,age,email,city
+Alice,30,alice@example.com,New York
+Bob,25,bob@example.com,Los Angeles
+Charlie,35,charlie@example.com,Chicago
+Diana,28,diana@example.com,Houston
+Eve,32,eve@example.com,Phoenix`;
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function detectDelimiter(text: string): string {
+    const lines = text.split('\n').filter(line => line.trim());
+    if (lines.length === 0) return ',';
+
+    const firstLine = lines[0];
+    const delimiters = [',', '\t', ';', '|'];
+    let bestDelimiter = ',';
+    let maxCount = 0;
+
+    for (const d of delimiters) {
+      const count = (firstLine.match(new RegExp(d === '|' ? '\\|' : d, 'g')) || []).length;
+      if (count > maxCount) {
+        maxCount = count;
+        bestDelimiter = d;
+      }
+    }
+
+    return bestDelimiter;
+  }
+
+  function parseCSV(text: string, delimiter: string): string[][] {
+    const rows: string[][] = [];
+    let currentRow: string[] = [];
+    let currentCell = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+
+      if (inQuotes) {
+        if (char === '"') {
+          if (nextChar === '"') {
+            currentCell += '"';
+            i++; // Skip next quote
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          currentCell += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === delimiter) {
+          currentRow.push(currentCell);
+          currentCell = '';
+        } else if (char === '\n' || (char === '\r' && nextChar === '\n')) {
+          currentRow.push(currentCell);
+          if (currentRow.length > 0 && currentRow.some(cell => cell.trim())) {
+            rows.push(currentRow);
+          }
+          currentRow = [];
+          currentCell = '';
+          if (char === '\r') i++; // Skip \n after \r
+        } else if (char !== '\r') {
+          currentCell += char;
+        }
+      }
+    }
+
+    // Add last cell and row
+    currentRow.push(currentCell);
+    if (currentRow.length > 0 && currentRow.some(cell => cell.trim())) {
+      rows.push(currentRow);
+    }
+
+    return rows;
+  }
+
+  function csvToJson() {
+    const csv = input.value.trim();
+    if (!csv) {
+      showError('Please enter CSV to convert');
+      return;
+    }
+
+    hideError();
+
+    let delimiter = delimiterSelect.value;
+    if (delimiter === 'auto') {
+      delimiter = detectDelimiter(csv);
+    }
+
+    const rows = parseCSV(csv, delimiter);
+
+    if (skipEmptyCheck.checked) {
+      rows.filter(row => row.some(cell => cell.trim()));
+    }
+
+    if (rows.length === 0) {
+      showError('No data found in CSV');
+      return;
+    }
+
+    let result: any;
+
+    if (hasHeadersCheck.checked && rows.length > 1) {
+      const headers = rows[0];
+      result = rows.slice(1).map(row => {
+        const obj: { [key: string]: string } = {};
+        headers.forEach((header, i) => {
+          obj[header.trim() || `column${i + 1}`] = row[i] || '';
+        });
+        return obj;
+      });
+    } else {
+      result = rows;
+    }
+
+    output.value = JSON.stringify(result, null, 2);
+  }
+
+  function jsonToCsv() {
+    const jsonStr = input.value.trim();
+    if (!jsonStr) {
+      showError('Please enter JSON to convert');
+      return;
+    }
+
+    try {
+      hideError();
+      const json = JSON.parse(jsonStr);
+
+      if (!Array.isArray(json)) {
+        showError('JSON must be an array');
+        return;
+      }
+
+      if (json.length === 0) {
+        output.value = '';
+        return;
+      }
+
+      let delimiter = delimiterSelect.value;
+      if (delimiter === 'auto') delimiter = ',';
+
+      // Check if array of objects or array of arrays
+      if (typeof json[0] === 'object' && !Array.isArray(json[0])) {
+        // Array of objects
+        const headers = Object.keys(json[0]);
+        const rows: string[][] = [headers];
+
+        for (const obj of json) {
+          const row = headers.map(h => {
+            const val = obj[h];
+            return val !== undefined && val !== null ? String(val) : '';
+          });
+          rows.push(row);
+        }
+
+        output.value = rows.map(row =>
+          row.map(cell => {
+            if (cell.includes(delimiter) || cell.includes('"') || cell.includes('\n')) {
+              return '"' + cell.replace(/"/g, '""') + '"';
+            }
+            return cell;
+          }).join(delimiter)
+        ).join('\n');
+      } else {
+        // Array of arrays
+        output.value = json.map((row: any[]) =>
+          row.map(cell => {
+            const str = cell !== undefined && cell !== null ? String(cell) : '';
+            if (str.includes(delimiter) || str.includes('"') || str.includes('\n')) {
+              return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+          }).join(delimiter)
+        ).join('\n');
+      }
+    } catch (e) {
+      showError('Error parsing JSON: ' + (e as Error).message);
+    }
+  }
+
+  document.getElementById('csv-to-json-btn').addEventListener('click', csvToJson);
+  document.getElementById('json-to-csv-btn').addEventListener('click', jsonToCsv);
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    input.value = '';
+    output.value = '';
+    hideError();
+  });
+
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(output.value);
+  });
+
+  document.getElementById('swap-btn').addEventListener('click', () => {
+    const temp = input.value;
+    input.value = output.value;
+    output.value = temp;
+  });
+
+  document.getElementById('sample-btn').addEventListener('click', () => {
+    input.value = sampleCsv;
+    hideError();
+  });
+
+  ShareManager.register({
+    tool: 'csv-json-converter',
+    actions: {
+      csvToJson: () => document.getElementById('csv-to-json-btn')!.click(),
+      jsonToCsv: () => document.getElementById('json-to-csv-btn')!.click()
+    }
+  });
+</script>

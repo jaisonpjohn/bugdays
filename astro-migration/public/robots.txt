@@ -1,0 +1,11 @@
+# Bug Days - Developer Tools
+# https://bugdays.com
+
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://bugdays.com/sitemap-index.xml
+
+# Crawl-delay for polite bots (optional, not all bots respect this)
+# Crawl-delay: 1

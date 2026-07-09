@@ -1,0 +1,43 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const tools = [
+  { name: 'JSON Formatter', href: '/json-formatter', description: 'Format, validate, and beautify JSON with tree view and path extraction' },
+  { name: 'JSON Diff', href: '/json-diff', description: 'Compare JSON objects with semantic diff and visual highlighting' },
+  { name: 'YAML ↔ JSON', href: '/yaml-json-converter', description: 'Bidirectional conversion between YAML and JSON formats' },
+  { name: 'CSV ↔ JSON', href: '/csv-json-converter', description: 'Convert between CSV spreadsheets and JSON arrays' },
+];
+---
+
+<Layout
+  title="JSON Tools"
+  description="Free online JSON tools for developers. Format, validate, compare, and convert JSON data. JSON formatter, JSON diff, YAML to JSON, CSV to JSON converters."
+  keywords="JSON tools, JSON formatter, JSON diff, YAML to JSON, CSV to JSON, JSON converter, JSON validator, online JSON tools"
+  breadcrumb={[{ name: "JSON Tools" }]}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-2">JSON Tools</h1>
+    <p class="text-gray-600 dark:text-slate-400 mb-6">Format, validate, compare, and convert JSON data</p>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      {tools.map((tool) => (
+        <a
+          href={tool.href}
+          class="block p-4 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all"
+        >
+          <h2 class="text-lg font-semibold text-indigo-600 dark:text-indigo-400 mb-1">{tool.name}</h2>
+          <p class="text-sm text-gray-600 dark:text-slate-300">{tool.description}</p>
+        </a>
+      ))}
+    </div>
+
+    <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About JSON Tools</h2>
+      <p class="text-gray-600 dark:text-slate-300 text-sm">
+        JSON (JavaScript Object Notation) is the most widely used data interchange format. Our JSON tools help you
+        format messy JSON, compare documents to find differences, and convert between JSON and other popular formats
+        like YAML and CSV. All processing happens in your browser - no data is sent to any server.
+      </p>
+    </div>
+  </div>
+</Layout>

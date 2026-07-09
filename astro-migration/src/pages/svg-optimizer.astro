@@ -1,0 +1,224 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="SVG Optimizer - Minify & Compress SVG"
+  description="Optimize and minify SVG files to reduce file size. Remove metadata, clean up paths, and compress SVG graphics. Free online SVGO-powered optimization tool."
+  keywords="SVG optimizer, minify SVG, compress SVG, SVG minifier, optimize SVG online, SVGO online, reduce SVG size, SVG compressor"
+  breadcrumb={[{ name: "Other", href: "/developer-tools" }, { name: "SVG Optimizer" }]}
+  toolId="svg-optimizer"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">SVG Optimizer</h1>
+    
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Original SVG</label>
+        <textarea
+          id="input-svg"
+          data-share-key="svg"
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none placeholder-gray-400"
+          placeholder={`<svg width="100" height="100" viewBox="0 0 100 100">
+  <!-- Comment -->
+  <circle cx="50" cy="50" r="40" stroke="green" stroke-width="4" fill="yellow" />
+</svg>`}
+        ></textarea>
+        <div class="mt-2 text-xs text-gray-500 dark:text-slate-400 flex justify-between">
+          <span id="orig-size">Size: 0 B</span>
+        </div>
+      </div>
+      
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Optimized SVG</label>
+        <textarea 
+          id="output-svg"
+          readonly
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none"
+        ></textarea>
+        <div class="mt-2 text-xs text-gray-500 dark:text-slate-400 flex justify-between items-center">
+          <span id="opt-size">Size: 0 B</span>
+          <span id="savings" class="font-bold text-green-600"></span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="flex flex-wrap gap-3 mb-6">
+      <button id="optimize-btn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+        </svg>
+        Optimize SVG
+      </button>
+      
+      <button id="copy-btn" class="px-6 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:bg-slate-900 transition-colors font-medium flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+        </svg>
+        Copy Result
+      </button>
+
+      <button id="preview-btn" class="px-6 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-50 dark:bg-slate-900 transition-colors font-medium flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+        </svg>
+        Toggle Preview
+      </button>
+    </div>
+
+    <!-- Preview Section -->
+    <div id="preview-container" class="grid md:grid-cols-2 gap-4 mb-4 hidden">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Original Preview</label>
+        <div class="border border-gray-200 dark:border-slate-700 rounded bg-[url('/transparent-grid.png')] bg-white dark:bg-slate-800 p-4 h-64 flex items-center justify-center overflow-auto">
+          <div id="preview-orig" class="max-w-full max-h-full"></div>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Optimized Preview</label>
+        <div class="border border-gray-200 dark:border-slate-700 rounded bg-[url('/transparent-grid.png')] bg-white dark:bg-slate-800 p-4 h-64 flex items-center justify-center overflow-auto">
+          <div id="preview-opt" class="max-w-full max-h-full"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div class="mt-8 bg-gray-50 dark:bg-slate-900 rounded-lg p-6 border border-gray-200 dark:border-slate-700">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About SVG Optimization</h2>
+      <p class="text-gray-600 dark:text-slate-300 mb-2">
+        This tool uses <a href="https://github.com/svg/svgo" target="_blank" class="text-indigo-600 hover:underline">SVGO</a> logic to safely optimize Scalable Vector Graphics by removing redundant information.
+      </p>
+      <ul class="list-disc list-inside text-gray-600 dark:text-slate-300 space-y-1 text-sm">
+        <li>Removes metadata, comments, and hidden elements</li>
+        <li>Minifies path data and coordinates</li>
+        <li>Converts colors and attributes to shorter forms</li>
+        <li>Safely preserves visual appearance</li>
+      </ul>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { optimize } from 'svgo/browser';
+  import { ShareManager } from '../lib/share';
+
+  const inputSvg = document.getElementById('input-svg') as HTMLTextAreaElement;
+  const outputSvg = document.getElementById('output-svg') as HTMLTextAreaElement;
+  const optimizeBtn = document.getElementById('optimize-btn');
+  const copyBtn = document.getElementById('copy-btn');
+  const previewBtn = document.getElementById('preview-btn');
+  const errorBox = document.getElementById('error-box');
+  const origSize = document.getElementById('orig-size');
+  const optSize = document.getElementById('opt-size');
+  const savings = document.getElementById('savings');
+  const previewContainer = document.getElementById('preview-container');
+  const previewOrig = document.getElementById('preview-orig');
+  const previewOpt = document.getElementById('preview-opt');
+  
+  function formatBytes(bytes: number) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function updateSize(elem: HTMLElement, text: string) {
+    const size = new Blob([text]).size;
+    elem.textContent = 'Size: ' + formatBytes(size);
+    return size;
+  }
+
+  function updatePreviews(orig: string, opt: string) {
+    previewOrig.innerHTML = orig;
+    previewOpt.innerHTML = opt;
+    // Basic sanitization/check if it renders
+    const svgs = previewContainer.querySelectorAll('svg');
+    svgs.forEach(svg => {
+      svg.style.maxWidth = '100%';
+      svg.style.maxHeight = '100%';
+    });
+  }
+
+  optimizeBtn.addEventListener('click', () => {
+    hideError();
+    const input = inputSvg.value.trim();
+    if (!input) {
+      showError('Please enter SVG code first');
+      return;
+    }
+
+    try {
+      const result = optimize(input, {
+        multipass: true,
+        plugins: [
+          'preset-default',
+          'removeDimensions', // Optional: remove width/height attributes if desired
+          {
+            name: 'removeAttrs',
+            params: {
+              attrs: '(data-name|data-id)'
+            }
+          }
+        ]
+      });
+      
+      const output = result.data;
+      outputSvg.value = output;
+      
+      const sizeBefore = updateSize(origSize, input);
+      const sizeAfter = updateSize(optSize, output);
+      
+      const savedBytes = sizeBefore - sizeAfter;
+      const savedPercent = sizeBefore > 0 ? ((savedBytes / sizeBefore) * 100).toFixed(1) : '0';
+      savings.textContent = `Saved ${formatBytes(savedBytes)} (${savedPercent}%)`;
+      
+      updatePreviews(input, output);
+      
+    } catch (err) {
+      console.error(err);
+      showError('Error optimizing SVG: ' + (err as Error).message);
+    }
+  });
+
+  copyBtn.addEventListener('click', async () => {
+    if (!outputSvg.value) return;
+    try {
+      await navigator.clipboard.writeText(outputSvg.value);
+      const originalText = copyBtn.innerHTML;
+      copyBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg> Copied!`;
+      setTimeout(() => {
+        copyBtn.innerHTML = originalText;
+      }, 2000);
+    } catch (err) {
+      showError('Failed to copy');
+    }
+  });
+
+  previewBtn.addEventListener('click', () => {
+    previewContainer.classList.toggle('hidden');
+    if (!previewContainer.classList.contains('hidden') && outputSvg.value) {
+      updatePreviews(inputSvg.value, outputSvg.value);
+    }
+  });
+
+  ShareManager.register({
+    tool: 'svg-optimizer',
+    afterLoad: () => {
+      if (inputSvg.value.trim()) {
+        optimizeBtn.click();
+      }
+    }
+  });
+</script>

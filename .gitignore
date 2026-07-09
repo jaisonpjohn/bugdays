@@ -1,0 +1,23 @@
+# dependencies / builds (any subproject)
+node_modules/
+dist/
+target/
+
+# logs
+npm-debug.log*
+yarn-error.log*
+
+# IDEs
+/.idea
+*.iml
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# System files
+.DS_Store
+Thumbs.db
+
+# separate projects / generated
+holy-cors/
+.astro/

@@ -1,0 +1,865 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Bulk API Invoker - Batch HTTP Request Tool",
+    "description": "Execute multiple API calls from CSV data with URL templates. Test APIs in bulk with configurable concurrency, headers, and body templates.",
+    "url": "https://bugdays.com/bulk-api-invoker",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": ["Bulk API testing", "CSV data import", "URL templates", "Concurrent requests", "Progress tracking", "Response export"]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I use URL templates?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Use curly braces for placeholders that match your CSV headers. For example, /products/{id}/shops/{shop_id} will replace {id} and {shop_id} with values from columns named 'id' and 'shop_id' in your CSV."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "How many concurrent requests can I run?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "You can configure 1-50 concurrent workers. Higher concurrency is faster but may overwhelm the target server. Start with 5-10 for most use cases."
+        }
+      }
+    ]
+  }
+];
+---
+
+<Layout
+  title="Bulk API Invoker - Batch HTTP Request Tool"
+  description="Execute multiple API calls from CSV data with URL templates. Test APIs in bulk with configurable concurrency, headers, body templates. Free online batch API tester."
+  keywords="bulk API tester, batch API calls, API load testing, CSV API requests, bulk HTTP requests, API automation, batch REST calls, parallel API requests, API testing tool"
+  breadcrumb={[{ name: "Network Tools", href: "/network-tools" }, { name: "Bulk API Invoker" }]}
+  toolId="bulk-api-invoker"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-7xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Bulk API Invoker</h1>
+
+    <div class="grid lg:grid-cols-2 gap-4 mb-4">
+      <!-- Left Column: Configuration -->
+      <div class="space-y-4">
+        <!-- URL Template -->
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Request Configuration</h3>
+
+          <div class="flex gap-2 mb-3">
+            <select id="method" class="p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-medium bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100">
+              <option value="GET" class="text-green-600">GET</option>
+              <option value="POST" class="text-yellow-600">POST</option>
+              <option value="PUT" class="text-blue-600">PUT</option>
+              <option value="PATCH" class="text-purple-600">PATCH</option>
+              <option value="DELETE" class="text-red-600">DELETE</option>
+            </select>
+            <input
+              type="text"
+              id="url-template"
+              class="flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+              placeholder="https://api.example.com/products/{product_id}/shops/{shop_id}"
+            />
+          </div>
+
+          <p class="text-xs text-gray-500 dark:text-slate-400 mb-4">
+            Use <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">{`{column_name}`}</code> for placeholders that match CSV headers
+          </p>
+
+          <!-- Concurrency -->
+          <div class="flex items-center gap-4 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
+            <label class="text-sm text-gray-700 dark:text-slate-200">Concurrent Workers:</label>
+            <input
+              type="number"
+              id="concurrency"
+              min="1"
+              max="50"
+              value="5"
+              class="w-20 p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-center bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100"
+            />
+            <span class="text-xs text-gray-500 dark:text-slate-400">(1-50)</span>
+          </div>
+        </div>
+
+        <!-- Headers -->
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200">Headers</h3>
+            <button id="add-header-btn" class="text-xs text-indigo-600 hover:text-indigo-800">+ Add Header</button>
+          </div>
+          <div id="headers-list" class="space-y-2">
+            <div class="header-row flex gap-2">
+              <input type="text" class="header-key flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Header name" value="Content-Type" />
+              <input type="text" class="header-value flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Value (supports {placeholders})" value="application/json" />
+              <button class="remove-header-btn p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">×</button>
+            </div>
+          </div>
+          <p class="text-xs text-gray-500 dark:text-slate-400 mt-2">Headers can also use <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">{`{placeholders}`}</code></p>
+        </div>
+
+        <!-- Body Template -->
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200">Request Body Template</h3>
+            <span class="text-xs text-gray-500 dark:text-slate-400">(for POST/PUT/PATCH)</span>
+          </div>
+          <textarea
+            id="body-template"
+            class="w-full h-32 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 resize-y"
+            placeholder='{"product_id": "{product_id}", "quantity": {qty}, "name": "{name}"}'
+          ></textarea>
+          <p class="text-xs text-gray-500 dark:text-slate-400 mt-2">JSON body with placeholders. Non-string values like numbers work too.</p>
+        </div>
+      </div>
+
+      <!-- Right Column: CSV Data -->
+      <div class="space-y-4">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200">CSV Data</h3>
+            <label class="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 cursor-pointer text-sm">
+              Upload CSV
+              <input type="file" id="csv-file" accept=".csv,.txt" class="hidden">
+            </label>
+          </div>
+          <textarea
+            id="csv-input"
+            class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 resize-y"
+            placeholder="product_id,shop_id,qty,name
+101,A1,5,Widget
+102,A2,10,Gadget
+103,B1,3,Thing"
+          ></textarea>
+          <div class="flex items-center justify-between mt-2">
+            <span id="csv-info" class="text-xs text-gray-500 dark:text-slate-400">Paste CSV or upload file. First row = headers.</span>
+            <button id="preview-btn" class="text-xs text-indigo-600 hover:text-indigo-800">Preview Parsed Data</button>
+          </div>
+        </div>
+
+        <!-- Parsed Preview -->
+        <div id="preview-section" class="hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <h3 class="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Parsed CSV Preview</h3>
+          <div id="preview-table" class="overflow-x-auto max-h-40 text-xs"></div>
+        </div>
+
+        <!-- Proxy Settings -->
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <div class="flex items-center gap-3">
+            <input type="checkbox" id="use-proxy" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+            <label for="use-proxy" class="text-sm text-gray-700 dark:text-slate-200">Use CORS Proxy</label>
+            <input
+              type="text"
+              id="proxy-url"
+              class="flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+              placeholder="http://localhost:2345/"
+              value="http://localhost:2345/"
+              disabled
+            />
+            <button id="proxy-info-btn" class="text-indigo-600 hover:text-indigo-800 text-sm whitespace-nowrap">
+              Setup Instructions
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <button id="start-btn" class="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+          Start Execution
+        </button>
+        <button id="stop-btn" class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium hidden">
+          Stop
+        </button>
+        <button id="clear-results-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors text-sm">
+          Clear Results
+        </button>
+        <button id="export-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors text-sm hidden">
+          Export Results
+        </button>
+
+        <div class="flex-1"></div>
+
+        <!-- Display Options -->
+        <div class="flex items-center gap-4 text-sm">
+          <label class="flex items-center gap-1">
+            <input type="checkbox" id="show-headers" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600" />
+            <span class="text-gray-600 dark:text-slate-300">Show Headers</span>
+          </label>
+          <label class="flex items-center gap-1">
+            <input type="checkbox" id="show-body" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600" checked />
+            <span class="text-gray-600 dark:text-slate-300">Show Body</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div id="progress-section" class="hidden mt-4">
+        <div class="flex items-center justify-between text-sm mb-2">
+          <span id="progress-text" class="text-gray-600 dark:text-slate-300">0 / 0 completed</span>
+          <span id="progress-stats" class="text-gray-500 dark:text-slate-400"></span>
+        </div>
+        <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2.5">
+          <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full transition-all duration-200" style="width: 0%"></div>
+        </div>
+        <div class="flex gap-4 mt-2 text-xs">
+          <span class="text-green-600 dark:text-green-400"><span id="success-count">0</span> Success</span>
+          <span class="text-red-600 dark:text-red-400"><span id="error-count">0</span> Failed</span>
+          <span class="text-gray-500 dark:text-slate-400"><span id="pending-count">0</span> Pending</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Results Table -->
+    <div id="results-section" class="hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 dark:bg-slate-900 sticky top-0">
+            <tr>
+              <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-slate-200 border-b border-gray-200 dark:border-slate-700 w-12">#</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-slate-200 border-b border-gray-200 dark:border-slate-700">URL</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-slate-200 border-b border-gray-200 dark:border-slate-700 w-24">Status</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-slate-200 border-b border-gray-200 dark:border-slate-700 w-20">Time</th>
+              <th class="px-3 py-2 text-left font-medium text-gray-700 dark:text-slate-200 border-b border-gray-200 dark:border-slate-700">Details</th>
+            </tr>
+          </thead>
+          <tbody id="results-body" class="divide-y divide-gray-200 dark:divide-slate-700"></tbody>
+        </table>
+      </div>
+      <div id="results-empty" class="hidden p-8 text-center text-gray-500 dark:text-slate-400">
+        No results yet. Configure your request and click "Start Execution".
+      </div>
+    </div>
+
+    <!-- Error Box -->
+    <div id="error-box" class="hidden mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-200"></div>
+
+    <!-- Info Section -->
+    <div class="mt-8 space-y-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Bulk API Testing Tool</h2>
+        <p class="text-gray-600 dark:text-slate-300">
+          Execute multiple API calls using data from a CSV file. Perfect for batch operations, data migration, load testing, or validating API endpoints with different inputs. All processing happens in your browser.
+        </p>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">How to Use</h3>
+        <ol class="list-decimal list-inside text-gray-600 dark:text-slate-300 space-y-2">
+          <li>Enter your URL template with placeholders like <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">/api/products/{`{id}`}</code></li>
+          <li>Paste or upload CSV data where column headers match your placeholder names</li>
+          <li>Optionally configure headers and body template (also supports placeholders)</li>
+          <li>Set the number of concurrent workers (higher = faster, but may overwhelm the server)</li>
+          <li>Click "Start Execution" and watch the progress</li>
+        </ol>
+      </div>
+
+      <div>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">Example</h3>
+        <div class="bg-gray-50 dark:bg-slate-900 rounded-lg p-4 text-sm">
+          <p class="font-medium text-gray-700 dark:text-slate-200 mb-2">URL Template:</p>
+          <code class="block bg-gray-200 dark:bg-slate-700 p-2 rounded mb-3">https://api.example.com/products/{`{product_id}`}/inventory</code>
+
+          <p class="font-medium text-gray-700 dark:text-slate-200 mb-2">CSV Data:</p>
+          <pre class="bg-gray-200 dark:bg-slate-700 p-2 rounded mb-3">product_id,warehouse
+SKU001,WH-A
+SKU002,WH-B
+SKU003,WH-A</pre>
+
+          <p class="font-medium text-gray-700 dark:text-slate-200 mb-2">Body Template (for POST):</p>
+          <pre class="bg-gray-200 dark:bg-slate-700 p-2 rounded">{`{"warehouse": "{warehouse}", "check_stock": true}`}</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- CORS Proxy Modal -->
+    <div id="proxy-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-4">CORS Proxy Setup</h3>
+        <div class="space-y-4 text-sm text-gray-600 dark:text-slate-300">
+          <p>To bypass CORS restrictions, run <a href="https://github.com/bugdays-com/holy-cors" target="_blank" class="text-indigo-600 hover:underline">Holy CORS</a> locally:</p>
+          <div class="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-xs overflow-auto">
+            <p class="text-gray-400"># macOS (Homebrew)</p>
+            <p>brew install bugdays-com/tap/holy-cors</p>
+            <p>holy-cors</p>
+          </div>
+          <div class="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-xs overflow-auto">
+            <p class="text-gray-400"># Docker</p>
+            <p>docker run -p 2345:2345 ghcr.io/bugdays-com/holy-cors</p>
+          </div>
+          <p>The proxy will be available at <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">http://localhost:2345/</code></p>
+          <p class="text-yellow-600 dark:text-yellow-400">Note: For APIs that already support CORS, you don't need the proxy.</p>
+        </div>
+        <button id="close-proxy-modal-btn" class="mt-4 px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300">Close</button>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  // DOM Elements
+  const methodSelect = document.getElementById('method') as HTMLSelectElement;
+  const urlTemplateInput = document.getElementById('url-template') as HTMLInputElement;
+  const concurrencyInput = document.getElementById('concurrency') as HTMLInputElement;
+  const csvFileInput = document.getElementById('csv-file') as HTMLInputElement;
+  const csvInput = document.getElementById('csv-input') as HTMLTextAreaElement;
+  const csvInfo = document.getElementById('csv-info');
+  const bodyTemplateInput = document.getElementById('body-template') as HTMLTextAreaElement;
+  const previewBtn = document.getElementById('preview-btn');
+  const previewSection = document.getElementById('preview-section');
+  const previewTable = document.getElementById('preview-table');
+  const startBtn = document.getElementById('start-btn');
+  const stopBtn = document.getElementById('stop-btn');
+  const clearResultsBtn = document.getElementById('clear-results-btn');
+  const exportBtn = document.getElementById('export-btn');
+  const progressSection = document.getElementById('progress-section');
+  const progressText = document.getElementById('progress-text');
+  const progressStats = document.getElementById('progress-stats');
+  const progressBar = document.getElementById('progress-bar');
+  const successCount = document.getElementById('success-count');
+  const errorCount = document.getElementById('error-count');
+  const pendingCount = document.getElementById('pending-count');
+  const resultsSection = document.getElementById('results-section');
+  const resultsBody = document.getElementById('results-body');
+  const resultsEmpty = document.getElementById('results-empty');
+  const errorBox = document.getElementById('error-box');
+  const showHeadersCheckbox = document.getElementById('show-headers') as HTMLInputElement;
+  const showBodyCheckbox = document.getElementById('show-body') as HTMLInputElement;
+  const useProxyCheckbox = document.getElementById('use-proxy') as HTMLInputElement;
+  const proxyUrlInput = document.getElementById('proxy-url') as HTMLInputElement;
+  const proxyInfoBtn = document.getElementById('proxy-info-btn');
+  const proxyModal = document.getElementById('proxy-modal');
+  const closeProxyModalBtn = document.getElementById('close-proxy-modal-btn');
+
+  // Proxy modal handlers
+  proxyInfoBtn?.addEventListener('click', () => proxyModal?.classList.remove('hidden'));
+  closeProxyModalBtn?.addEventListener('click', () => proxyModal?.classList.add('hidden'));
+  proxyModal?.addEventListener('click', (e) => {
+    if (e.target === proxyModal) proxyModal.classList.add('hidden');
+  });
+
+  interface CsvRow {
+    [key: string]: string;
+  }
+
+  interface RequestResult {
+    index: number;
+    url: string;
+    status: number | string;
+    statusText: string;
+    time: number;
+    success: boolean;
+    responseBody?: string;
+    responseHeaders?: { [key: string]: string };
+    error?: string;
+  }
+
+  let parsedCsv: CsvRow[] = [];
+  let csvHeaders: string[] = [];
+  let results: RequestResult[] = [];
+  let isRunning = false;
+  let shouldStop = false;
+
+  // CSV file upload
+  csvFileInput?.addEventListener('change', (e) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      csvInput.value = e.target?.result as string;
+      parseCsv();
+    };
+    reader.readAsText(file);
+  });
+
+  // Parse CSV on input change
+  csvInput?.addEventListener('input', () => {
+    parseCsv();
+  });
+
+  // Proxy checkbox
+  useProxyCheckbox?.addEventListener('change', () => {
+    proxyUrlInput.disabled = !useProxyCheckbox.checked;
+  });
+
+  function parseCsv() {
+    const text = csvInput.value.trim();
+    if (!text) {
+      parsedCsv = [];
+      csvHeaders = [];
+      csvInfo!.textContent = 'Paste CSV or upload file. First row = headers.';
+      return;
+    }
+
+    const lines = text.split(/\r?\n/).filter(line => line.trim());
+    if (lines.length < 2) {
+      csvInfo!.textContent = 'Need at least a header row and one data row.';
+      return;
+    }
+
+    // Parse header
+    csvHeaders = parseCSVLine(lines[0]);
+
+    // Parse data rows
+    parsedCsv = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = parseCSVLine(lines[i]);
+      const row: CsvRow = {};
+      csvHeaders.forEach((header, idx) => {
+        row[header] = values[idx] || '';
+      });
+      parsedCsv.push(row);
+    }
+
+    csvInfo!.textContent = `${parsedCsv.length} rows, ${csvHeaders.length} columns: ${csvHeaders.join(', ')}`;
+  }
+
+  function parseCSVLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+
+    return result;
+  }
+
+  // Preview parsed data
+  previewBtn?.addEventListener('click', () => {
+    parseCsv();
+
+    if (parsedCsv.length === 0) {
+      showError('No data to preview. Enter CSV data first.');
+      return;
+    }
+
+    let html = '<table class="w-full border-collapse">';
+    html += '<thead><tr>';
+    csvHeaders.forEach(h => {
+      html += `<th class="border border-gray-300 dark:border-slate-600 px-2 py-1 bg-gray-100 dark:bg-slate-700 text-left">${escapeHtml(h)}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+
+    parsedCsv.slice(0, 10).forEach(row => {
+      html += '<tr>';
+      csvHeaders.forEach(h => {
+        html += `<td class="border border-gray-300 dark:border-slate-600 px-2 py-1">${escapeHtml(row[h])}</td>`;
+      });
+      html += '</tr>';
+    });
+
+    if (parsedCsv.length > 10) {
+      html += `<tr><td colspan="${csvHeaders.length}" class="text-center text-gray-500 py-2">... and ${parsedCsv.length - 10} more rows</td></tr>`;
+    }
+
+    html += '</tbody></table>';
+    previewTable!.innerHTML = html;
+    previewSection?.classList.remove('hidden');
+    hideError();
+  });
+
+  // Add header row
+  document.getElementById('add-header-btn')?.addEventListener('click', () => {
+    addHeaderRow();
+  });
+
+  function addHeaderRow(key = '', value = '') {
+    const headersList = document.getElementById('headers-list');
+    const row = document.createElement('div');
+    row.className = 'header-row flex gap-2';
+    row.innerHTML = `
+      <input type="text" class="header-key flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Header name" value="${escapeHtml(key)}" />
+      <input type="text" class="header-value flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Value (supports {placeholders})" value="${escapeHtml(value)}" />
+      <button class="remove-header-btn p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded">×</button>
+    `;
+    headersList?.appendChild(row);
+    row.querySelector('.remove-header-btn')?.addEventListener('click', () => row.remove());
+  }
+
+  // Initial remove button handler
+  document.querySelectorAll('.remove-header-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      (e.target as HTMLElement).closest('.header-row')?.remove();
+    });
+  });
+
+  // Get headers from form
+  function getHeaders(): { [key: string]: string } {
+    const headers: { [key: string]: string } = {};
+    document.querySelectorAll('.header-row').forEach(row => {
+      const key = (row.querySelector('.header-key') as HTMLInputElement)?.value.trim();
+      const value = (row.querySelector('.header-value') as HTMLInputElement)?.value.trim();
+      if (key) {
+        headers[key] = value;
+      }
+    });
+    return headers;
+  }
+
+  // Interpolate template with row data
+  function interpolate(template: string, row: CsvRow): string {
+    return template.replace(/\{(\w+)\}/g, (match, key) => {
+      return row.hasOwnProperty(key) ? row[key] : match;
+    });
+  }
+
+  // Start execution
+  startBtn?.addEventListener('click', async () => {
+    parseCsv();
+
+    // Validation
+    const urlTemplate = urlTemplateInput.value.trim();
+    if (!urlTemplate) {
+      showError('Please enter a URL template.');
+      return;
+    }
+
+    if (parsedCsv.length === 0) {
+      showError('Please enter CSV data with at least one data row.');
+      return;
+    }
+
+    const concurrency = Math.min(50, Math.max(1, parseInt(concurrencyInput.value) || 5));
+
+    // Initialize
+    isRunning = true;
+    shouldStop = false;
+    results = [];
+
+    startBtn?.classList.add('hidden');
+    stopBtn?.classList.remove('hidden');
+    progressSection?.classList.remove('hidden');
+    resultsSection?.classList.remove('hidden');
+    resultsEmpty?.classList.add('hidden');
+    resultsBody!.innerHTML = '';
+    exportBtn?.classList.add('hidden');
+    hideError();
+
+    const method = methodSelect.value;
+    const headers = getHeaders();
+    const bodyTemplate = bodyTemplateInput.value.trim();
+    const useProxy = useProxyCheckbox?.checked;
+    const proxyUrl = proxyUrlInput.value.trim();
+
+    // Create request queue
+    const total = parsedCsv.length;
+    let completed = 0;
+    let successTotal = 0;
+    let errorTotal = 0;
+
+    updateProgress(0, total, successTotal, errorTotal);
+
+    // Initialize result slots
+    for (let i = 0; i < total; i++) {
+      results.push({
+        index: i,
+        url: '',
+        status: 'Pending',
+        statusText: '',
+        time: 0,
+        success: false
+      });
+      addResultRow(i, 'Pending...');
+    }
+
+    // Concurrent execution with worker pool
+    const startTime = performance.now();
+
+    async function executeRequest(index: number): Promise<void> {
+      if (shouldStop) return;
+
+      const row = parsedCsv[index];
+      const url = interpolate(urlTemplate, row);
+      const finalUrl = useProxy ? proxyUrl + url : url;
+
+      // Interpolate headers
+      const requestHeaders: { [key: string]: string } = {};
+      for (const [key, value] of Object.entries(headers)) {
+        requestHeaders[key] = interpolate(value, row);
+      }
+
+      // Interpolate body
+      let body: string | undefined;
+      if (['POST', 'PUT', 'PATCH'].includes(method) && bodyTemplate) {
+        body = interpolate(bodyTemplate, row);
+      }
+
+      const reqStart = performance.now();
+
+      try {
+        const response = await fetch(finalUrl, {
+          method,
+          headers: requestHeaders,
+          body
+        });
+
+        const elapsed = Math.round(performance.now() - reqStart);
+        const responseBody = await response.text();
+
+        // Get response headers
+        const respHeaders: { [key: string]: string } = {};
+        response.headers.forEach((value, key) => {
+          respHeaders[key] = value;
+        });
+
+        results[index] = {
+          index,
+          url,
+          status: response.status,
+          statusText: response.statusText,
+          time: elapsed,
+          success: response.ok,
+          responseBody,
+          responseHeaders: respHeaders
+        };
+
+        if (response.ok) {
+          successTotal++;
+        } else {
+          errorTotal++;
+        }
+
+      } catch (err) {
+        const elapsed = Math.round(performance.now() - reqStart);
+        const errorMsg = (err as Error).message;
+        const isCorsLikely = errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || errorMsg.includes('Load failed');
+
+        let displayError = errorMsg;
+        if (isCorsLikely && !useProxy) {
+          displayError = 'CORS blocked - enable proxy';
+        } else if (isCorsLikely && useProxy) {
+          displayError = 'Proxy not running - start holy-cors';
+        }
+
+        results[index] = {
+          index,
+          url,
+          status: 'Error',
+          statusText: displayError,
+          time: elapsed,
+          success: false,
+          error: displayError
+        };
+        errorTotal++;
+      }
+
+      completed++;
+      updateProgress(completed, total, successTotal, errorTotal);
+      updateResultRow(index, results[index]);
+    }
+
+    // Run with concurrency limit
+    const executing: Promise<void>[] = [];
+
+    for (let i = 0; i < total; i++) {
+      if (shouldStop) break;
+
+      const p = executeRequest(i);
+      executing.push(p);
+
+      if (executing.length >= concurrency) {
+        await Promise.race(executing);
+        // Remove completed promises
+        for (let j = executing.length - 1; j >= 0; j--) {
+          // Check if promise is settled (hacky but works)
+          const status = await Promise.race([
+            executing[j].then(() => 'fulfilled'),
+            Promise.resolve('pending')
+          ]);
+          if (status === 'fulfilled') {
+            executing.splice(j, 1);
+          }
+        }
+      }
+    }
+
+    // Wait for remaining
+    await Promise.all(executing);
+
+    const totalTime = Math.round(performance.now() - startTime);
+    progressStats!.textContent = `Total time: ${(totalTime / 1000).toFixed(1)}s | Avg: ${(totalTime / total).toFixed(0)}ms/req`;
+
+    isRunning = false;
+    startBtn?.classList.remove('hidden');
+    stopBtn?.classList.add('hidden');
+    exportBtn?.classList.remove('hidden');
+  });
+
+  // Stop execution
+  stopBtn?.addEventListener('click', () => {
+    shouldStop = true;
+    stopBtn?.classList.add('hidden');
+    startBtn?.classList.remove('hidden');
+  });
+
+  // Clear results
+  clearResultsBtn?.addEventListener('click', () => {
+    results = [];
+    resultsBody!.innerHTML = '';
+    progressSection?.classList.add('hidden');
+    resultsSection?.classList.add('hidden');
+    exportBtn?.classList.add('hidden');
+  });
+
+  // Export results
+  exportBtn?.addEventListener('click', () => {
+    const csv = [
+      ['Row', 'URL', 'Status', 'Status Text', 'Time (ms)', 'Success', 'Response Body'].join(','),
+      ...results.map(r => [
+        r.index + 1,
+        `"${r.url.replace(/"/g, '""')}"`,
+        r.status,
+        `"${r.statusText.replace(/"/g, '""')}"`,
+        r.time,
+        r.success,
+        `"${(r.responseBody || '').replace(/"/g, '""').substring(0, 1000)}"`
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bulk-api-results-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  function updateProgress(completed: number, total: number, success: number, errors: number) {
+    const percent = total > 0 ? (completed / total) * 100 : 0;
+    progressBar!.style.width = `${percent}%`;
+    progressText!.textContent = `${completed} / ${total} completed`;
+    successCount!.textContent = success.toString();
+    errorCount!.textContent = errors.toString();
+    pendingCount!.textContent = (total - completed).toString();
+  }
+
+  function addResultRow(index: number, status: string) {
+    const row = document.createElement('tr');
+    row.id = `result-row-${index}`;
+    row.className = 'hover:bg-gray-50 dark:hover:bg-slate-700/50';
+    row.innerHTML = `
+      <td class="px-3 py-2 text-gray-600 dark:text-slate-300">${index + 1}</td>
+      <td class="px-3 py-2 font-mono text-xs truncate max-w-xs">-</td>
+      <td class="px-3 py-2"><span class="px-2 py-0.5 rounded text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300">${status}</span></td>
+      <td class="px-3 py-2 text-gray-500 dark:text-slate-400">-</td>
+      <td class="px-3 py-2 text-gray-500 dark:text-slate-400">-</td>
+    `;
+    resultsBody?.appendChild(row);
+  }
+
+  function updateResultRow(index: number, result: RequestResult) {
+    const row = document.getElementById(`result-row-${index}`);
+    if (!row) return;
+
+    const statusClass = result.success
+      ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+      : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+
+    const showBody = showBodyCheckbox?.checked;
+    const showHeaders = showHeadersCheckbox?.checked;
+
+    let details = '';
+    if (result.error) {
+      details = `<span class="text-red-600 dark:text-red-400">${escapeHtml(result.error)}</span>`;
+    } else {
+      const parts: string[] = [];
+      if (showHeaders && result.responseHeaders) {
+        const headerStr = Object.entries(result.responseHeaders)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join('\n');
+        parts.push(`<details class="inline"><summary class="cursor-pointer text-indigo-600 dark:text-indigo-400">Headers</summary><pre class="mt-1 p-2 bg-gray-100 dark:bg-slate-700 rounded text-xs max-h-32 overflow-auto">${escapeHtml(headerStr)}</pre></details>`);
+      }
+      if (showBody && result.responseBody) {
+        const truncated = result.responseBody.length > 500
+          ? result.responseBody.substring(0, 500) + '...'
+          : result.responseBody;
+        parts.push(`<details class="inline"><summary class="cursor-pointer text-indigo-600 dark:text-indigo-400">Body</summary><pre class="mt-1 p-2 bg-gray-100 dark:bg-slate-700 rounded text-xs max-h-32 overflow-auto">${escapeHtml(truncated)}</pre></details>`);
+      }
+      details = parts.join(' ');
+    }
+
+    row.innerHTML = `
+      <td class="px-3 py-2 text-gray-600 dark:text-slate-300">${index + 1}</td>
+      <td class="px-3 py-2 font-mono text-xs"><span class="truncate block max-w-xs" title="${escapeHtml(result.url)}">${escapeHtml(result.url)}</span></td>
+      <td class="px-3 py-2"><span class="px-2 py-0.5 rounded text-xs font-medium ${statusClass}">${result.status} ${result.statusText}</span></td>
+      <td class="px-3 py-2 text-gray-500 dark:text-slate-400">${result.time}ms</td>
+      <td class="px-3 py-2 text-xs">${details}</td>
+    `;
+  }
+
+  // Re-render on checkbox change
+  showHeadersCheckbox?.addEventListener('change', () => {
+    results.forEach((r, i) => {
+      if (r.status !== 'Pending') {
+        updateResultRow(i, r);
+      }
+    });
+  });
+
+  showBodyCheckbox?.addEventListener('change', () => {
+    results.forEach((r, i) => {
+      if (r.status !== 'Pending') {
+        updateResultRow(i, r);
+      }
+    });
+  });
+
+  function showError(msg: string) {
+    errorBox!.textContent = msg;
+    errorBox?.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox?.classList.add('hidden');
+  }
+
+  function escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Initial parse
+  parseCsv();
+
+  // Share functionality
+  ShareManager.register({
+    tool: 'bulk-api-invoker'
+  });
+</script>

@@ -1,0 +1,471 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="XML Formatter & Beautifier"
+  description="Format and beautify XML documents online. Pretty print XML with proper indentation, validate XML syntax, view as interactive tree, and minify XML files. Free XML formatting tool for developers."
+  keywords="XML formatter, XML beautifier, format XML online, XML pretty print, XML validator, minify XML, XML editor online, XML tree view"
+  breadcrumb={[{ name: "XML Tools", href: "/xml-tools" }, { name: "XML Formatter" }]}
+  toolId="xml-formatter"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">XML Formatter</h1>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+      <!-- Toolbar -->
+      <div class="flex flex-wrap items-center gap-2 p-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
+        <div id="text-buttons" class="flex flex-wrap gap-2">
+          <button id="format-btn" data-share-action="format" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Format
+          </button>
+          <button id="minify-btn" data-share-action="minify" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Minify
+          </button>
+          <button id="tree-btn" data-share-action="tree" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Tree View
+          </button>
+        </div>
+        <div id="tree-buttons" class="hidden flex flex-wrap gap-2">
+          <button id="back-btn" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Back to Text
+          </button>
+          <button id="expand-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+            Expand All
+          </button>
+          <button id="collapse-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+            Collapse All
+          </button>
+        </div>
+
+        <div class="flex-1"></div>
+
+        <div class="flex items-center gap-2 mr-2" id="indent-controls">
+          <label class="text-sm text-gray-600 dark:text-slate-300">Indent:</label>
+          <select id="indent-type" class="px-2 py-1 border border-gray-300 dark:border-slate-600 rounded text-sm bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200">
+            <option value="2">2 spaces</option>
+            <option value="4">4 spaces</option>
+            <option value="tab">Tab</option>
+          </select>
+        </div>
+
+        <button id="sample-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Load Sample">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </button>
+        <button id="clear-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Clear">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+        </button>
+        <div class="relative">
+          <button id="copy-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Copy">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+          </button>
+          <span id="copied-msg" class="hidden absolute -top-8 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs px-2 py-1 rounded whitespace-nowrap">Copied!</span>
+        </div>
+      </div>
+
+      <!-- Error message -->
+      <div id="error-box" class="hidden bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 p-4">
+        <p class="text-red-700 dark:text-red-300 text-sm">
+          <span class="font-medium">Invalid XML:</span> <span id="error-text"></span>
+        </p>
+      </div>
+
+      <!-- Editor area -->
+      <div id="editor-view">
+        <textarea
+          id="editor"
+          data-share-key="xml"
+          class="w-full min-h-[400px] max-h-[600px] p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset resize-none bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 border-0"
+          placeholder="Paste your XML here..."
+        ></textarea>
+      </div>
+
+      <!-- Tree View -->
+      <div id="tree-view" class="hidden p-4 min-h-[400px] max-h-[600px] overflow-auto font-mono text-sm bg-white dark:bg-slate-800"></div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online XML Formatter</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Format and beautify your XML data with proper indentation. View XML as an interactive tree structure.
+        Validate XML syntax and get clear error messages for invalid XML. Supports minification to reduce file size.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const editor = document.getElementById('editor') as HTMLTextAreaElement;
+  const treeView = document.getElementById('tree-view')!;
+  const editorView = document.getElementById('editor-view')!;
+  const textButtons = document.getElementById('text-buttons')!;
+  const treeButtons = document.getElementById('tree-buttons')!;
+  const indentControls = document.getElementById('indent-controls')!;
+  const errorBox = document.getElementById('error-box')!;
+  const errorText = document.getElementById('error-text')!;
+  const copiedMsg = document.getElementById('copied-msg')!;
+  const indentType = document.getElementById('indent-type') as HTMLSelectElement;
+
+  let originalText = '';
+
+  const sampleXml = `<?xml version="1.0" encoding="UTF-8"?>
+<bookstore xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <book category="fiction" isbn="978-0743273565">
+    <title lang="en">The Great Gatsby</title>
+    <author>F. Scott Fitzgerald</author>
+    <year>1925</year>
+    <price currency="USD">10.99</price>
+    <description>A story of decadence and excess.</description>
+  </book>
+  <book category="non-fiction" isbn="978-0553380163">
+    <title lang="en">A Brief History of Time</title>
+    <author>Stephen Hawking</author>
+    <year>1988</year>
+    <price currency="USD">15.99</price>
+    <!-- Classic physics book -->
+  </book>
+  <book category="fiction">
+    <title lang="es">Cien anos de soledad</title>
+    <author>Gabriel Garcia Marquez</author>
+    <year>1967</year>
+    <price currency="USD">14.00</price>
+  </book>
+</bookstore>`;
+
+  function showError(msg: string) {
+    errorText.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function parseXml(xmlString: string): Document | null {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlString, 'application/xml');
+    const parseError = doc.querySelector('parsererror');
+    if (parseError) {
+      const errorContent = parseError.textContent || 'Unknown parsing error';
+      showError(errorContent);
+      return null;
+    }
+    return doc;
+  }
+
+  function getIndent(): string {
+    const value = indentType.value;
+    if (value === 'tab') return '\t';
+    return ' '.repeat(parseInt(value, 10));
+  }
+
+  function formatXml(xml: string, indent: string): string {
+    const doc = parseXml(xml);
+    if (!doc) return '';
+
+    hideError();
+
+    let formatted = '';
+    let indentLevel = 0;
+
+    function processNode(node: Node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent?.trim();
+        if (text) {
+          formatted += text;
+        }
+        return;
+      }
+
+      if (node.nodeType === Node.COMMENT_NODE) {
+        formatted += '\n' + indent.repeat(indentLevel) + '<!--' + node.textContent + '-->';
+        return;
+      }
+
+      if (node.nodeType === Node.PROCESSING_INSTRUCTION_NODE) {
+        const pi = node as ProcessingInstruction;
+        formatted += '<?' + pi.target + ' ' + pi.data + '?>\n';
+        return;
+      }
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        const tagName = element.tagName;
+
+        formatted += '\n' + indent.repeat(indentLevel) + '<' + tagName;
+
+        for (const attr of element.attributes) {
+          formatted += ' ' + attr.name + '="' + escapeXmlAttr(attr.value) + '"';
+        }
+
+        const children = Array.from(element.childNodes).filter(child => {
+          if (child.nodeType === Node.TEXT_NODE) {
+            return child.textContent?.trim();
+          }
+          return true;
+        });
+
+        if (children.length === 0) {
+          formatted += '/>';
+        } else if (children.length === 1 && children[0].nodeType === Node.TEXT_NODE) {
+          formatted += '>' + children[0].textContent?.trim() + '</' + tagName + '>';
+        } else {
+          formatted += '>';
+          indentLevel++;
+          for (const child of children) {
+            processNode(child);
+          }
+          indentLevel--;
+          formatted += '\n' + indent.repeat(indentLevel) + '</' + tagName + '>';
+        }
+      }
+    }
+
+    const xmlDecl = xml.match(/<\?xml[^?]*\?>/);
+    if (xmlDecl) {
+      formatted = xmlDecl[0];
+    }
+
+    if (doc.documentElement) {
+      processNode(doc.documentElement);
+    }
+
+    return formatted.trim();
+  }
+
+  function escapeXmlAttr(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function minifyXml(xml: string): string {
+    const doc = parseXml(xml);
+    if (!doc) return '';
+
+    hideError();
+
+    const serializer = new XMLSerializer();
+    let result = serializer.serializeToString(doc);
+    result = result.replace(/>\s+</g, '><');
+
+    return result;
+  }
+
+  // Build XML Tree HTML
+  function buildXmlTreeHtml(node: Node): string {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent?.trim();
+      if (text) {
+        return `<span class="xml-text">${escapeHtml(text)}</span>`;
+      }
+      return '';
+    }
+
+    if (node.nodeType === Node.COMMENT_NODE) {
+      return `<div class="xml-tree-node xml-comment">&lt;!-- ${escapeHtml(node.textContent || '')} --&gt;</div>`;
+    }
+
+    if (node.nodeType === Node.PROCESSING_INSTRUCTION_NODE) {
+      const pi = node as ProcessingInstruction;
+      return `<div class="xml-tree-node"><span class="xml-bracket">&lt;?</span><span class="xml-tag">${escapeHtml(pi.target)}</span> ${escapeHtml(pi.data)}<span class="xml-bracket">?&gt;</span></div>`;
+    }
+
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const element = node as Element;
+      const tagName = element.tagName;
+      const id = 'n' + Math.random().toString(36).substr(2, 8);
+
+      // Build attributes string
+      let attrsHtml = '';
+      for (const attr of element.attributes) {
+        attrsHtml += ` <span class="xml-attr-name">${escapeHtml(attr.name)}</span>=<span class="xml-attr-value">"${escapeHtml(attr.value)}"</span>`;
+      }
+
+      // Get meaningful children (skip empty text nodes)
+      const children = Array.from(element.childNodes).filter(child => {
+        if (child.nodeType === Node.TEXT_NODE) {
+          return child.textContent?.trim();
+        }
+        return true;
+      });
+
+      // Self-closing tag
+      if (children.length === 0) {
+        return `<div class="xml-tree-node"><span class="xml-bracket">&lt;</span><span class="xml-tag">${escapeHtml(tagName)}</span>${attrsHtml}<span class="xml-bracket">/&gt;</span></div>`;
+      }
+
+      // Single text child - inline
+      if (children.length === 1 && children[0].nodeType === Node.TEXT_NODE) {
+        const text = children[0].textContent?.trim() || '';
+        return `<div class="xml-tree-node"><span class="xml-bracket">&lt;</span><span class="xml-tag">${escapeHtml(tagName)}</span>${attrsHtml}<span class="xml-bracket">&gt;</span><span class="xml-text">${escapeHtml(text)}</span><span class="xml-bracket">&lt;/</span><span class="xml-tag">${escapeHtml(tagName)}</span><span class="xml-bracket">&gt;</span></div>`;
+      }
+
+      // Has element children - collapsible
+      let childrenHtml = '';
+      for (const child of children) {
+        childrenHtml += buildXmlTreeHtml(child);
+      }
+
+      return `
+        <div class="xml-tree-node" data-id="${id}">
+          <span class="xml-toggle" onclick="toggleXmlNode('${id}')">▼</span>
+          <span class="xml-bracket">&lt;</span><span class="xml-tag">${escapeHtml(tagName)}</span>${attrsHtml}<span class="xml-bracket">&gt;</span>
+          <span class="text-gray-400 dark:text-slate-500 text-xs ml-1">${children.length} ${children.length === 1 ? 'child' : 'children'}</span>
+          <div class="xml-children" data-children="${id}">
+            ${childrenHtml}
+          </div>
+          <div><span class="xml-bracket">&lt;/</span><span class="xml-tag">${escapeHtml(tagName)}</span><span class="xml-bracket">&gt;</span></div>
+        </div>
+      `;
+    }
+
+    return '';
+  }
+
+  // Toggle tree node
+  (window as any).toggleXmlNode = function(id: string) {
+    const node = document.querySelector(`[data-id="${id}"]`);
+    if (!node) return;
+    const children = node.querySelector(`[data-children="${id}"]`) as HTMLElement;
+    const toggle = node.querySelector('.xml-toggle');
+    if (!children || !toggle) return;
+
+    if (children.classList.contains('hidden')) {
+      children.classList.remove('hidden');
+      toggle.textContent = '▼';
+    } else {
+      children.classList.add('hidden');
+      toggle.textContent = '▶';
+    }
+  };
+
+  // Format button
+  document.getElementById('format-btn')!.addEventListener('click', () => {
+    const xml = editor.value.trim();
+    if (!xml) {
+      showError('Please enter XML to format');
+      return;
+    }
+    const formatted = formatXml(xml, getIndent());
+    if (formatted) {
+      editor.value = formatted;
+    }
+  });
+
+  // Minify button
+  document.getElementById('minify-btn')!.addEventListener('click', () => {
+    const xml = editor.value.trim();
+    if (!xml) {
+      showError('Please enter XML to minify');
+      return;
+    }
+    const minified = minifyXml(xml);
+    if (minified) {
+      editor.value = minified;
+    }
+  });
+
+  // Tree View button
+  document.getElementById('tree-btn')!.addEventListener('click', () => {
+    hideError();
+    const xml = editor.value.trim();
+    if (!xml) {
+      showError('Please enter XML to view');
+      return;
+    }
+
+    const doc = parseXml(xml);
+    if (!doc) return;
+
+    originalText = xml;
+
+    let treeHtml = '';
+
+    // Handle XML declaration
+    const xmlDecl = xml.match(/<\?xml[^?]*\?>/);
+    if (xmlDecl) {
+      treeHtml += `<div class="xml-tree-node"><span class="xml-bracket">&lt;?</span><span class="xml-tag">xml</span> <span class="xml-attr-name">version</span>=<span class="xml-attr-value">"1.0"</span><span class="xml-bracket">?&gt;</span></div>`;
+    }
+
+    // Build tree from document element
+    if (doc.documentElement) {
+      treeHtml += buildXmlTreeHtml(doc.documentElement);
+    }
+
+    treeView.innerHTML = treeHtml;
+
+    editorView.classList.add('hidden');
+    treeView.classList.remove('hidden');
+    textButtons.classList.add('hidden');
+    treeButtons.classList.remove('hidden');
+    indentControls.classList.add('hidden');
+  });
+
+  // Back to text
+  document.getElementById('back-btn')!.addEventListener('click', () => {
+    treeView.classList.add('hidden');
+    editorView.classList.remove('hidden');
+    treeButtons.classList.add('hidden');
+    textButtons.classList.remove('hidden');
+    indentControls.classList.remove('hidden');
+    editor.value = originalText;
+  });
+
+  // Expand all
+  document.getElementById('expand-btn')!.addEventListener('click', () => {
+    document.querySelectorAll('.xml-children').forEach(el => el.classList.remove('hidden'));
+    document.querySelectorAll('.xml-toggle').forEach(el => el.textContent = '▼');
+  });
+
+  // Collapse all
+  document.getElementById('collapse-btn')!.addEventListener('click', () => {
+    document.querySelectorAll('.xml-children').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.xml-toggle').forEach(el => el.textContent = '▶');
+  });
+
+  // Clear
+  document.getElementById('clear-btn')!.addEventListener('click', () => {
+    editor.value = '';
+    hideError();
+  });
+
+  // Copy
+  document.getElementById('copy-btn')!.addEventListener('click', () => {
+    const text = editor.value || originalText;
+    navigator.clipboard.writeText(text);
+    copiedMsg.classList.remove('hidden');
+    setTimeout(() => copiedMsg.classList.add('hidden'), 1500);
+  });
+
+  // Sample
+  document.getElementById('sample-btn')!.addEventListener('click', () => {
+    editor.value = sampleXml;
+    hideError();
+  });
+
+  ShareManager.register({
+    tool: 'xml-formatter',
+    actions: {
+      format: () => document.getElementById('format-btn')!.click(),
+      minify: () => document.getElementById('minify-btn')!.click(),
+      tree: () => document.getElementById('tree-btn')!.click()
+    }
+  });
+</script>

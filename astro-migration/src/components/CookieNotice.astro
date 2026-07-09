@@ -1,0 +1,54 @@
+---
+// CookieNotice.astro
+// Simple informational cookie banner that shows once and stays dismissed
+// Non-blocking - GA4 loads regardless (pragmatic approach)
+---
+
+<div
+  id="cookie-notice"
+  class="fixed bottom-0 left-0 right-0 z-50 hidden"
+  role="alert"
+  aria-live="polite"
+>
+  <div class="bg-slate-800 dark:bg-slate-950 border-t border-slate-700 dark:border-slate-800 shadow-lg">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <p class="text-sm text-slate-300 dark:text-slate-400">
+        We use cookies to analyze site usage. See our
+        <a href="/privacy" class="text-indigo-400 hover:text-indigo-300 underline">Privacy Policy</a>.
+      </p>
+      <button
+        id="cookie-dismiss"
+        class="px-4 py-1.5 text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-slate-800"
+      >
+        Got it
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  function initCookieNotice() {
+    const notice = document.getElementById('cookie-notice');
+    const dismissBtn = document.getElementById('cookie-dismiss');
+
+    if (!notice || !dismissBtn) return;
+
+    // Check if already dismissed (persists forever in localStorage)
+    const dismissed = localStorage.getItem('cookie-notice-dismissed');
+
+    if (!dismissed) {
+      // Show notice after a short delay for better UX
+      setTimeout(() => {
+        notice.classList.remove('hidden');
+      }, 1000);
+    }
+
+    dismissBtn.addEventListener('click', () => {
+      notice.classList.add('hidden');
+      localStorage.setItem('cookie-notice-dismissed', 'true');
+    });
+  }
+
+  initCookieNotice();
+  document.addEventListener('astro:after-swap', initCookieNotice);
+</script>

@@ -1,0 +1,335 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="XML to JSON Converter"
+  description="Convert XML to JSON and JSON to XML instantly. Free online bidirectional converter with attribute handling and namespace support. Perfect for API integration and data transformation."
+  keywords="XML to JSON, JSON to XML, XML converter, convert XML online, XML JSON converter, API data converter, XML transformation"
+  breadcrumb={[{ name: "XML Tools", href: "/xml-tools" }, { name: "XML ↔ JSON" }]}
+  toolId="xml-json-converter"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">XML ↔ JSON Converter</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Input</label>
+        <textarea
+          id="input"
+          data-share-key="input"
+          class="w-full h-80 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Paste XML or JSON here..."
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Output</label>
+        <textarea
+          id="output"
+          readonly
+          class="w-full h-80 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none text-gray-900 dark:text-slate-100"
+          placeholder="Converted output will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mt-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 dark:text-slate-200">Attribute prefix:</label>
+          <select id="attr-prefix" class="p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100">
+            <option value="@">@ (e.g., @id)</option>
+            <option value="_">_ (e.g., _id)</option>
+            <option value="">None</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-medium text-gray-700 dark:text-slate-200">Text content key:</label>
+          <select id="text-key" class="p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100">
+            <option value="#text">#text</option>
+            <option value="_text">_text</option>
+            <option value="$">$</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" id="force-arrays" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+          <label for="force-arrays" class="text-sm text-gray-700 dark:text-slate-200">Force arrays for all elements</label>
+        </div>
+      </div>
+    </div>
+
+    <div id="error-box" class="hidden mt-4 p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-300"></div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="xml-to-json-btn" data-share-action="xmlToJson" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        XML → JSON
+      </button>
+      <button id="json-to-xml-btn" data-share-action="jsonToXml" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        JSON → XML
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Clear
+      </button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Copy Output
+      </button>
+      <button id="swap-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Swap ↔
+      </button>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online XML to JSON Converter</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Convert between XML and JSON formats with customizable attribute handling. Choose how XML attributes
+        are represented in JSON (with @ or _ prefix) and how text content is keyed. Supports bidirectional
+        conversion while preserving data structure.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const attrPrefixSelect = document.getElementById('attr-prefix') as HTMLSelectElement;
+  const textKeySelect = document.getElementById('text-key') as HTMLSelectElement;
+  const forceArraysCheck = document.getElementById('force-arrays') as HTMLInputElement;
+  const errorBox = document.getElementById('error-box');
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function getAttrPrefix(): string {
+    return attrPrefixSelect.value;
+  }
+
+  function getTextKey(): string {
+    return textKeySelect.value;
+  }
+
+  function xmlToJson(xmlString: string): any {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlString, 'application/xml');
+    const parseError = doc.querySelector('parsererror');
+    if (parseError) {
+      throw new Error(parseError.textContent || 'Invalid XML');
+    }
+
+    const attrPrefix = getAttrPrefix();
+    const textKey = getTextKey();
+    const forceArrays = forceArraysCheck.checked;
+
+    function elementToJson(element: Element): any {
+      const result: any = {};
+
+      // Handle attributes
+      for (const attr of element.attributes) {
+        result[attrPrefix + attr.name] = attr.value;
+      }
+
+      // Gather children by tag name
+      const childElements: { [key: string]: Element[] } = {};
+      let hasTextContent = false;
+      let textContent = '';
+
+      for (const child of element.childNodes) {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+          const tagName = (child as Element).tagName;
+          if (!childElements[tagName]) {
+            childElements[tagName] = [];
+          }
+          childElements[tagName].push(child as Element);
+        } else if (child.nodeType === Node.TEXT_NODE) {
+          const text = child.textContent?.trim();
+          if (text) {
+            hasTextContent = true;
+            textContent += text;
+          }
+        }
+      }
+
+      // Convert child elements
+      for (const [tagName, elements] of Object.entries(childElements)) {
+        if (forceArrays || elements.length > 1) {
+          result[tagName] = elements.map(el => elementToJson(el));
+        } else {
+          result[tagName] = elementToJson(elements[0]);
+        }
+      }
+
+      // Handle text content
+      if (hasTextContent) {
+        if (Object.keys(result).length === 0) {
+          return textContent;
+        }
+        result[textKey] = textContent;
+      }
+
+      return Object.keys(result).length === 0 ? '' : result;
+    }
+
+    const root = doc.documentElement;
+    return { [root.tagName]: elementToJson(root) };
+  }
+
+  function jsonToXml(jsonObj: any): string {
+    const attrPrefix = getAttrPrefix();
+    const textKey = getTextKey();
+
+    function escapeXml(str: string): string {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function convertValue(value: any, tagName: string, indentLevel: string): string {
+      if (value === null || value === undefined) {
+        return `${indentLevel}<${tagName}/>\n`;
+      }
+
+      if (typeof value !== 'object') {
+        return `${indentLevel}<${tagName}>${escapeXml(value)}</${tagName}>\n`;
+      }
+
+      if (Array.isArray(value)) {
+        return value.map(item => convertValue(item, tagName, indentLevel)).join('');
+      }
+
+      // Object - handle attributes and children
+      let attributes = '';
+      let children = '';
+      let textContent = '';
+      const childIndent = indentLevel + '  ';
+
+      for (const [key, val] of Object.entries(value)) {
+        if (key === textKey) {
+          textContent = escapeXml(String(val));
+        } else if (attrPrefix && key.startsWith(attrPrefix)) {
+          const attrName = key.slice(attrPrefix.length);
+          attributes += ` ${attrName}="${escapeXml(String(val))}"`;
+        } else {
+          children += convertValue(val, key, childIndent);
+        }
+      }
+
+      if (children) {
+        if (textContent) {
+          return `${indentLevel}<${tagName}${attributes}>\n${childIndent}${textContent}\n${children}${indentLevel}</${tagName}>\n`;
+        }
+        return `${indentLevel}<${tagName}${attributes}>\n${children}${indentLevel}</${tagName}>\n`;
+      } else if (textContent) {
+        return `${indentLevel}<${tagName}${attributes}>${textContent}</${tagName}>\n`;
+      } else {
+        return `${indentLevel}<${tagName}${attributes}/>\n`;
+      }
+    }
+
+    let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+
+    // Handle array at root level - wrap in <root> element
+    if (Array.isArray(jsonObj)) {
+      xml += '<root>\n';
+      for (const item of jsonObj) {
+        if (typeof item === 'object' && item !== null) {
+          for (const [key, val] of Object.entries(item)) {
+            xml += convertValue(val, key, '  ');
+          }
+        } else {
+          xml += `  <item>${escapeXml(String(item))}</item>\n`;
+        }
+      }
+      xml += '</root>';
+    } else if (typeof jsonObj === 'object' && jsonObj !== null) {
+      // Handle object - each top-level key becomes a root element
+      // But XML can only have one root, so if there are multiple keys, wrap in <root>
+      const keys = Object.keys(jsonObj);
+      if (keys.length === 0) {
+        xml += '<root/>';
+      } else if (keys.length === 1) {
+        // Single root element
+        const rootTag = keys[0];
+        xml += convertValue(jsonObj[rootTag], rootTag, '');
+      } else {
+        // Multiple top-level keys - wrap in root
+        xml += '<root>\n';
+        for (const [key, val] of Object.entries(jsonObj)) {
+          xml += convertValue(val, key, '  ');
+        }
+        xml += '</root>';
+      }
+    } else {
+      // Primitive at root level
+      xml += `<root>${escapeXml(String(jsonObj))}</root>`;
+    }
+
+    return xml.trim();
+  }
+
+  document.getElementById('xml-to-json-btn').addEventListener('click', () => {
+    const xml = input.value.trim();
+    if (!xml) {
+      showError('Please enter XML to convert');
+      return;
+    }
+
+    try {
+      hideError();
+      const json = xmlToJson(xml);
+      output.value = JSON.stringify(json, null, 2);
+    } catch (e) {
+      showError('Error: ' + (e as Error).message);
+    }
+  });
+
+  document.getElementById('json-to-xml-btn').addEventListener('click', () => {
+    const jsonStr = input.value.trim();
+    if (!jsonStr) {
+      showError('Please enter JSON to convert');
+      return;
+    }
+
+    try {
+      hideError();
+      const json = JSON.parse(jsonStr);
+      output.value = jsonToXml(json);
+    } catch (e) {
+      showError('Error: ' + (e as Error).message);
+    }
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    input.value = '';
+    output.value = '';
+    hideError();
+  });
+
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(output.value);
+  });
+
+  document.getElementById('swap-btn').addEventListener('click', () => {
+    const temp = input.value;
+    input.value = output.value;
+    output.value = temp;
+  });
+
+  ShareManager.register({
+    tool: 'xml-json-converter',
+    actions: {
+      xmlToJson: () => document.getElementById('xml-to-json-btn')!.click(),
+      jsonToXml: () => document.getElementById('json-to-xml-btn')!.click()
+    }
+  });
+</script>

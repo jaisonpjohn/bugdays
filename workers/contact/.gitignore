@@ -1,0 +1,12 @@
+# Wrangler local state
+.wrangler/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+.dev.vars

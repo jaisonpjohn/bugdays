@@ -1,0 +1,220 @@
+---
+// Theme toggle component with light/dark/system modes
+---
+
+<div class="theme-toggle relative">
+  <button
+    id="theme-toggle-btn"
+    type="button"
+    class="flex items-center justify-center w-8 h-8 rounded-lg
+           bg-slate-200 dark:bg-slate-700
+           hover:bg-slate-300 dark:hover:bg-slate-600
+           transition-colors"
+    aria-label="Toggle theme"
+    title="Toggle theme"
+  >
+    <!-- Sun icon (shown in dark mode) -->
+    <svg
+      id="theme-icon-light"
+      class="w-4 h-4 text-yellow-500 hidden"
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path
+        fill-rule="evenodd"
+        d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+        clip-rule="evenodd"
+      />
+    </svg>
+    <!-- Moon icon (shown in light mode) -->
+    <svg
+      id="theme-icon-dark"
+      class="w-4 h-4 text-slate-600 hidden"
+      fill="currentColor"
+      viewBox="0 0 20 20"
+    >
+      <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+    </svg>
+    <!-- System icon (shown in system mode) -->
+    <svg
+      id="theme-icon-system"
+      class="w-4 h-4 text-slate-500 hidden"
+      fill="none"
+      stroke="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        stroke-width="2"
+        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+      />
+    </svg>
+  </button>
+
+  <!-- Dropdown menu -->
+  <div
+    id="theme-menu"
+    class="absolute right-0 top-full mt-2 w-36 py-1 rounded-lg shadow-lg border
+           bg-white dark:bg-slate-800
+           border-slate-200 dark:border-slate-700
+           hidden z-50"
+  >
+    <button
+      type="button"
+      data-theme="light"
+      class="theme-option w-full px-3 py-2 text-left text-sm flex items-center gap-2
+             hover:bg-slate-100 dark:hover:bg-slate-700
+             text-slate-700 dark:text-slate-300"
+    >
+      <svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+        <path
+          fill-rule="evenodd"
+          d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"
+          clip-rule="evenodd"
+        />
+      </svg>
+      <span>Light</span>
+      <svg id="check-light" class="w-4 h-4 ml-auto text-indigo-500 hidden" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      data-theme="dark"
+      class="theme-option w-full px-3 py-2 text-left text-sm flex items-center gap-2
+             hover:bg-slate-100 dark:hover:bg-slate-700
+             text-slate-700 dark:text-slate-300"
+    >
+      <svg class="w-4 h-4 text-indigo-400" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+      </svg>
+      <span>Dark</span>
+      <svg id="check-dark" class="w-4 h-4 ml-auto text-indigo-500 hidden" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+      </svg>
+    </button>
+    <button
+      type="button"
+      data-theme="system"
+      class="theme-option w-full px-3 py-2 text-left text-sm flex items-center gap-2
+             hover:bg-slate-100 dark:hover:bg-slate-700
+             text-slate-700 dark:text-slate-300"
+    >
+      <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+        />
+      </svg>
+      <span>System</span>
+      <svg id="check-system" class="w-4 h-4 ml-auto text-indigo-500 hidden" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+      </svg>
+    </button>
+  </div>
+</div>
+
+<script>
+  function initThemeToggle() {
+    const toggleBtn = document.getElementById('theme-toggle-btn');
+    const menu = document.getElementById('theme-menu');
+    const iconLight = document.getElementById('theme-icon-light');
+    const iconDark = document.getElementById('theme-icon-dark');
+    const iconSystem = document.getElementById('theme-icon-system');
+    const checkLight = document.getElementById('check-light');
+    const checkDark = document.getElementById('check-dark');
+    const checkSystem = document.getElementById('check-system');
+    const themeOptions = document.querySelectorAll('.theme-option');
+
+    if (!toggleBtn || !menu) return;
+
+    // Get stored theme or default to system
+    function getStoredTheme(): 'light' | 'dark' | 'system' {
+      const stored = localStorage.getItem('theme');
+      if (stored === 'light' || stored === 'dark' || stored === 'system') {
+        return stored;
+      }
+      return 'system';
+    }
+
+    // Get effective theme (resolves 'system' to actual theme)
+    function getEffectiveTheme(theme: 'light' | 'dark' | 'system'): 'light' | 'dark' {
+      if (theme === 'system') {
+        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+      return theme;
+    }
+
+    // Apply theme to document
+    function applyTheme(theme: 'light' | 'dark' | 'system') {
+      const effective = getEffectiveTheme(theme);
+
+      if (effective === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+
+      // Update icons
+      iconLight?.classList.toggle('hidden', theme !== 'dark');
+      iconDark?.classList.toggle('hidden', theme !== 'light');
+      iconSystem?.classList.toggle('hidden', theme !== 'system');
+
+      // Update checkmarks
+      checkLight?.classList.toggle('hidden', theme !== 'light');
+      checkDark?.classList.toggle('hidden', theme !== 'dark');
+      checkSystem?.classList.toggle('hidden', theme !== 'system');
+    }
+
+    // Set theme and store preference
+    function setTheme(theme: 'light' | 'dark' | 'system') {
+      localStorage.setItem('theme', theme);
+      applyTheme(theme);
+    }
+
+    // Toggle menu visibility
+    function toggleMenu() {
+      menu.classList.toggle('hidden');
+    }
+
+    // Close menu when clicking outside
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      if (!toggleBtn.contains(target) && !menu.contains(target)) {
+        menu.classList.add('hidden');
+      }
+    }
+
+    // Event listeners
+    toggleBtn.addEventListener('click', toggleMenu);
+    document.addEventListener('click', handleClickOutside);
+
+    themeOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const theme = option.getAttribute('data-theme') as 'light' | 'dark' | 'system';
+        setTheme(theme);
+        menu.classList.add('hidden');
+      });
+    });
+
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      const currentTheme = getStoredTheme();
+      if (currentTheme === 'system') {
+        applyTheme('system');
+      }
+    });
+
+    // Initialize
+    applyTheme(getStoredTheme());
+  }
+
+  // Run on load
+  initThemeToggle();
+
+  // Re-run after Astro page transitions
+  document.addEventListener('astro:after-swap', initThemeToggle);
+</script>

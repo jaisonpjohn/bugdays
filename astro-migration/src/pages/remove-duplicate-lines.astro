@@ -1,0 +1,243 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="Remove Duplicate Lines Online - Dedupe Text"
+  description="Remove duplicate lines from text. Deduplicate lists with case-sensitive or insensitive matching. Free online duplicate remover with detailed report."
+  keywords="remove duplicate lines, dedupe text, delete duplicates, unique lines, remove duplicates online, deduplicate list"
+  breadcrumb={[{ name: "Text Tools", href: "/text-tools" }, { name: "Remove Duplicates" }]}
+  toolId="remove-duplicate-lines"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Remove Duplicate Lines</h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+          Input <span id="input-count" class="text-gray-500 dark:text-slate-400 font-normal"></span>
+        </label>
+        <textarea
+          id="input"
+          data-share-key="input"
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100"
+          placeholder="Enter lines to deduplicate...&#10;One item per line"
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">
+          Output <span id="output-count" class="text-gray-500 dark:text-slate-400 font-normal"></span>
+        </label>
+        <textarea
+          id="output"
+          readonly
+          class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none text-gray-900 dark:text-slate-100"
+          placeholder="Unique lines will appear here..."
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="mt-4 p-4 bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
+      <div class="flex flex-wrap gap-4">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="case-sensitive" data-share-key="caseSensitive" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Case sensitive</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="trim" data-share-key="trim" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Trim whitespace</span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="sort-output" data-share-key="sortOutput" class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500">
+          <span class="text-sm text-gray-700 dark:text-slate-200">Sort output</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button id="execute-btn" data-share-action="execute" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Remove Duplicates
+      </button>
+      <button id="report-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Show Report
+      </button>
+      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Copy
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors font-medium">
+        Clear
+      </button>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="report-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50 p-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col">
+        <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100">Duplicate Report</h3>
+          <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div class="p-4 text-sm text-gray-600 dark:text-slate-300 border-b border-gray-200 dark:border-slate-700">
+          <span id="report-summary"></span>
+        </div>
+        <div class="flex-1 overflow-auto p-4">
+          <table class="w-full text-sm">
+            <thead class="sticky top-0 bg-white dark:bg-slate-800">
+              <tr class="text-left border-b border-gray-200 dark:border-slate-700">
+                <th class="pb-2 font-medium text-gray-700 dark:text-slate-200">Count</th>
+                <th class="pb-2 font-medium text-gray-700 dark:text-slate-200">Entry</th>
+              </tr>
+            </thead>
+            <tbody id="report-body" class="font-mono"></tbody>
+          </table>
+        </div>
+        <div class="p-4 border-t border-gray-200 dark:border-slate-700">
+          <button id="copy-report-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
+            Copy Report
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Remove Duplicate Lines Online</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Remove duplicate lines from your text while preserving order. View a detailed report showing how many times each line appeared. Perfect for cleaning up lists, log files, and data.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('input') as HTMLTextAreaElement;
+  const output = document.getElementById('output') as HTMLTextAreaElement;
+  const inputCount = document.getElementById('input-count');
+  const outputCount = document.getElementById('output-count');
+
+  let lastReport: { entry: string; count: number }[] = [];
+
+  function execute() {
+    const caseSensitive = (document.getElementById('case-sensitive') as HTMLInputElement).checked;
+    const trim = (document.getElementById('trim') as HTMLInputElement).checked;
+    const sortOutput = (document.getElementById('sort-output') as HTMLInputElement).checked;
+
+    let lines = input.value.split('\n');
+    const originalCount = lines.length;
+
+    if (trim) lines = lines.map(l => l.trim());
+
+    // Build frequency map
+    const frequency = new Map<string, { display: string; count: number }>();
+    for (const line of lines) {
+      const key = caseSensitive ? line : line.toLowerCase();
+      if (frequency.has(key)) {
+        frequency.get(key)!.count++;
+      } else {
+        frequency.set(key, { display: line, count: 1 });
+      }
+    }
+
+    lastReport = Array.from(frequency.values())
+      .map(v => ({ entry: v.display, count: v.count }))
+      .sort((a, b) => b.count - a.count);
+
+    // Get unique lines preserving order
+    const seen = new Set<string>();
+    const unique: string[] = [];
+
+    for (const line of lines) {
+      const key = caseSensitive ? line : line.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(line);
+      }
+    }
+
+    let result = unique;
+    if (sortOutput) {
+      result = result.sort((a, b) => a.localeCompare(b));
+    }
+
+    output.value = result.join('\n');
+    const removed = originalCount - unique.length;
+    outputCount!.textContent = `(${unique.length} unique, ${removed} removed)`;
+  }
+
+  function updateInputCount() {
+    const lines = input.value.split('\n').filter(l => l.trim() !== '');
+    inputCount!.textContent = lines.length > 0 ? `(${lines.length} lines)` : '';
+  }
+
+  function escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Report modal
+  const reportModal = document.getElementById('report-modal');
+  const reportBody = document.getElementById('report-body');
+  const reportSummary = document.getElementById('report-summary');
+
+  function showReport() {
+    if (lastReport.length === 0) {
+      execute();
+    }
+
+    const totalEntries = lastReport.reduce((sum, r) => sum + r.count, 0);
+    const uniqueCount = lastReport.length;
+    const duplicateCount = lastReport.reduce((sum, r) => sum + r.count - 1, 0);
+
+    reportSummary!.textContent = `${totalEntries} total entries, ${uniqueCount} unique, ${duplicateCount} duplicates removed`;
+
+    reportBody!.innerHTML = lastReport.map(r => {
+      const countClass = r.count > 1 ? 'text-amber-600 dark:text-amber-400 font-semibold' : 'text-gray-500 dark:text-slate-400';
+      const entryText = r.entry === '' ? '<em class="text-gray-400 dark:text-slate-500">(empty line)</em>' : escapeHtml(r.entry);
+      return `<tr class="border-b border-gray-100 dark:border-slate-700">
+        <td class="py-2 pr-4 ${countClass}">${r.count}</td>
+        <td class="py-2 text-gray-700 dark:text-slate-300 break-all">${entryText}</td>
+      </tr>`;
+    }).join('');
+
+    reportModal!.classList.remove('hidden');
+    reportModal!.classList.add('flex');
+  }
+
+  function hideReport() {
+    reportModal!.classList.add('hidden');
+    reportModal!.classList.remove('flex');
+  }
+
+  document.getElementById('execute-btn')?.addEventListener('click', execute);
+  document.getElementById('report-btn')?.addEventListener('click', showReport);
+  document.getElementById('copy-btn')?.addEventListener('click', () => navigator.clipboard.writeText(output.value));
+  document.getElementById('clear-btn')?.addEventListener('click', () => {
+    input.value = '';
+    output.value = '';
+    inputCount!.textContent = '';
+    outputCount!.textContent = '';
+    lastReport = [];
+  });
+  document.getElementById('close-modal')?.addEventListener('click', hideReport);
+  document.getElementById('copy-report-btn')?.addEventListener('click', () => {
+    const lines = lastReport.map(r => `${r.count}\t${r.entry}`);
+    navigator.clipboard.writeText(['Count\tEntry', ...lines].join('\n'));
+  });
+
+  reportModal?.addEventListener('click', (e) => {
+    if (e.target === reportModal) hideReport();
+  });
+
+  input.addEventListener('input', updateInputCount);
+
+  ShareManager.register({
+    tool: 'remove-duplicate-lines',
+    actions: { execute: () => document.getElementById('execute-btn')?.click() }
+  });
+</script>

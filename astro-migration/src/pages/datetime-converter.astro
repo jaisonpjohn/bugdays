@@ -1,0 +1,301 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="DateTime Converter - Unix Timestamp & ISO 8601"
+  description="Convert between Unix timestamps, ISO 8601, and human-readable dates. Support for milliseconds, timezone conversion, and relative time. Free online datetime converter."
+  keywords="Unix timestamp converter, epoch converter, ISO 8601 converter, datetime converter, timestamp to date, date to timestamp, Unix time converter"
+  breadcrumb={[{ name: "Converters", href: "/converter-tools" }, { name: "DateTime Converter" }]}
+  toolId="datetime-converter"
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">DateTime Converter</h1>
+
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <div class="flex flex-wrap gap-3 mb-4">
+        <button id="now-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+          Use Current Time
+        </button>
+        <button id="clear-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+          Clear
+        </button>
+      </div>
+
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Timezone</label>
+        <select id="timezone" data-share-key="timezone" class="w-full md:w-auto p-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+          <option value="UTC">UTC</option>
+          <option value="America/New_York">America/New_York (EST/EDT)</option>
+          <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+          <option value="America/Denver">America/Denver (MST/MDT)</option>
+          <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+          <option value="Europe/London">Europe/London (GMT/BST)</option>
+          <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+          <option value="Europe/Berlin">Europe/Berlin (CET/CEST)</option>
+          <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+          <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
+          <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+          <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+          <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
+          <option value="Pacific/Auckland">Pacific/Auckland (NZST/NZDT)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <!-- Unix Timestamp -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Unix Timestamp (seconds)</label>
+        <input
+          type="text"
+          id="unix-sec"
+          data-share-key="unixSec"
+          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="e.g., 1704067200"
+        />
+      </div>
+
+      <!-- Unix Timestamp (milliseconds) -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Unix Timestamp (milliseconds)</label>
+        <input
+          type="text"
+          id="unix-ms"
+          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="e.g., 1704067200000"
+        />
+      </div>
+
+      <!-- ISO 8601 -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">ISO 8601</label>
+        <input
+          type="text"
+          id="iso8601"
+          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="e.g., 2024-01-01T00:00:00Z"
+        />
+      </div>
+
+      <!-- Human Readable -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Human Readable</label>
+        <input
+          type="text"
+          id="human"
+          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="e.g., January 1, 2024 12:00:00 AM"
+        />
+      </div>
+
+      <!-- Date Picker -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Date Picker</label>
+        <input
+          type="datetime-local"
+          id="datepicker"
+          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+        />
+      </div>
+
+      <!-- RFC 2822 -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">RFC 2822</label>
+        <input
+          type="text"
+          id="rfc2822"
+          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="e.g., Mon, 01 Jan 2024 00:00:00 +0000"
+        />
+      </div>
+    </div>
+
+    <div id="error-box" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div class="mt-8">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online DateTime Converter</h2>
+      <p class="text-gray-600 dark:text-slate-300">
+        Convert between Unix timestamps (seconds/milliseconds), ISO 8601, RFC 2822, and human-readable date formats.
+        Select a timezone to see the date/time in different regions. All conversions happen instantly in your browser.
+      </p>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const unixSec = document.getElementById('unix-sec') as HTMLInputElement;
+  const unixMs = document.getElementById('unix-ms') as HTMLInputElement;
+  const iso8601 = document.getElementById('iso8601') as HTMLInputElement;
+  const human = document.getElementById('human') as HTMLInputElement;
+  const datepicker = document.getElementById('datepicker') as HTMLInputElement;
+  const rfc2822 = document.getElementById('rfc2822') as HTMLInputElement;
+  const timezone = document.getElementById('timezone') as HTMLSelectElement;
+  const errorBox = document.getElementById('error-box');
+
+  let updating = false;
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function updateAllFromDate(date: Date, source: string) {
+    if (updating || isNaN(date.getTime())) return;
+    updating = true;
+    hideError();
+
+    const tz = timezone.value;
+    const ms = date.getTime();
+
+    if (source !== 'unix-sec') unixSec.value = Math.floor(ms / 1000).toString();
+    if (source !== 'unix-ms') unixMs.value = ms.toString();
+    if (source !== 'iso8601') iso8601.value = date.toISOString();
+    if (source !== 'rfc2822') rfc2822.value = date.toUTCString();
+    if (source !== 'human') {
+      human.value = date.toLocaleString('en-US', {
+        timeZone: tz,
+        dateStyle: 'full',
+        timeStyle: 'long'
+      });
+    }
+    if (source !== 'datepicker') {
+      // Format for datetime-local input in selected timezone
+      const localDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
+      const year = localDate.getFullYear();
+      const month = String(localDate.getMonth() + 1).padStart(2, '0');
+      const day = String(localDate.getDate()).padStart(2, '0');
+      const hours = String(localDate.getHours()).padStart(2, '0');
+      const minutes = String(localDate.getMinutes()).padStart(2, '0');
+      datepicker.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    updating = false;
+  }
+
+  unixSec.addEventListener('input', () => {
+    const val = unixSec.value.trim();
+    if (!val) return;
+    const num = parseInt(val, 10);
+    if (isNaN(num)) {
+      showError('Invalid Unix timestamp');
+      return;
+    }
+    updateAllFromDate(new Date(num * 1000), 'unix-sec');
+  });
+
+  unixMs.addEventListener('input', () => {
+    const val = unixMs.value.trim();
+    if (!val) return;
+    const num = parseInt(val, 10);
+    if (isNaN(num)) {
+      showError('Invalid Unix timestamp');
+      return;
+    }
+    updateAllFromDate(new Date(num), 'unix-ms');
+  });
+
+  iso8601.addEventListener('input', () => {
+    const val = iso8601.value.trim();
+    if (!val) return;
+    const date = new Date(val);
+    if (isNaN(date.getTime())) {
+      showError('Invalid ISO 8601 date');
+      return;
+    }
+    updateAllFromDate(date, 'iso8601');
+  });
+
+  human.addEventListener('input', () => {
+    const val = human.value.trim();
+    if (!val) return;
+    const date = new Date(val);
+    if (isNaN(date.getTime())) {
+      showError('Invalid date format');
+      return;
+    }
+    updateAllFromDate(date, 'human');
+  });
+
+  rfc2822.addEventListener('input', () => {
+    const val = rfc2822.value.trim();
+    if (!val) return;
+    const date = new Date(val);
+    if (isNaN(date.getTime())) {
+      showError('Invalid RFC 2822 date');
+      return;
+    }
+    updateAllFromDate(date, 'rfc2822');
+  });
+
+  datepicker.addEventListener('input', () => {
+    const val = datepicker.value;
+    if (!val) return;
+    // Parse the datetime-local value in the selected timezone
+    const tz = timezone.value;
+    const date = new Date(val);
+    if (isNaN(date.getTime())) {
+      showError('Invalid date');
+      return;
+    }
+    updateAllFromDate(date, 'datepicker');
+  });
+
+  timezone.addEventListener('change', () => {
+    // Re-update human readable and datepicker with current timestamp
+    const val = unixMs.value.trim();
+    if (val) {
+      const num = parseInt(val, 10);
+      if (!isNaN(num)) {
+        const date = new Date(num);
+        const tz = timezone.value;
+        human.value = date.toLocaleString('en-US', {
+          timeZone: tz,
+          dateStyle: 'full',
+          timeStyle: 'long'
+        });
+        // Update datepicker
+        const localDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
+        const year = localDate.getFullYear();
+        const month = String(localDate.getMonth() + 1).padStart(2, '0');
+        const day = String(localDate.getDate()).padStart(2, '0');
+        const hours = String(localDate.getHours()).padStart(2, '0');
+        const minutes = String(localDate.getMinutes()).padStart(2, '0');
+        datepicker.value = `${year}-${month}-${day}T${hours}:${minutes}`;
+      }
+    }
+  });
+
+  document.getElementById('now-btn').addEventListener('click', () => {
+    updateAllFromDate(new Date(), 'now');
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    unixSec.value = '';
+    unixMs.value = '';
+    iso8601.value = '';
+    human.value = '';
+    datepicker.value = '';
+    rfc2822.value = '';
+    hideError();
+  });
+
+  ShareManager.register({
+    tool: 'datetime-converter',
+    afterLoad: () => {
+      const val = unixSec.value.trim();
+      if (val) {
+        const num = parseInt(val, 10);
+        if (!isNaN(num)) {
+          updateAllFromDate(new Date(num * 1000), 'unix-sec');
+        }
+      }
+    }
+  });
+</script>

@@ -1,0 +1,14 @@
+---
+// Redirect old line-tools URLs to new SEO-friendly pages
+const tab = Astro.url.searchParams.get('tab');
+
+const redirectMap: Record<string, string> = {
+  'join': '/join-lines',
+  'split': '/split-text',
+  'sort': '/sort-lines',
+  'dedupe': '/remove-duplicate-lines',
+};
+
+const destination = redirectMap[tab || ''] || '/join-lines';
+return Astro.redirect(destination, 301);
+---

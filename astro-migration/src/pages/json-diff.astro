@@ -1,0 +1,658 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const jsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "JSON Diff - Compare JSON Online",
+    "description": "Free online JSON diff tool. Compare two JSON objects and find differences instantly with color-coded highlighting.",
+    "url": "https://bugdays.com/json-diff",
+    "applicationCategory": "DeveloperApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": ["JSON comparison", "Semantic diff", "Deep object comparison", "Array order ignore", "Color-coded diff"]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "How do I compare two JSON files?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Paste your original JSON in the left panel and modified JSON in the right panel, then click Compare. The tool highlights added (green), removed (red), and modified (purple) values."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Does JSON key order matter when comparing?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "By default, key order is ignored - so {\"a\":1,\"b\":2} equals {\"b\":2,\"a\":1}. You can toggle this option off if order matters for your use case."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I compare nested JSON objects?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes! This tool performs deep comparison of nested objects and arrays, showing the exact path where differences occur."
+        }
+      }
+    ]
+  }
+];
+---
+
+<Layout
+  title="JSON Diff Online - Compare JSON, Find Differences"
+  description="Free Online JSON diff tool to compare two JSON objects online. Find differences instantly with semantic comparison. Color-coded highlighting shows added, removed, and changed values. Compare API responses, config files."
+  keywords="JSON diff, JSON compare, JSON comparison, JSON difference, compare JSON online, diff JSON, JSON diff checker, compare two JSON, JSON comparator, semantic JSON diff, API response compare, JSON file compare"
+  breadcrumb={[{ name: "JSON Tools", href: "/json-tools" }, { name: "JSON Diff" }]}
+  toolId="json-diff"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-6xl mx-auto">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">JSON Diff - Compare JSON Online</h1>
+
+    <div class="grid md:grid-cols-2 gap-4 mb-4">
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Original JSON</label>
+        <textarea
+          id="json1"
+          data-share-key="json1"
+          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+          placeholder={'{"name": "John", "age": 30}'}
+        ></textarea>
+      </div>
+
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Modified JSON</label>
+        <textarea
+          id="json2"
+          data-share-key="json2"
+          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
+          placeholder={'{"name": "Jane", "age": 25}'}
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- Options -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
+      <div class="flex flex-wrap items-center gap-6">
+        <label class="inline-flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="ignore-key-order" data-share-key="ignoreKeyOrder" checked class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+          <span class="text-sm text-gray-700 dark:text-slate-200">Ignore key order</span>
+        </label>
+        <label class="inline-flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="ignore-array-order" data-share-key="ignoreArrayOrder" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
+          <span class="text-sm text-gray-700 dark:text-slate-200">Ignore array order</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap gap-3 mb-4">
+      <button id="compare-btn" data-share-action="compare" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        Compare JSON
+      </button>
+      <button id="format-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Format Both
+      </button>
+      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Clear
+      </button>
+      <button id="swap-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Swap
+      </button>
+      <button id="sample-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
+        Load Sample
+      </button>
+    </div>
+
+    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
+
+    <div id="stats" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800"></div>
+
+    <!-- Diff Results -->
+    <div id="results" class="hidden">
+      <!-- Side-by-side JSON view with highlighting -->
+      <div class="grid md:grid-cols-2 gap-4 mb-4">
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm font-medium text-gray-700 dark:text-slate-200">Original</label>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-0.5 bg-red-200 text-red-800 rounded border border-red-400">removed</span>
+              <span class="px-2 py-0.5 bg-purple-200 text-purple-800 rounded border border-purple-400">changed</span>
+            </div>
+          </div>
+          <div id="diff-left" class="font-mono text-sm overflow-auto max-h-[500px] border border-gray-200 dark:border-slate-700 rounded bg-gray-50 dark:bg-slate-900 p-2"></div>
+        </div>
+        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+          <div class="flex items-center justify-between mb-2">
+            <label class="text-sm font-medium text-gray-700 dark:text-slate-200">Modified</label>
+            <div class="flex gap-2 text-xs">
+              <span class="px-2 py-0.5 bg-green-200 text-green-800 rounded border border-green-400">added</span>
+              <span class="px-2 py-0.5 bg-purple-200 text-purple-800 rounded border border-purple-400">changed</span>
+            </div>
+          </div>
+          <div id="diff-right" class="font-mono text-sm overflow-auto max-h-[500px] border border-gray-200 dark:border-slate-700 rounded bg-gray-50 dark:bg-slate-900 p-2"></div>
+        </div>
+      </div>
+
+      <!-- Textual Changes Report -->
+      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Changes Report</label>
+        <div id="changes-list" class="space-y-2 max-h-80 overflow-auto"></div>
+      </div>
+    </div>
+
+    <div class="mt-8 space-y-6">
+      <div>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online JSON Diff & Comparison Tool</h2>
+        <p class="text-gray-600 dark:text-slate-300 mb-4">
+          Compare two JSON objects and instantly find all differences. This JSON diff checker uses semantic comparison
+          (not just text diff) to identify added, removed, and modified values at any nesting level. Perfect for
+          comparing API responses, debugging webhooks, validating configuration changes, or reviewing JSON data changes.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4 text-sm">
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">🔍 Semantic Comparison</h3>
+          <p class="text-gray-600 dark:text-slate-300">Compares JSON structure and values, not just text. Finds real differences even if formatting changes.</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">🎨 Color-Coded Diff</h3>
+          <p class="text-gray-600 dark:text-slate-300">Green for added, red for removed, purple for changed. See exactly what's different at a glance.</p>
+        </div>
+        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">⚙️ Flexible Options</h3>
+          <p class="text-gray-600 dark:text-slate-300">Ignore key order or array order for flexible comparison. Great for unordered data.</p>
+        </div>
+      </div>
+
+      <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg text-sm">
+        <p class="font-medium text-gray-700 dark:text-slate-200 mb-2">How to compare JSON:</p>
+        <ol class="text-gray-600 dark:text-slate-300 space-y-1 list-decimal list-inside">
+          <li>Paste your original JSON in the left panel</li>
+          <li>Paste the modified JSON in the right panel</li>
+          <li>Click <strong>Compare JSON</strong> to see all differences</li>
+          <li>Review color-coded results and the changes report</li>
+        </ol>
+      </div>
+
+      <details class="bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+        <summary class="p-4 font-medium text-gray-700 dark:text-slate-200 cursor-pointer">Frequently Asked Questions</summary>
+        <div class="px-4 pb-4 space-y-4 text-sm">
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100">How do I compare two JSON files?</h4>
+            <p class="text-gray-600 dark:text-slate-300">Paste your original JSON in the left panel and modified JSON in the right panel, then click Compare. The tool highlights added (green), removed (red), and modified (purple) values with their exact paths.</p>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100">Does JSON key order matter?</h4>
+            <p class="text-gray-600 dark:text-slate-300">By default, key order is ignored - so <code>{`{"a":1,"b":2}`}</code> equals <code>{`{"b":2,"a":1}`}</code>. You can disable this if key order matters for your comparison.</p>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100">Can I compare nested JSON?</h4>
+            <p class="text-gray-600 dark:text-slate-300">Yes! This tool performs deep comparison of nested objects and arrays at any depth, showing the exact path where each difference occurs.</p>
+          </div>
+          <div>
+            <h4 class="font-medium text-gray-800 dark:text-slate-100">Is my JSON data safe?</h4>
+            <p class="text-gray-600 dark:text-slate-300">All comparison happens in your browser. Your JSON data is never sent to any server.</p>
+          </div>
+        </div>
+      </details>
+    </div>
+  </div>
+</Layout>
+
+
+
+<script>
+  import { ShareManager } from '../lib/share';
+
+  const json1Input = document.getElementById('json1') as HTMLTextAreaElement;
+  const json2Input = document.getElementById('json2') as HTMLTextAreaElement;
+
+  ShareManager.register({
+    tool: 'json-diff',
+    actions: {
+      compare: () => document.getElementById('compare-btn')?.click(),
+    }
+  });
+  const ignoreKeyOrder = document.getElementById('ignore-key-order') as HTMLInputElement;
+  const ignoreArrayOrder = document.getElementById('ignore-array-order') as HTMLInputElement;
+  const diffLeft = document.getElementById('diff-left');
+  const diffRight = document.getElementById('diff-right');
+  const changesList = document.getElementById('changes-list');
+  const results = document.getElementById('results');
+  const stats = document.getElementById('stats');
+  const errorBox = document.getElementById('error-box');
+
+  const sample1 = {
+    name: "John Doe",
+    age: 30,
+    email: "john@example.com",
+    address: {
+      street: "123 Main St",
+      city: "New York",
+      zip: "10001"
+    },
+    hobbies: ["reading", "gaming", "hiking"],
+    active: true
+  };
+
+  const sample2 = {
+    name: "John Smith",
+    age: 31,
+    phone: "555-1234",
+    address: {
+      street: "123 Main St",
+      city: "Boston",
+      zip: "02101"
+    },
+    hobbies: ["reading", "cooking", "hiking"],
+    active: false
+  };
+
+  function showError(msg: string) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+    results.classList.add('hidden');
+    stats.classList.add('hidden');
+  }
+
+  function hideError() {
+    errorBox.classList.add('hidden');
+  }
+
+  function sortObject(obj: any): any {
+    if (obj === null || typeof obj !== 'object') return obj;
+    if (Array.isArray(obj)) {
+      return ignoreArrayOrder.checked
+        ? obj.map(sortObject).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+        : obj.map(sortObject);
+    }
+    const sorted: any = {};
+    Object.keys(obj).sort().forEach(key => {
+      sorted[key] = sortObject(obj[key]);
+    });
+    return sorted;
+  }
+
+  function deepEqual(a: any, b: any): boolean {
+    if (a === b) return true;
+    if (a === null || b === null) return false;
+    if (typeof a !== typeof b) return false;
+    if (typeof a !== 'object') return false;
+
+    if (Array.isArray(a) !== Array.isArray(b)) return false;
+
+    if (Array.isArray(a)) {
+      if (a.length !== b.length) return false;
+      if (ignoreArrayOrder.checked) {
+        const sortedA = [...a].map(sortObject).sort((x, y) => JSON.stringify(x).localeCompare(JSON.stringify(y)));
+        const sortedB = [...b].map(sortObject).sort((x, y) => JSON.stringify(x).localeCompare(JSON.stringify(y)));
+        return sortedA.every((item, i) => deepEqual(item, sortedB[i]));
+      }
+      return a.every((item, i) => deepEqual(item, b[i]));
+    }
+
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+    return keysA.every(key => keysB.includes(key) && deepEqual(a[key], b[key]));
+  }
+
+  interface Change {
+    type: 'added' | 'removed' | 'modified';
+    path: string;
+    oldValue?: any;
+    newValue?: any;
+  }
+
+  function findChanges(obj1: any, obj2: any, path: string = ''): Change[] {
+    const changes: Change[] = [];
+
+    if (obj1 === obj2) return changes;
+    if (obj1 === null && obj2 !== null) {
+      return [{ type: 'modified', path: path || '(root)', oldValue: null, newValue: obj2 }];
+    }
+    if (obj1 !== null && obj2 === null) {
+      return [{ type: 'modified', path: path || '(root)', oldValue: obj1, newValue: null }];
+    }
+
+    if (typeof obj1 !== 'object' || typeof obj2 !== 'object') {
+      if (obj1 !== obj2) {
+        changes.push({ type: 'modified', path: path || '(root)', oldValue: obj1, newValue: obj2 });
+      }
+      return changes;
+    }
+
+    if (Array.isArray(obj1) && Array.isArray(obj2)) {
+      if (ignoreArrayOrder.checked) {
+        // Compare as sets - find elements that exist in one but not the other
+        const stringify = (v: any) => JSON.stringify(sortObject(v));
+        const set1 = obj1.map((v, i) => ({ val: v, str: stringify(v), idx: i }));
+        const set2 = obj2.map((v, i) => ({ val: v, str: stringify(v), idx: i }));
+
+        // Find items in obj1 that are not in obj2 (removed)
+        const removed = set1.filter(item1 => !set2.some(item2 => item1.str === item2.str));
+        for (const item of removed) {
+          const itemPath = path ? `${path}[${item.idx}]` : `[${item.idx}]`;
+          changes.push({ type: 'removed', path: itemPath, oldValue: item.val });
+        }
+
+        // Find items in obj2 that are not in obj1 (added)
+        const added = set2.filter(item2 => !set1.some(item1 => item1.str === item2.str));
+        for (const item of added) {
+          const itemPath = path ? `${path}[${item.idx}]` : `[${item.idx}]`;
+          changes.push({ type: 'added', path: itemPath, newValue: item.val });
+        }
+      } else {
+        // Compare by position
+        const maxLen = Math.max(obj1.length, obj2.length);
+        for (let i = 0; i < maxLen; i++) {
+          const itemPath = path ? `${path}[${i}]` : `[${i}]`;
+          if (i >= obj1.length) {
+            changes.push({ type: 'added', path: itemPath, newValue: obj2[i] });
+          } else if (i >= obj2.length) {
+            changes.push({ type: 'removed', path: itemPath, oldValue: obj1[i] });
+          } else {
+            changes.push(...findChanges(obj1[i], obj2[i], itemPath));
+          }
+        }
+      }
+      return changes;
+    }
+
+    if (Array.isArray(obj1) !== Array.isArray(obj2)) {
+      changes.push({ type: 'modified', path: path || '(root)', oldValue: obj1, newValue: obj2 });
+      return changes;
+    }
+
+    const keys1 = new Set(Object.keys(obj1));
+    const keys2 = new Set(Object.keys(obj2));
+
+    // Removed keys
+    for (const key of keys1) {
+      if (!keys2.has(key)) {
+        const keyPath = path ? `${path}.${key}` : key;
+        changes.push({ type: 'removed', path: keyPath, oldValue: obj1[key] });
+      }
+    }
+
+    // Added keys
+    for (const key of keys2) {
+      if (!keys1.has(key)) {
+        const keyPath = path ? `${path}.${key}` : key;
+        changes.push({ type: 'added', path: keyPath, newValue: obj2[key] });
+      }
+    }
+
+    // Modified keys
+    for (const key of keys1) {
+      if (keys2.has(key)) {
+        const keyPath = path ? `${path}.${key}` : key;
+        changes.push(...findChanges(obj1[key], obj2[key], keyPath));
+      }
+    }
+
+    return changes;
+  }
+
+  function formatValue(val: any): string {
+    if (val === null) return '<span class="diff-null">null</span>';
+    if (typeof val === 'string') return `<span class="diff-string">"${escapeHtml(val)}"</span>`;
+    if (typeof val === 'number') return `<span class="diff-number">${val}</span>`;
+    if (typeof val === 'boolean') return `<span class="diff-boolean">${val}</span>`;
+    return escapeHtml(JSON.stringify(val));
+  }
+
+  function escapeHtml(text: string): string {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Annotate JSON string with inline highlights for changes
+  function annotateJson(jsonStr: string, obj: any, changes: Change[], isOriginal: boolean): string {
+    // Use Map with array to handle multiple changes at same path (e.g., array reorder)
+    const changedPaths = new Map<string, Change[]>();
+    changes.forEach(c => {
+      const existing = changedPaths.get(c.path) || [];
+      existing.push(c);
+      changedPaths.set(c.path, existing);
+    });
+
+    const highlights: { start: number; end: number; type: string; path: string }[] = [];
+
+    function findChangedPositions(val: any, path: string, jsonText: string, searchStart: number) {
+      const pathChanges = changedPaths.get(path) || [];
+
+      // Find the relevant change for this side (original or modified)
+      let change: Change | undefined;
+      for (const c of pathChanges) {
+        if (c.type === 'removed' && isOriginal) { change = c; break; }
+        if (c.type === 'added' && !isOriginal) { change = c; break; }
+        if (c.type === 'modified') { change = c; break; }
+      }
+
+      if (change) {
+        const valStr = JSON.stringify(val);
+        let pos = searchStart;
+        let keyPos = -1;
+
+        // Extract key name from path (for object properties)
+        const keyNameMatch = path.match(/\.?([^.\[\]]+)$|(\[\d+\])$/);
+        const keyName = keyNameMatch ? keyNameMatch[1] : null;
+        const isArrayItem = path.match(/\[\d+\]$/);
+
+        // Find key position for object properties
+        if (keyName && !isArrayItem) {
+          const keyStr = `"${keyName}"`;
+          keyPos = jsonText.indexOf(keyStr, searchStart);
+          if (keyPos !== -1) {
+            const colonPos = jsonText.indexOf(':', keyPos);
+            if (colonPos !== -1) {
+              pos = colonPos + 1;
+              while (pos < jsonText.length && /\s/.test(jsonText[pos])) pos++;
+            }
+          }
+        }
+
+        const valPos = jsonText.indexOf(valStr, pos);
+        if (valPos !== -1) {
+          let highlightType = '';
+          if (change.type === 'added' && !isOriginal) highlightType = 'added';
+          else if (change.type === 'removed' && isOriginal) highlightType = 'removed';
+          else if (change.type === 'modified') highlightType = 'modified';
+
+          if (highlightType) {
+            // For added/removed keys, highlight entire "key": value
+            // For modified, just highlight the value
+            const highlightStart = (change.type !== 'modified' && keyPos !== -1) ? keyPos : valPos;
+            highlights.push({
+              start: highlightStart,
+              end: valPos + valStr.length,
+              type: highlightType,
+              path: path
+            });
+          }
+        }
+      }
+
+      if (val !== null && typeof val === 'object') {
+        if (Array.isArray(val)) {
+          val.forEach((item, i) => {
+            const itemPath = path ? `${path}[${i}]` : `[${i}]`;
+            findChangedPositions(item, itemPath, jsonText, searchStart);
+          });
+        } else {
+          Object.keys(val).forEach(key => {
+            const keyPath = path ? `${path}.${key}` : key;
+            findChangedPositions(val[key], keyPath, jsonText, searchStart);
+          });
+        }
+      }
+    }
+
+    const prettyJson = JSON.stringify(obj, null, 2);
+    findChangedPositions(obj, '', prettyJson, 0);
+
+    highlights.sort((a, b) => a.start - b.start);
+
+    let finalResult = '';
+    let lastEnd = 0;
+    for (const h of highlights) {
+      finalResult += escapeHtml(prettyJson.slice(lastEnd, h.start));
+      const content = prettyJson.slice(h.start, h.end);
+
+      let style = '';
+      if (h.type === 'added') style = 'background-color: #bbf7d0; color: #14532d; border: 1px solid #22c55e; border-radius: 2px; padding: 0 1px;';
+      else if (h.type === 'removed') style = 'background-color: #fecaca; color: #7f1d1d; border: 1px solid #ef4444; border-radius: 2px; padding: 0 1px; text-decoration: line-through solid #7f1d1d;';
+      else if (h.type === 'modified') style = 'background-color: #e9d5ff; color: #581c87; border: 1px solid #a855f7; border-radius: 2px; padding: 0 1px;';
+
+      finalResult += `<mark style="${style}" title="${escapeHtml(h.path)}">` + escapeHtml(content) + '</mark>';
+      lastEnd = h.end;
+    }
+    finalResult += escapeHtml(prettyJson.slice(lastEnd));
+
+    return '<pre class="whitespace-pre-wrap text-sm">' + finalResult + '</pre>';
+  }
+
+  function compare() {
+    hideError();
+
+    const str1 = json1Input.value.trim();
+    const str2 = json2Input.value.trim();
+
+    if (!str1 || !str2) {
+      showError('Please enter JSON in both fields');
+      return;
+    }
+
+    let obj1: any, obj2: any;
+    try {
+      obj1 = JSON.parse(str1);
+    } catch (e) {
+      showError('Invalid JSON in left panel: ' + (e as Error).message);
+      return;
+    }
+    try {
+      obj2 = JSON.parse(str2);
+    } catch (e) {
+      showError('Invalid JSON in right panel: ' + (e as Error).message);
+      return;
+    }
+
+    const changes = findChanges(obj1, obj2);
+
+    // Stats
+    const added = changes.filter(c => c.type === 'added').length;
+    const removed = changes.filter(c => c.type === 'removed').length;
+    const modified = changes.filter(c => c.type === 'modified').length;
+
+    if (changes.length === 0) {
+      stats.innerHTML = '✓ <strong>No differences</strong> - JSON objects are equal';
+      stats.className = 'mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800';
+    } else {
+      const parts = [];
+      if (added > 0) parts.push(`<span class="text-green-700 font-medium">+${added} added</span>`);
+      if (removed > 0) parts.push(`<span class="text-red-700 font-medium">−${removed} removed</span>`);
+      if (modified > 0) parts.push(`<span class="text-purple-700 font-medium">~${modified} changed</span>`);
+      stats.innerHTML = `Found <strong>${changes.length} difference${changes.length !== 1 ? 's' : ''}</strong>: ${parts.join(', ')}`;
+      stats.className = 'mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-gray-800';
+    }
+    stats.classList.remove('hidden');
+
+    // Render diffs with inline annotations
+    diffLeft.innerHTML = annotateJson(json1Input.value, obj1, changes, true);
+    diffRight.innerHTML = annotateJson(json2Input.value, obj2, changes, false);
+
+    // Changes list - show useful detailed output
+    if (changes.length === 0) {
+      changesList.innerHTML = '<div class="text-gray-500 dark:text-slate-400 text-sm">No differences - the JSON objects are equal</div>';
+    } else {
+      const formatVal = (v: any) => {
+        const s = JSON.stringify(v);
+        return s.length > 80 ? s.slice(0, 80) + '...' : s;
+      };
+
+      changesList.innerHTML = changes.map(c => {
+        const bgStyle = c.type === 'added' ? 'background-color: #f0fdf4; border-left: 4px solid #22c55e;' : c.type === 'removed' ? 'background-color: #fef2f2; border-left: 4px solid #ef4444;' : 'background-color: #faf5ff; border-left: 4px solid #a855f7;';
+        const icon = c.type === 'added' ? '+' : c.type === 'removed' ? '−' : '~';
+        const iconColorStyle = c.type === 'added' ? 'color: #16a34a;' : c.type === 'removed' ? 'color: #dc2626;' : 'color: #9333ea;';
+
+        let content = `<span style="${iconColorStyle} font-weight: bold; margin-right: 0.5rem;">${icon}</span>`;
+        content += `<code class="text-indigo-700">${escapeHtml(c.path)}</code>`;
+
+        if (c.type === 'added') {
+          content += `<span class="text-gray-500 dark:text-slate-400 mx-2">=</span><span class="text-green-700">${escapeHtml(formatVal(c.newValue))}</span>`;
+        } else if (c.type === 'removed') {
+          content += `<span class="text-gray-500 dark:text-slate-400 mx-2">was</span><span class="text-red-700">${escapeHtml(formatVal(c.oldValue))}</span>`;
+        } else {
+          content += `<span class="text-gray-500 dark:text-slate-400 mx-2">changed from</span><span class="text-red-700">${escapeHtml(formatVal(c.oldValue))}</span>`;
+          content += `<span class="text-gray-500 dark:text-slate-400 mx-2">→</span><span class="text-green-700">${escapeHtml(formatVal(c.newValue))}</span>`;
+        }
+        return `<div class="p-3 rounded-lg font-mono text-sm leading-relaxed mb-2" style="${bgStyle}">${content}</div>`;
+      }).join('');
+    }
+
+    results.classList.remove('hidden');
+
+    // Sync scroll
+    diffLeft.onscroll = () => { diffRight.scrollTop = diffLeft.scrollTop; };
+    diffRight.onscroll = () => { diffLeft.scrollTop = diffRight.scrollTop; };
+  }
+
+  document.getElementById('compare-btn').addEventListener('click', compare);
+
+  document.getElementById('format-btn').addEventListener('click', () => {
+    try {
+      if (json1Input.value.trim()) {
+        json1Input.value = JSON.stringify(JSON.parse(json1Input.value), null, 2);
+      }
+    } catch {}
+    try {
+      if (json2Input.value.trim()) {
+        json2Input.value = JSON.stringify(JSON.parse(json2Input.value), null, 2);
+      }
+    } catch {}
+  });
+
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    json1Input.value = '';
+    json2Input.value = '';
+    results.classList.add('hidden');
+    stats.classList.add('hidden');
+    hideError();
+  });
+
+  document.getElementById('swap-btn').addEventListener('click', () => {
+    const temp = json1Input.value;
+    json1Input.value = json2Input.value;
+    json2Input.value = temp;
+    if (!results.classList.contains('hidden')) compare();
+  });
+
+  document.getElementById('sample-btn').addEventListener('click', () => {
+    json1Input.value = JSON.stringify(sample1, null, 2);
+    json2Input.value = JSON.stringify(sample2, null, 2);
+    hideError();
+  });
+
+  // Re-compare when options change
+  ignoreKeyOrder.addEventListener('change', () => {
+    if (!results.classList.contains('hidden')) compare();
+  });
+  ignoreArrayOrder.addEventListener('change', () => {
+    if (!results.classList.contains('hidden')) compare();
+  });
+</script>
