@@ -593,3 +593,6 @@ textarea, input, pre, code {
 .dark .yaml-colon {
   color: #6b7280;
 }
+
+/* cache-heal 2026-07-09: force new asset hash after mid-deploy 404 got browser-cached */
+:root { --bd-rev: 2; }
