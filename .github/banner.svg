@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 200" width="800" height="200" role="img" aria-label="Bug Days — free developer tools that run entirely in your browser">
+  <style>
+    .shell-l, .shell-r { transform-origin: 20px 12px; }
+    .shell-l { animation: openL 5s ease-in-out infinite; }
+    .shell-r { animation: openR 5s ease-in-out infinite; }
+    .center-line { animation: lineFade 5s ease-in-out infinite; }
+    .antenna-l { transform-origin: 16px 6px; animation: wigL 5s ease-in-out infinite; }
+    .antenna-r { transform-origin: 24px 6px; animation: wigR 5s ease-in-out infinite; }
+    @keyframes openL { 0%, 50%, 92%, 100% { transform: rotate(0deg); } 60%, 82% { transform: rotate(22deg); } }
+    @keyframes openR { 0%, 50%, 92%, 100% { transform: rotate(0deg); } 60%, 82% { transform: rotate(-22deg); } }
+    @keyframes lineFade { 0%, 50%, 92%, 100% { opacity: 1; } 58%, 84% { opacity: 0; } }
+    @keyframes wigL { 0%, 50%, 70%, 100% { transform: rotate(0deg); } 56%, 64% { transform: rotate(-12deg); } }
+    @keyframes wigR { 0%, 50%, 70%, 100% { transform: rotate(0deg); } 56%, 64% { transform: rotate(12deg); } }
+    text { font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+  </style>
+
+  <!-- Card background -->
+  <rect width="800" height="200" rx="16" fill="#0f172a"/>
+  <rect x="1" y="1" width="798" height="198" rx="15" fill="none" stroke="#312e81" stroke-width="2"/>
+
+  <!-- The bug (spreads its wings) -->
+  <g transform="translate(42,34) scale(3.3)">
+    <!-- Body/abdomen (visible when shells open) -->
+    <ellipse cx="20" cy="23" rx="7" ry="11" fill="#64748b"/>
+    <ellipse cx="20" cy="28" rx="5" ry="6" fill="#94a3b8"/>
+    <ellipse cx="20" cy="32" rx="3" ry="3" fill="#94a3b8"/>
+
+    <!-- Left shell half -->
+    <g class="shell-l">
+      <path d="M20 12 C8 13, 6 20, 6 24 C6 30, 10 35, 20 35 Z" fill="#6366f1"/>
+      <circle cx="14" cy="19" r="2.5" fill="#0f172a"/>
+      <circle cx="12" cy="27" r="2" fill="#0f172a"/>
+    </g>
+
+    <!-- Right shell half -->
+    <g class="shell-r">
+      <path d="M20 12 C32 13, 34 20, 34 24 C34 30, 30 35, 20 35 Z" fill="#6366f1"/>
+      <circle cx="26" cy="19" r="2.5" fill="#0f172a"/>
+      <circle cx="28" cy="27" r="2" fill="#0f172a"/>
+    </g>
+
+    <!-- Center line on shell -->
+    <line class="center-line" x1="20" y1="12" x2="20" y2="35" stroke="#0f172a" stroke-width="1.5"/>
+
+    <!-- Legs -->
+    <path d="M8 20 Q5 21, 4 24" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <path d="M8 26 Q5 27, 3 29" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <path d="M32 20 Q35 21, 36 24" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <path d="M32 26 Q35 27, 37 29" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+
+    <!-- Head -->
+    <circle cx="20" cy="10" r="6" fill="#334155"/>
+    <!-- Antennae -->
+    <g class="antenna-l">
+      <path d="M16 6 Q14 2, 11 3" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      <circle cx="11" cy="3" r="1.5" fill="#94a3b8"/>
+    </g>
+    <g class="antenna-r">
+      <path d="M24 6 Q26 2, 29 3" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      <circle cx="29" cy="3" r="1.5" fill="#94a3b8"/>
+    </g>
+    <!-- Sunglasses -->
+    <rect x="13" y="8" width="5" height="3.5" rx="0.8" fill="#a78bfa"/>
+    <rect x="22" y="8" width="5" height="3.5" rx="0.8" fill="#a78bfa"/>
+    <rect x="18" y="9" width="4" height="1" fill="#a78bfa"/>
+    <rect x="14" y="8.5" width="1.5" height="1" rx="0.3" fill="#ddd6fe"/>
+    <rect x="23" y="8.5" width="1.5" height="1" rx="0.3" fill="#ddd6fe"/>
+    <!-- Smile -->
+    <path d="M18 13 Q20 14.5, 22 13" stroke="#94a3b8" stroke-width="1" stroke-linecap="round" fill="none"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="215" y="92" font-size="46" font-weight="700" fill="#f8fafc">Bug Days</text>
+  <text x="217" y="128" font-size="18" fill="#94a3b8">Free developer tools that run entirely in your browser.</text>
+  <text x="217" y="158" font-size="15" font-weight="600" fill="#818cf8">bugdays.com</text>
+</svg>
