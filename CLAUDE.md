@@ -13,6 +13,7 @@ All site work happens in `astro-migration/`:
 ```sh
 npm run dev        # local dev at localhost:4321
 npm run build      # static build to dist/ (66+ pages; treat any build error as blocking)
+npm run preview    # serve dist/ locally — use this + curl to smoke-test pages before deploying
 ```
 
 There is no test suite or linter. To test pure logic in `src/lib/` (parser, detectors, exporters), write a throwaway script in the scratchpad and run it with `npx tsx <file>.mts` — use the `.mts` extension (top-level await fails under `.ts`/cjs).
@@ -65,3 +66,7 @@ If you rename a `data-share-key` or `toolId`, old share links break silently —
 ### Design rules
 
 See `astro-migration/CLAUDE.md`: indigo-600 accent, white/slate palette with dark: variants on everything, no horizontal scroll, compact vertical layout, responsive phone→UHD. Match existing tool pages rather than inventing new patterns.
+
+### Strategy context
+
+`astro-migration/GROWTH.md` is the growth/SEO playbook (positioning, differentiators, content priorities, feature roadmap). Consult it before proposing new tools or SEO changes — it explains *why* the flagship features exist and what's deliberately out of scope (e.g. anything that breaks the no-upload privacy promise).
