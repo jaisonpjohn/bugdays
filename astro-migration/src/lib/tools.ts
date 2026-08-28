@@ -91,6 +91,7 @@ export const toolGroups: ToolGroup[] = [
     icon: "text",
     items: [
       { name: "Text Diff", href: "/text-diff", description: "Compare two texts line by line", keywords: ["compare", "difference"] },
+      { name: "ASCII Table Converter", href: "/ascii-table-converter", description: "Terminal tables to HTML, CSV & Excel", keywords: ["terminal", "console", "box drawing", "unicode table", "xlsx", "spreadsheet", "word", "outlook", "pdf"] },
       { name: "Case Converter", href: "/case-converter", description: "camelCase, snake_case & more", keywords: ["uppercase", "lowercase", "kebab", "pascal", "title"] },
       { name: "Join Lines", href: "/join-lines", description: "Join lines with a delimiter", keywords: ["merge", "concatenate", "comma"] },
       { name: "Split Text", href: "/split-text", description: "Split text by a delimiter", keywords: ["explode", "lines"] },

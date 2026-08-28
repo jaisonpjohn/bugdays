@@ -1,0 +1,567 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const sampleTable = `Deployment summary
+
+╭──────┬──────────────┬─────────┬───────────────╮
+│ ID   │ Service      │ Status  │ Last deploy    │
+├──────┼──────────────┼─────────┼───────────────┤
+│ 17   │ auth-api     │ healthy │ 2 minutes ago  │
+│ 18   │ web-frontend │ healthy │ 12 minutes ago │
+│ 19   │ mail-worker  │ paused  │ yesterday      │
+╰──────┴──────────────┴─────────┴───────────────╯
+
+3 services returned`;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'ASCII Table Converter',
+    description: 'Convert terminal ASCII and Unicode box-drawing tables into editable HTML tables, CSV, Excel workbooks, and print-ready PDFs.',
+    url: 'https://bugdays.com/ascii-table-converter',
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'Any',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    featureList: [
+      'ASCII and Unicode terminal table detection',
+      'Editable HTML table preview',
+      'Rich table copy for Excel, Word and Outlook',
+      'CSV and XLSX downloads',
+      'Print and Save as PDF support',
+      'Private client-side processing',
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'How do I copy a terminal table into Excel?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Paste the terminal output, convert it, then use Copy table or download CSV or XLSX. Copy table includes tab-separated text so spreadsheet apps place values into separate cells.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Does it support Unicode box-drawing tables?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'Yes. It detects common ASCII borders, Unicode box-drawing characters, Markdown-style pipes, PostgreSQL-style output, tabs, and aligned columns separated by spaces.',
+        },
+      },
+      {
+        '@type': 'Question',
+        name: 'Is terminal output uploaded?',
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: 'No. Parsing, editing, copying, spreadsheet creation, and printing happen locally in the browser.',
+        },
+      },
+    ],
+  },
+];
+---
+
+<Layout
+  title="ASCII Table Converter - Terminal Table to HTML, CSV & Excel"
+  description="Convert terminal ASCII tables and Unicode box-drawing tables into clean HTML tables. Copy to Excel, Word, or Outlook; download CSV or XLSX; print or save as PDF."
+  keywords="ASCII table converter, terminal table to Excel, text table to HTML, ASCII table to CSV, terminal output to XLSX, box drawing table converter, copy terminal table to Word, print ASCII table"
+  breadcrumb={[{ name: 'Text Tools', href: '/text-tools' }, { name: 'ASCII Table Converter' }]}
+  toolId="ascii-table-converter"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-[1500px] mx-auto">
+    <div class="mb-5">
+      <div class="flex flex-wrap items-center gap-3 mb-2">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100">ASCII Table Converter</h1>
+        <span class="px-2 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-semibold">Terminal → real table</span>
+      </div>
+      <p class="text-gray-600 dark:text-slate-300 max-w-4xl">
+        Paste the pipes, dashes, plus signs, and box-drawing characters your terminal returned. Turn them into an editable table that copies cleanly into spreadsheets, documents, and email.
+      </p>
+    </div>
+
+    <div class="grid xl:grid-cols-[minmax(380px,0.8fr)_minmax(560px,1.2fr)] gap-4 items-start">
+      <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="font-semibold text-gray-800 dark:text-slate-100">1. Paste terminal output</h2>
+            <p class="text-xs text-gray-500 dark:text-slate-400">Extra text before or after the table is okay.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <label class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 cursor-pointer text-sm font-medium">
+              Open file
+              <input id="table-file" type="file" accept=".txt,.log,.out,.md,text/plain,text/markdown" class="hidden" />
+            </label>
+            <button id="paste-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Paste</button>
+            <button id="sample-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Sample</button>
+            <button id="clear-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Clear</button>
+          </div>
+        </div>
+
+        <textarea
+          id="table-input"
+          data-share-key="table"
+          class="w-full h-[390px] p-4 font-mono text-[13px] leading-5 resize-y bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+          spellcheck="false"
+          wrap="off"
+          aria-label="Terminal table input"
+          placeholder="Paste a terminal table here…"
+        >{sampleTable}</textarea>
+
+        <div class="px-4 py-3 border-t border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 space-y-3">
+          <div class="flex flex-wrap gap-x-5 gap-y-2">
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-slate-200">
+              <input id="header-row" data-share-key="header" type="checkbox" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" />
+              First row is a header
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-slate-200" title="Adds an apostrophe before values beginning with =, +, -, or @ in CSV and clipboard text.">
+              <input id="protect-formulas" data-share-key="protect" type="checkbox" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" />
+              Protect spreadsheet formulas
+            </label>
+          </div>
+          <button id="convert-btn" data-share-action="convert" type="button" class="w-full px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
+            Convert to table
+          </button>
+          <p class="text-[11px] leading-4 text-gray-500 dark:text-slate-400">
+            Auto-detects ASCII and Unicode borders, Markdown pipes, PostgreSQL output, tabs, and columns separated by multiple spaces. ANSI terminal colors are removed.
+          </p>
+        </div>
+      </section>
+
+      <section id="result-card" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden min-w-0">
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <h2 class="font-semibold text-gray-800 dark:text-slate-100">2. Edit, copy, or export</h2>
+            <p id="table-stats" class="text-xs text-gray-500 dark:text-slate-400 truncate">Convert a table to see the preview.</p>
+          </div>
+          <span id="privacy-badge" class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Browser only
+          </span>
+        </div>
+
+        <div id="error-box" class="hidden m-4 p-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 text-sm" role="alert"></div>
+
+        <div id="empty-state" class="p-12 text-center text-gray-500 dark:text-slate-400">
+          <svg class="w-12 h-12 mx-auto mb-3 text-slate-300 dark:text-slate-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
+            <path d="M4 5.5h16v13H4zM4 10h16M9 5.5v13M15 5.5v13" stroke-width="1.5" />
+          </svg>
+          Your clean, editable table will appear here.
+        </div>
+
+        <div id="result-content" class="hidden">
+          <div class="no-print px-4 py-3 bg-slate-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700 grid sm:grid-cols-2 lg:grid-cols-[minmax(150px,1fr)_150px_130px] gap-3">
+            <label class="text-xs font-medium text-gray-600 dark:text-slate-300">
+              Table title <span class="font-normal text-gray-400">(optional)</span>
+              <input id="table-title" data-share-key="title" type="text" placeholder="Terminal results" class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100" />
+            </label>
+            <label class="text-xs font-medium text-gray-600 dark:text-slate-300">
+              Table style
+              <select id="table-style" data-share-key="style" class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100">
+                <option value="striped">Striped</option>
+                <option value="clean">Clean grid</option>
+                <option value="compact">Compact</option>
+              </select>
+            </label>
+            <label class="text-xs font-medium text-gray-600 dark:text-slate-300">
+              PDF orientation
+              <select id="page-orientation" data-share-key="orientation" class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100">
+                <option value="landscape">Landscape</option>
+                <option value="portrait">Portrait</option>
+              </select>
+            </label>
+          </div>
+
+          <div id="print-area" class="bg-white text-slate-900">
+            <h2 id="print-title" class="hidden px-5 pt-5 text-xl font-bold"></h2>
+            <div class="max-h-[580px] overflow-auto preview-scroll">
+              <table id="preview-table" data-style="striped" class="w-full border-collapse text-sm"></table>
+            </div>
+          </div>
+
+          <div class="no-print px-4 py-4 border-t border-gray-200 dark:border-slate-700 space-y-3">
+            <div class="flex flex-wrap gap-2">
+              <button id="copy-table-btn" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold">Copy table</button>
+              <button id="copy-csv-btn" type="button" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Copy CSV</button>
+              <button id="download-csv-btn" type="button" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Download CSV</button>
+              <button id="download-xlsx-btn" type="button" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-semibold">Download Excel (.xlsx)</button>
+              <button id="print-btn" type="button" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Print / Save PDF</button>
+            </div>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <label class="flex items-center gap-2 text-xs text-gray-500 dark:text-slate-400">
+                Filename
+                <input id="filename" data-share-key="filename" type="text" value="terminal-table" class="w-44 px-2 py-1.5 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 text-gray-800 dark:text-slate-100" />
+              </label>
+              <span class="text-xs text-gray-500 dark:text-slate-400">Click any cell in the preview to edit it before copying or exporting.</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-lg bg-slate-900 text-white shadow-xl text-sm" role="status" aria-live="polite"></div>
+
+    <section class="mt-8 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">From ASCII circus to useful data</h2>
+      <div class="grid md:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-slate-300">
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Paste into Excel, Word, or Outlook</h3>
+          <p><strong>Copy table</strong> writes rich HTML and tab-separated text together. Apps that understand tables keep the rows and columns; plain-text apps receive clean TSV.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Real CSV and XLSX files</h3>
+          <p>CSV follows standard quoting rules and includes a UTF-8 marker for Excel. XLSX export creates a styled workbook with text-safe cells, useful column widths, a frozen header, and filters.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Private and print-ready</h3>
+          <p>The terminal text stays in this tab. Use the browser print dialog to print the clean table or choose <strong>Save as PDF</strong>, with portrait or landscape page sizing.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<style is:global>
+  #preview-table th,
+  #preview-table td {
+    border: 1px solid #cbd5e1;
+    padding: 0.65rem 0.75rem;
+    text-align: left;
+    vertical-align: top;
+    min-width: 7rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  #preview-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    color: #fff;
+    background: #4f46e5;
+    font-weight: 700;
+  }
+  #preview-table[data-style='striped'] tbody tr:nth-child(even) td { background: #f8fafc; }
+  #preview-table[data-style='clean'] th { color: #0f172a; background: #f1f5f9; }
+  #preview-table[data-style='clean'] td { background: #fff; }
+  #preview-table[data-style='compact'] { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.75rem; }
+  #preview-table[data-style='compact'] th,
+  #preview-table[data-style='compact'] td { min-width: 5rem; padding: 0.35rem 0.5rem; }
+  #preview-table [contenteditable='true']:focus {
+    outline: 3px solid rgba(99, 102, 241, 0.35);
+    outline-offset: -3px;
+    background: #eef2ff !important;
+    color: #0f172a;
+  }
+  .dark #preview-table td { color: #e2e8f0; background: #0f172a; border-color: #475569; }
+  .dark #preview-table[data-style='striped'] tbody tr:nth-child(even) td { background: #1e293b; }
+  .dark #preview-table[data-style='clean'] th { color: #e2e8f0; background: #334155; }
+  .dark #preview-table[data-style='clean'] td { background: #0f172a; }
+  @media print {
+    body * { visibility: hidden !important; }
+    #print-area,
+    #print-area * { visibility: visible !important; }
+    #print-area {
+      position: absolute;
+      inset: 0 auto auto 0;
+      width: 100%;
+      color: #111827 !important;
+      background: white !important;
+    }
+    #print-title:not(:empty) { display: block !important; padding: 0 0 0.4in; }
+    #print-area .preview-scroll { max-height: none !important; overflow: visible !important; }
+    #preview-table { width: 100% !important; font-size: 9pt !important; }
+    #preview-table thead { display: table-header-group; }
+    #preview-table tr { break-inside: avoid; }
+    #preview-table th,
+    #preview-table td {
+      position: static !important;
+      min-width: 0 !important;
+      padding: 5pt 6pt !important;
+      color: #111827 !important;
+      border: 1px solid #64748b !important;
+    }
+    #preview-table th { color: #fff !important; background: #4f46e5 !important; print-color-adjust: exact; }
+    #preview-table[data-style='striped'] tbody tr:nth-child(even) td { background: #f1f5f9 !important; print-color-adjust: exact; }
+  }
+</style>
+
+<script>
+  import { parseTerminalTable } from '../lib/ascii-table';
+  import { createXlsxBlob, safeDownloadName, tableToDelimited } from '../lib/spreadsheet-export';
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('table-input') as HTMLTextAreaElement;
+  const sample = input.value;
+  const fileInput = document.getElementById('table-file') as HTMLInputElement;
+  const headerRow = document.getElementById('header-row') as HTMLInputElement;
+  const protectFormulas = document.getElementById('protect-formulas') as HTMLInputElement;
+  const resultContent = document.getElementById('result-content') as HTMLElement;
+  const emptyState = document.getElementById('empty-state') as HTMLElement;
+  const errorBox = document.getElementById('error-box') as HTMLElement;
+  const tableStats = document.getElementById('table-stats') as HTMLElement;
+  const previewTable = document.getElementById('preview-table') as HTMLTableElement;
+  const tableStyle = document.getElementById('table-style') as HTMLSelectElement;
+  const pageOrientation = document.getElementById('page-orientation') as HTMLSelectElement;
+  const tableTitle = document.getElementById('table-title') as HTMLInputElement;
+  const printTitle = document.getElementById('print-title') as HTMLElement;
+  const filename = document.getElementById('filename') as HTMLInputElement;
+  const toast = document.getElementById('toast') as HTMLElement;
+
+  let currentRows: string[][] = [];
+  let toastTimer = 0;
+
+  function showToast(message: string, isError = false): void {
+    window.clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.classList.toggle('bg-red-700', isError);
+    toast.classList.toggle('bg-slate-900', !isError);
+    toast.classList.remove('hidden');
+    toastTimer = window.setTimeout(() => toast.classList.add('hidden'), 2600);
+  }
+
+  function showError(message: string): void {
+    errorBox.textContent = message;
+    errorBox.classList.remove('hidden');
+  }
+
+  function clearError(): void {
+    errorBox.textContent = '';
+    errorBox.classList.add('hidden');
+  }
+
+  function cellElement(value: string, tag: 'th' | 'td', rowIndex: number, columnIndex: number): HTMLTableCellElement {
+    const cell = document.createElement(tag);
+    cell.textContent = value;
+    cell.contentEditable = 'true';
+    cell.spellcheck = false;
+    cell.setAttribute('aria-label', `Row ${rowIndex + 1}, column ${columnIndex + 1}`);
+    return cell;
+  }
+
+  function renderTable(): void {
+    previewTable.replaceChildren();
+    if (currentRows.length === 0) return;
+
+    const firstRowIsHeader = headerRow.checked;
+    if (firstRowIsHeader) {
+      const head = document.createElement('thead');
+      const row = document.createElement('tr');
+      currentRows[0].forEach((value, columnIndex) => row.append(cellElement(value, 'th', 0, columnIndex)));
+      head.append(row);
+      previewTable.append(head);
+    }
+
+    const body = document.createElement('tbody');
+    const firstBodyRow = firstRowIsHeader ? 1 : 0;
+    currentRows.slice(firstBodyRow).forEach((values, offset) => {
+      const rowIndex = offset + firstBodyRow;
+      const row = document.createElement('tr');
+      values.forEach((value, columnIndex) => row.append(cellElement(value, 'td', rowIndex, columnIndex)));
+      body.append(row);
+    });
+    previewTable.append(body);
+    previewTable.dataset.style = tableStyle.value;
+  }
+
+  function rowsFromPreview(): string[][] {
+    return Array.from(previewTable.rows).map(row =>
+      Array.from(row.cells).map(cell => (cell.innerText || '').replace(/\u00a0/g, ' ').trim()),
+    );
+  }
+
+  function captureEdits(): string[][] {
+    const rows = rowsFromPreview();
+    if (rows.length) currentRows = rows;
+    return currentRows;
+  }
+
+  function convert(): void {
+    clearError();
+    try {
+      const parsed = parseTerminalTable(input.value);
+      currentRows = parsed.rows;
+      renderTable();
+      const rowLabel = `${parsed.rows.length.toLocaleString()} row${parsed.rows.length === 1 ? '' : 's'}`;
+      const columnCount = parsed.rows[0]?.length || 0;
+      const details = [rowLabel, `${columnCount.toLocaleString()} column${columnCount === 1 ? '' : 's'}`, parsed.formatLabel];
+      if (parsed.skippedLineCount) details.push(`${parsed.skippedLineCount} non-table line${parsed.skippedLineCount === 1 ? '' : 's'} ignored`);
+      if (parsed.warnings.length) details.push(...parsed.warnings);
+      tableStats.textContent = details.join(' · ');
+      emptyState.classList.add('hidden');
+      resultContent.classList.remove('hidden');
+    } catch (error) {
+      currentRows = [];
+      previewTable.replaceChildren();
+      resultContent.classList.add('hidden');
+      emptyState.classList.remove('hidden');
+      tableStats.textContent = 'No table detected yet.';
+      showError(error instanceof Error ? error.message : 'Could not parse that table.');
+    }
+  }
+
+  function protectedRows(rows: string[][]): string[][] {
+    if (!protectFormulas.checked) return rows;
+    return rows.map(row => row.map(value => /^[\t\r ]*[=+\-@]/.test(value) ? `'${value}` : value));
+  }
+
+  function richTableHtml(rows: string[][]): string {
+    const table = document.createElement('table');
+    table.setAttribute('style', 'border-collapse:collapse;font-family:Arial,sans-serif;font-size:11pt;color:#111827');
+    rows.forEach((values, rowIndex) => {
+      const row = document.createElement('tr');
+      values.forEach(value => {
+        const cell = document.createElement(headerRow.checked && rowIndex === 0 ? 'th' : 'td');
+        cell.textContent = value;
+        cell.setAttribute('style', headerRow.checked && rowIndex === 0
+          ? 'border:1px solid #94a3b8;padding:7px 9px;text-align:left;background:#4f46e5;color:#ffffff;font-weight:bold;vertical-align:top;white-space:pre-wrap'
+          : 'border:1px solid #94a3b8;padding:7px 9px;text-align:left;vertical-align:top;white-space:pre-wrap');
+        row.append(cell);
+      });
+      table.append(row);
+    });
+    return table.outerHTML;
+  }
+
+  async function copyRichTable(): Promise<void> {
+    const rows = captureEdits();
+    if (!rows.length) return;
+    const plain = tableToDelimited(rows, '\t', protectFormulas.checked);
+    try {
+      if (navigator.clipboard.write && typeof ClipboardItem !== 'undefined') {
+        await navigator.clipboard.write([new ClipboardItem({
+          'text/html': new Blob([richTableHtml(protectedRows(rows))], { type: 'text/html' }),
+          'text/plain': new Blob([plain], { type: 'text/plain' }),
+        })]);
+        showToast('Table copied for Excel, Word, and Outlook.');
+      } else {
+        await navigator.clipboard.writeText(plain);
+        showToast('Table copied as tab-separated text.');
+      }
+    } catch {
+      try {
+        await navigator.clipboard.writeText(plain);
+        showToast('Table copied as tab-separated text.');
+      } catch {
+        showToast('Clipboard access was blocked by the browser.', true);
+      }
+    }
+  }
+
+  async function copyCsv(): Promise<void> {
+    const csv = tableToDelimited(captureEdits(), ',', protectFormulas.checked);
+    try {
+      await navigator.clipboard.writeText(csv);
+      showToast('CSV copied.');
+    } catch {
+      showToast('Clipboard access was blocked by the browser.', true);
+    }
+  }
+
+  function download(blob: Blob, extension: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${safeDownloadName(filename.value)}.${extension}`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  document.getElementById('convert-btn')?.addEventListener('click', convert);
+  document.getElementById('sample-btn')?.addEventListener('click', () => {
+    input.value = sample;
+    convert();
+  });
+  document.getElementById('clear-btn')?.addEventListener('click', () => {
+    input.value = '';
+    currentRows = [];
+    previewTable.replaceChildren();
+    resultContent.classList.add('hidden');
+    emptyState.classList.remove('hidden');
+    tableStats.textContent = 'Convert a table to see the preview.';
+    clearError();
+    input.focus();
+  });
+  document.getElementById('paste-btn')?.addEventListener('click', async () => {
+    try {
+      input.value = await navigator.clipboard.readText();
+      convert();
+    } catch {
+      showToast('Paste permission was blocked. Use Ctrl/Command+V in the input box.', true);
+      input.focus();
+    }
+  });
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showError('That file is larger than 5 MB. Trim the terminal output and try again.');
+      fileInput.value = '';
+      return;
+    }
+    input.value = await file.text();
+    fileInput.value = '';
+    convert();
+  });
+  input.addEventListener('keydown', event => {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+      event.preventDefault();
+      convert();
+    }
+  });
+  headerRow.addEventListener('change', () => {
+    captureEdits();
+    renderTable();
+  });
+  tableStyle.addEventListener('change', () => { previewTable.dataset.style = tableStyle.value; });
+  tableTitle.addEventListener('input', () => {
+    printTitle.textContent = tableTitle.value.trim();
+    printTitle.classList.toggle('hidden', !tableTitle.value.trim());
+  });
+  pageOrientation.addEventListener('change', () => {
+    const existing = document.getElementById('dynamic-print-page');
+    const style = existing || document.createElement('style');
+    style.id = 'dynamic-print-page';
+    style.textContent = `@page { size: ${pageOrientation.value}; margin: 0.5in; }`;
+    if (!existing) document.head.append(style);
+  });
+  document.getElementById('copy-table-btn')?.addEventListener('click', copyRichTable);
+  document.getElementById('copy-csv-btn')?.addEventListener('click', copyCsv);
+  document.getElementById('download-csv-btn')?.addEventListener('click', () => {
+    const csv = tableToDelimited(captureEdits(), ',', protectFormulas.checked);
+    download(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' }), 'csv');
+    showToast('CSV downloaded.');
+  });
+  document.getElementById('download-xlsx-btn')?.addEventListener('click', () => {
+    try {
+      const rows = captureEdits();
+      download(createXlsxBlob(rows, { sheetName: tableTitle.value || 'Table', headerRow: headerRow.checked }), 'xlsx');
+      showToast('Excel workbook downloaded.');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Could not create the workbook.', true);
+    }
+  });
+  document.getElementById('print-btn')?.addEventListener('click', () => {
+    captureEdits();
+    printTitle.textContent = tableTitle.value.trim();
+    printTitle.classList.toggle('hidden', !tableTitle.value.trim());
+    pageOrientation.dispatchEvent(new Event('change'));
+    window.print();
+  });
+
+  ShareManager.register({
+    tool: 'ascii-table-converter',
+    actions: { convert: () => convert() },
+    afterLoad: () => {
+      tableStyle.dispatchEvent(new Event('change'));
+      tableTitle.dispatchEvent(new Event('input'));
+      pageOrientation.dispatchEvent(new Event('change'));
+    },
+  });
+
+  pageOrientation.dispatchEvent(new Event('change'));
+  convert();
+</script>
