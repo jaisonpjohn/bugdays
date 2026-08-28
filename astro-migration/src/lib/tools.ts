@@ -31,6 +31,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "Compare Lists", href: "/list-compare", description: "Set operations on two lists", keywords: ["intersection", "union", "difference", "set ops"] },
       { name: "GZip & Base64", href: "/gzip-base64", description: "Compress & encode text", keywords: ["compress", "decompress", "deflate", "zlib"] },
       { name: "Schema Explorer", href: "/schema-explorer", description: "ER diagram from database DDL", keywords: ["erd", "database", "diagram"] },
+      { name: "SOAP Client", href: "/soap-client", description: "WSDL-aware SOAP request workspace", keywords: ["wsdl", "xml", "web service", "soapui"] },
     ]
   },
   {
@@ -143,7 +144,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "CIDR Calculator", href: "/cidr-calculator", description: "Subnet & IP range calculator", keywords: ["subnet", "netmask", "ip range"] },
       { name: "API Client", href: "/api-client", description: "Send HTTP requests from the browser", keywords: ["http", "rest", "postman", "curl", "request"] },
       { name: "Bulk API Invoker", href: "/bulk-api-invoker", description: "Batch-call an API with CSV data", keywords: ["batch", "http", "load"] },
-      { name: "SOAP Client", href: "/soap-client", description: "Call SOAP web services", keywords: ["wsdl", "xml", "web service"] },
+      { name: "SOAP Client", href: "/soap-client", description: "WSDL-aware SOAP request workspace", keywords: ["wsdl", "xml", "web service", "soapui", "soap 1.1", "soap 1.2"] },
       { name: "gRPC Client", href: "/grpc-client", description: "Call gRPC services", keywords: ["proto", "rpc"] },
       { name: "WebSocket", href: "/websocket-client", description: "Test WebSocket connections", keywords: ["ws", "wss", "socket"] },
       { name: "SSE Client", href: "/sse-client", description: "Test Server-Sent Events streams", keywords: ["eventsource", "stream"] },
