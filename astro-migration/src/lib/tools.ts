@@ -93,6 +93,7 @@ export const toolGroups: ToolGroup[] = [
     items: [
       { name: "Text Diff", href: "/text-diff", description: "Compare two texts line by line", keywords: ["compare", "difference"] },
       { name: "ASCII Table Converter", href: "/ascii-table-converter", description: "Terminal tables to HTML, CSV & Excel", keywords: ["terminal", "console", "box drawing", "unicode table", "xlsx", "spreadsheet", "word", "outlook", "pdf"] },
+      { name: "ASCII Table Generator", href: "/ascii-table-generator", description: "CSV, JSON & HTML to terminal tables", keywords: ["table maker", "unicode table", "markdown table", "postgres", "tsv", "text table"] },
       { name: "Case Converter", href: "/case-converter", description: "camelCase, snake_case & more", keywords: ["uppercase", "lowercase", "kebab", "pascal", "title"] },
       { name: "Join Lines", href: "/join-lines", description: "Join lines with a delimiter", keywords: ["merge", "concatenate", "comma"] },
       { name: "Split Text", href: "/split-text", description: "Split text by a delimiter", keywords: ["explode", "lines"] },
@@ -109,6 +110,7 @@ export const toolGroups: ToolGroup[] = [
     icon: "shield",
     items: [
       { name: "Hash Generator", href: "/hash-generator", description: "MD5, SHA-1, SHA-256 & more", keywords: ["md5", "sha", "checksum", "digest"] },
+      { name: "Certificate Inspector", href: "/certificate-inspector", description: "Inspect & convert X.509 certificates", keywords: ["ssl", "tls", "x509", "pem", "der", "cer", "crt", "p7b", "pkcs7", "certificate decoder"] },
       { name: "JWT Decoder", href: "/jwt-decoder", description: "Decode & inspect JWT tokens", keywords: ["token", "json web token", "claims"] },
       { name: "Password Gen", href: "/password-generator", description: "Generate strong passwords", keywords: ["random", "secure", "passphrase"] },
       { name: "DBeaver Decrypt", href: "/dbeaver-password-decrypter", description: "Recover DBeaver saved passwords", keywords: ["credentials", "recover", "database"] },

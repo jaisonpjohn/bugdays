@@ -4,6 +4,8 @@
 // into the right tools with the data preloaded (via the share-state hash).
 // Everything runs in the browser — nothing is uploaded.
 
+import { parseTerminalTable } from './ascii-table';
+
 export interface ToolAction {
   label: string;
   toolId: string;      // matches the tool page's toolId (share state `t`)
@@ -131,12 +133,35 @@ const detectJson: Detector = (input) => {
       id: 'json', title: 'JSON', confidence: 96,
       note: `Valid JSON — ${kind}`,
       primary: { label: 'Open in JSON Formatter', toolId: 'json-formatter', href: '/json-formatter', data: { json: t }, action: 'prettify' },
+      secondary: Array.isArray(parsed)
+        ? { label: 'Generate an ASCII table', toolId: 'ascii-table-generator', href: '/ascii-table-generator', data: { input: t, format: 'json' }, action: 'generate' }
+        : undefined,
     };
   }
   return {
     id: 'json-broken', title: 'JSON (invalid)', confidence: 45,
     note: 'Looks like JSON but does not parse — the formatter will pinpoint the error',
     primary: { label: 'Find the error in JSON Formatter', toolId: 'json-formatter', href: '/json-formatter', data: { json: t }, action: 'prettify' },
+  };
+};
+
+const detectCertificate: Detector = (input) => {
+  const trimmed = input.trim();
+  const certificateCount = (trimmed.match(/-----BEGIN CERTIFICATE-----/g) || []).length;
+  const isBundle = /-----BEGIN (?:PKCS7|CMS)-----/.test(trimmed);
+  if (!certificateCount && !isBundle) return null;
+  return {
+    id: 'certificate',
+    title: isBundle ? 'PKCS#7 certificate bundle' : certificateCount > 1 ? 'PEM certificate chain' : 'X.509 certificate',
+    confidence: 99,
+    note: isBundle ? 'Inspect the certificates and export the bundle' : `${certificateCount} public certificate${certificateCount === 1 ? '' : 's'} found`,
+    primary: {
+      label: 'Inspect and convert certificate',
+      toolId: 'certificate-inspector',
+      href: '/certificate-inspector',
+      data: { certificate: input },
+      action: 'inspect',
+    },
   };
 };
 
@@ -350,10 +375,61 @@ const detectCsv: Detector = (input) => {
         id: 'csv', title: sep === '\t' ? 'TSV (tab-separated)' : 'CSV', confidence: 60,
         note: `${lines.length} rows × ${counts[0] + 1} columns`,
         primary: { label: 'Convert to JSON', toolId: 'csv-json-converter', href: '/csv-json-converter', data: { input: input.trim() }, action: 'csvToJson' },
+        secondary: { label: 'Generate an ASCII table', toolId: 'ascii-table-generator', href: '/ascii-table-generator', data: { input: input.trim(), format: sep === '\t' ? 'tsv' : 'csv' }, action: 'generate' },
       };
     }
   }
   return null;
+};
+
+const detectAsciiTable: Detector = (input) => {
+  const trimmed = input.trim();
+  const lines = trimmed.split('\n').filter(line => line.trim());
+  if (lines.length < 2) return null;
+
+  // The parser deliberately accepts loose fixed-width output. Magic Box needs
+  // stronger evidence so ordinary prose and source code are not called tables.
+  const hasUnicodeBox = /[┌┐└┘├┤┬┴┼╭╮╯╰╔╗╚╝╠╣╦╩╬│┃║]/u.test(trimmed);
+  const hasAsciiBorder = lines.some(line => /^\s*\+(?:[-=_]{2,}\+){2,}\s*$/.test(line));
+  const pipeRows = lines.filter(line => (line.match(/[|│┃║]/g) || []).length >= 2).length;
+  const hasFixedUnderline = lines.some(line => /^\s*[-=_—─━═]{2,}(?:\s{2,}[-=_—─━═]{2,})+\s*$/u.test(line));
+  const tabRows = lines.filter(line => line.split(/\t+/).length >= 2).length;
+  const spacedRows = lines.filter(line => line.trim().split(/ {2,}/).length >= 2).length;
+  const hasStrongEvidence = hasUnicodeBox
+    || hasAsciiBorder
+    || pipeRows >= 2
+    || hasFixedUnderline
+    || tabRows >= 2
+    || (lines.length >= 3 && spacedRows >= 3);
+  if (!hasStrongEvidence) return null;
+
+  try {
+    const parsed = parseTerminalTable(input);
+    const columns = parsed.rows[0]?.length || 0;
+    if (parsed.rows.length < 2 || columns < 2) return null;
+    const confidence = hasUnicodeBox || hasAsciiBorder
+      ? 97
+      : pipeRows >= 2 || hasFixedUnderline
+        ? 91
+        : tabRows >= 2
+          ? 84
+          : 72;
+    return {
+      id: 'ascii-table',
+      title: 'Terminal / ASCII table',
+      confidence,
+      note: `${parsed.rows.length} rows × ${columns} columns · ${parsed.formatLabel}`,
+      primary: {
+        label: 'Open in ASCII Table Converter',
+        toolId: 'ascii-table-converter',
+        href: '/ascii-table-converter',
+        data: { table: input },
+        action: 'convert',
+      },
+    };
+  } catch {
+    return null;
+  }
 };
 
 const detectCron: Detector = (input) => {
@@ -428,10 +504,10 @@ const detectHex: Detector = (input) => {
 // ---------------------------------------------------------------------------
 
 const DETECTORS: Detector[] = [
-  detectJwt, detectDataUriImage, detectJson, detectDdl, detectXml,
+  detectJwt, detectDataUriImage, detectJson, detectDdl, detectCertificate, detectXml,
   detectEpoch, detectIsoDate, detectUuid, detectColor, detectIpCidr,
   detectCron, detectUnixPerms, detectUrl, detectUrlEncoded, detectQueryString,
-  detectBase64, detectHex, detectToml, detectYaml, detectCsv,
+  detectBase64, detectHex, detectToml, detectAsciiTable, detectYaml, detectCsv,
 ];
 
 export async function detect(input: string): Promise<Detection[]> {

@@ -1,0 +1,613 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const sampleCertificate = `-----BEGIN CERTIFICATE-----
+MIIDrDCCApSgAwIBAgIUV6JcH3NME/AyM22g9GP+UqH0TwcwDQYJKoZIhvcNAQEL
+BQAwNjEVMBMGA1UEAwwMZXhhbXBsZS50ZXN0MRAwDgYDVQQKDAdCdWdkYXlzMQsw
+CQYDVQQGEwJVUzAeFw0yNjA5MDMxODIzMDRaFw0yNzA5MDMxODIzMDRaMDYxFTAT
+BgNVBAMMDGV4YW1wbGUudGVzdDEQMA4GA1UECgwHQnVnZGF5czELMAkGA1UEBhMC
+VVMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDJN6TZTeyCYDA+cDSA
+Ryi3zwRFNyNpkcb+Rh0uw0GN6xPSG9P/kelwIyBGGfijvI+KaeD1yLKTzOZxZFmc
+2eDYLiAPVBfvvvBmARzX/nJn7rNBWUFKsvL4hQ7EHjJ5H9SZohdGo8+3fDCi0JDD
+KLiQ6YgJRXW//PQw43GiIu50G0woBowwVag80rANJp3IHk6Yq0Clp1DvRa/xUB04
+4aQhkBIi5DYxtWIIQKjv2OdNLmTDM5RROJBtsxOK3l7i/4rHM2ubsY1YKan5mT7L
+UUbDIzlONL3rvlT+5SUj/Tf/Jb5BXfpjvmEYByy8Xhxv0ZZeHFWSL8bnLAs90Epe
+al6FAgMBAAGjgbEwga4wHQYDVR0OBBYEFNtUfqb/Gh71FQyyKHyjNA6Z4wUUMB8G
+A1UdIwQYMBaAFNtUfqb/Gh71FQyyKHyjNA6Z4wUUMC8GA1UdEQQoMCaCDGV4YW1w
+bGUudGVzdIIQYXBpLmV4YW1wbGUudGVzdIcEfwAAATAMBgNVHRMBAf8EAjAAMA4G
+A1UdDwEB/wQEAwIFoDAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIwDQYJ
+KoZIhvcNAQELBQADggEBAIeP4bY9pZqFcH1zLccdzRI8L3JMHvbAWcoPDWZop/xM
+vxhwtQgI+HhEOycE3cRna8WMG0vjGXthK6yEE37AnefHwOiBGfGx4N0JO5KU7Jbp
+cqbBeqKcBjURDsGrm9O9yv0YdP6XzvA50gbn11uJf+e4j3RXMZb0fM73o5kDpk8t
+CSXySaI2fWzozTzBaL44BBjmWP4bq4x6zEauWFFYTGPBgBvFe9l4P76fRjvuxzp3
+5T1yjfmC9U/9gfaVJ3ESIDmGRbmkNJgxhnHcunufDoWp6eOq8z0KmhOxJL+a6wwo
+pb31ZVpYTag03Gws6pdteRe/EDwDr2z34ejfBD1ZrIA=
+-----END CERTIFICATE-----`;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Certificate Inspector & Converter',
+    description: 'Inspect X.509 TLS certificates and convert PEM, DER, CER, Base64, hex, and PKCS#7 formats locally in the browser.',
+    url: 'https://bugdays.com/certificate-inspector',
+    applicationCategory: 'SecurityApplication',
+    operatingSystem: 'Any',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    featureList: [
+      'X.509 certificate inspection',
+      'PEM, DER, CER, Base64, hex, and PKCS#7 input',
+      'PEM, DER/CER, Base64, hex, JSON, and PKCS#7 export',
+      'Certificate chain and bundle support',
+      'SAN, usage, extension, fingerprint, and validity details',
+      'Private client-side processing',
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'How do I inspect a PEM or CER certificate?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Paste a PEM certificate or open a PEM, CRT, CER, DER, or P7B file. The inspector shows identity, validity, public key, fingerprints, SANs, usages, and extensions.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Can I convert PEM to DER or CER?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Yes. Inspect the certificate and download its binary DER encoding with a CER extension, or export PEM, Base64 DER, hex DER, JSON, and PKCS#7 bundles.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Does the certificate leave my browser?',
+        acceptedAnswer: { '@type': 'Answer', text: 'No. Certificate parsing, fingerprinting, inspection, and conversion happen locally in the browser.' },
+      },
+    ],
+  },
+];
+---
+
+<Layout
+  title="Certificate Inspector & Converter - X.509 PEM, DER, CER"
+  description="Inspect X.509 TLS certificates and convert PEM, DER, CER, Base64, hex, and PKCS#7 formats. View SANs, validity, key usage, fingerprints, and chains locally."
+  keywords="certificate inspector, certificate decoder, PEM to DER, DER to PEM, CER converter, X509 certificate viewer, SSL certificate decoder, TLS certificate checker, P7B converter, certificate fingerprint"
+  breadcrumb={[{ name: 'Security Tools', href: '/security-tools' }, { name: 'Certificate Inspector' }]}
+  toolId="certificate-inspector"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-[1450px] mx-auto">
+    <div class="mb-5">
+      <div class="flex flex-wrap items-center gap-3 mb-2">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100">Certificate Inspector & Converter</h1>
+        <span class="px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">X.509 · Browser only</span>
+      </div>
+      <p class="text-gray-600 dark:text-slate-300 max-w-5xl">
+        Drop a certificate or paste its text to see what it identifies, when it expires, what it can be used for, and whether a bundle contains a chain. Export the same public certificate in the format your server or application needs.
+      </p>
+    </div>
+
+    <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-semibold text-gray-800 dark:text-slate-100">Open a public certificate</h2>
+          <p class="text-xs text-gray-500 dark:text-slate-400">PEM, CRT, CER, DER, Base64, hex, or PKCS#7/P7B · up to 5 MB</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <label id="file-drop" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer text-sm font-semibold">
+            Open certificate file
+            <input id="certificate-file" type="file" accept=".pem,.crt,.cer,.der,.p7b,.p7c,.txt,application/x-x509-ca-cert,application/pkcs7-mime,text/plain" class="hidden" />
+          </label>
+          <button id="paste-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Paste</button>
+          <button id="sample-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Sample</button>
+          <button id="clear-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Clear</button>
+        </div>
+      </div>
+      <textarea
+        id="certificate-input"
+        data-share-key="certificate"
+        class="w-full h-56 p-4 font-mono text-[12px] leading-5 resize-y bg-slate-950 text-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+        spellcheck="false"
+        wrap="off"
+        aria-label="Certificate input"
+        placeholder="Paste a -----BEGIN CERTIFICATE----- block, Base64 DER, or hex DER…"
+      >{sampleCertificate}</textarea>
+      <div class="px-4 py-3 border-t border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex flex-wrap items-center gap-3">
+        <button id="inspect-btn" data-share-action="inspect" type="button" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold">Inspect certificate</button>
+        <span class="text-xs text-gray-500 dark:text-slate-400">Pasted text is inspected automatically. Files never leave this browser.</span>
+      </div>
+    </section>
+
+    <div id="error-box" class="hidden mt-4 p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 text-sm" role="alert"></div>
+
+    <div id="results" class="hidden mt-4 space-y-4">
+      <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="font-semibold text-gray-800 dark:text-slate-100">Certificates found</h2>
+            <p id="source-summary" class="text-xs text-gray-500 dark:text-slate-400"></p>
+          </div>
+          <span id="chain-count" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold"></span>
+        </div>
+        <div id="certificate-list" class="p-3 flex gap-2 overflow-x-auto" role="tablist" aria-label="Certificates in input"></div>
+      </section>
+
+      <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <div class="px-4 py-4 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-start justify-between gap-4">
+          <div class="min-w-0">
+            <div class="flex flex-wrap gap-2 mb-2">
+              <span id="status-pill" class="px-2.5 py-1 rounded-full text-xs font-bold"></span>
+              <span id="kind-pill" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold"></span>
+              <span id="self-pill" class="hidden px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-xs font-semibold">Self-signed</span>
+            </div>
+            <h2 id="certificate-heading" class="text-xl font-bold text-gray-800 dark:text-slate-100 break-words"></h2>
+          </div>
+          <div class="text-right">
+            <div class="text-xs uppercase tracking-wide text-gray-400">Valid until</div>
+            <div id="valid-until" class="font-semibold text-gray-800 dark:text-slate-100"></div>
+          </div>
+        </div>
+
+        <div id="notice-box" class="hidden mx-4 mt-4 p-3 rounded-lg text-sm"></div>
+
+        <div class="p-4 grid md:grid-cols-2 xl:grid-cols-4 gap-3">
+          <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 min-w-0">
+            <div class="text-xs uppercase tracking-wide text-gray-400 mb-1">Subject</div>
+            <div id="subject" class="text-sm font-medium text-gray-800 dark:text-slate-100 break-words"></div>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 min-w-0">
+            <div class="text-xs uppercase tracking-wide text-gray-400 mb-1">Issuer</div>
+            <div id="issuer" class="text-sm font-medium text-gray-800 dark:text-slate-100 break-words"></div>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 min-w-0">
+            <div class="text-xs uppercase tracking-wide text-gray-400 mb-1">Public key</div>
+            <div id="public-key" class="text-sm font-medium text-gray-800 dark:text-slate-100"></div>
+          </div>
+          <div class="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 min-w-0">
+            <div class="text-xs uppercase tracking-wide text-gray-400 mb-1">Signature</div>
+            <div id="signature" class="text-sm font-medium text-gray-800 dark:text-slate-100 break-words"></div>
+          </div>
+        </div>
+
+        <div class="px-4 pb-4 grid lg:grid-cols-2 gap-4">
+          <div class="rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+            <h3 class="px-4 py-3 font-semibold text-gray-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700">Validity and identity</h3>
+            <dl class="divide-y divide-gray-100 dark:divide-slate-700 text-sm">
+              <div class="p-3 grid sm:grid-cols-[130px_1fr] gap-1"><dt class="text-gray-500 dark:text-slate-400">Not before</dt><dd id="not-before" class="text-gray-800 dark:text-slate-100"></dd></div>
+              <div class="p-3 grid sm:grid-cols-[130px_1fr] gap-1"><dt class="text-gray-500 dark:text-slate-400">Not after</dt><dd id="not-after" class="text-gray-800 dark:text-slate-100"></dd></div>
+              <div class="p-3 grid sm:grid-cols-[130px_1fr] gap-1"><dt class="text-gray-500 dark:text-slate-400">Serial number</dt><dd id="serial" class="font-mono text-xs text-gray-800 dark:text-slate-100 break-all"></dd></div>
+            </dl>
+          </div>
+          <div class="rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+            <h3 class="px-4 py-3 font-semibold text-gray-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700">Subject alternative names</h3>
+            <div id="san-list" class="p-4 flex flex-wrap gap-2"></div>
+          </div>
+          <div class="rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+            <h3 class="px-4 py-3 font-semibold text-gray-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700">Allowed uses</h3>
+            <div class="p-4 space-y-3">
+              <div>
+                <div class="text-xs uppercase tracking-wide text-gray-400 mb-2">Key usage</div>
+                <div id="key-usage" class="flex flex-wrap gap-2"></div>
+              </div>
+              <div>
+                <div class="text-xs uppercase tracking-wide text-gray-400 mb-2">Extended key usage</div>
+                <div id="extended-usage" class="flex flex-wrap gap-2"></div>
+              </div>
+            </div>
+          </div>
+          <div class="rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
+            <h3 class="px-4 py-3 font-semibold text-gray-800 dark:text-slate-100 bg-slate-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700">Fingerprints</h3>
+            <div class="p-4 space-y-3 text-sm">
+              <div>
+                <div class="flex justify-between gap-2 mb-1"><span class="text-xs uppercase tracking-wide text-gray-400">SHA-256</span><button data-copy-target="sha256" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Copy</button></div>
+                <code id="sha256" class="block text-xs text-gray-800 dark:text-slate-100 break-all"></code>
+              </div>
+              <div>
+                <div class="flex justify-between gap-2 mb-1"><span class="text-xs uppercase tracking-wide text-gray-400">SHA-1</span><button data-copy-target="sha1" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Copy</button></div>
+                <code id="sha1" class="block text-xs text-gray-800 dark:text-slate-100 break-all"></code>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid xl:grid-cols-[1.25fr_0.75fr] gap-4 items-start">
+        <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden min-w-0">
+          <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+            <h2 class="font-semibold text-gray-800 dark:text-slate-100">Extensions</h2>
+            <span id="extension-count" class="text-xs text-gray-500 dark:text-slate-400"></span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-slate-50 dark:bg-slate-900/50 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                <tr><th class="px-4 py-3">Extension</th><th class="px-4 py-3">OID</th><th class="px-4 py-3">Critical</th><th class="px-4 py-3">Value</th></tr>
+              </thead>
+              <tbody id="extensions-body" class="divide-y divide-gray-100 dark:divide-slate-700"></tbody>
+            </table>
+          </div>
+          <details class="border-t border-gray-200 dark:border-slate-700">
+            <summary class="px-4 py-3 cursor-pointer font-medium text-sm text-gray-700 dark:text-slate-200">Full decoded certificate</summary>
+            <pre id="text-dump" class="max-h-[520px] overflow-auto p-4 bg-slate-950 text-slate-100 text-xs leading-5 whitespace-pre"></pre>
+          </details>
+        </section>
+
+        <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+          <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700">
+            <h2 class="font-semibold text-gray-800 dark:text-slate-100">Convert and export</h2>
+            <p class="text-xs text-gray-500 dark:text-slate-400">Exports contain the public certificate only.</p>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="grid sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-2">
+              <button id="copy-pem" type="button" class="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold">Copy PEM</button>
+              <button id="download-pem" type="button" class="px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Download .pem</button>
+              <button id="download-der" type="button" class="px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Download DER / .cer</button>
+              <button id="copy-base64" type="button" class="px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Copy Base64 DER</button>
+              <button id="copy-hex" type="button" class="px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Copy hex DER</button>
+              <button id="download-json" type="button" class="px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Download JSON report</button>
+            </div>
+            <div id="bundle-exports" class="hidden pt-3 border-t border-gray-200 dark:border-slate-700">
+              <div class="text-xs uppercase tracking-wide text-gray-400 mb-2">Whole bundle</div>
+              <div class="grid gap-2">
+                <button id="download-chain" type="button" class="px-3 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-semibold">Download PEM chain</button>
+                <button id="download-p7b" type="button" class="px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Download PKCS#7 / .p7b</button>
+                <button id="download-p7b-pem" type="button" class="px-3 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Download PKCS#7 PEM</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-lg bg-slate-900 text-white shadow-xl text-sm" role="status" aria-live="polite"></div>
+
+    <section class="mt-8 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">Know what is inside before you install it</h2>
+      <div class="grid md:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-slate-300">
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Identity and expiry at a glance</h3>
+          <p>See the subject, issuer, serial number, validity window, SAN hostnames and IPs, public-key details, signature algorithm, and SHA fingerprints.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Certificate format conversion</h3>
+          <p>Convert a certificate between PEM text, binary DER/CER, Base64 DER, and hex. Export a machine-readable JSON report or package multiple certificates as a PEM chain or PKCS#7 bundle.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Useful scope, honest result</h3>
+          <p>The inspector decodes public X.509 data and computes fingerprints locally. It does not send private keys anywhere or contact revocation, Certificate Transparency, or trust-store services.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<script>
+  import {
+    certificateBase64,
+    certificateBundleDer,
+    certificateBundlePem,
+    certificateChainPem,
+    certificateDer,
+    certificateHex,
+    certificatePem,
+    inspectCertificates,
+    parseCertificateInput,
+    reportToJson,
+    type CertificateInput,
+    type CertificateReport,
+  } from '../lib/certificate-inspector';
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('certificate-input') as HTMLTextAreaElement;
+  const sample = input.value;
+  const fileInput = document.getElementById('certificate-file') as HTMLInputElement;
+  const dropZone = document.getElementById('file-drop') as HTMLLabelElement;
+  const results = document.getElementById('results') as HTMLElement;
+  const errorBox = document.getElementById('error-box') as HTMLElement;
+  const toast = document.getElementById('toast') as HTMLElement;
+  let parsedInput: CertificateInput | null = null;
+  let reports: CertificateReport[] = [];
+  let selectedIndex = 0;
+  let inspectTimer = 0;
+  let toastTimer = 0;
+
+  const element = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
+
+  function showToast(message: string, isError = false): void {
+    window.clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.classList.toggle('bg-red-700', isError);
+    toast.classList.toggle('bg-slate-900', !isError);
+    toast.classList.remove('hidden');
+    toastTimer = window.setTimeout(() => toast.classList.add('hidden'), 2600);
+  }
+
+  function showError(message: string): void {
+    errorBox.textContent = message;
+    errorBox.classList.remove('hidden');
+  }
+
+  function clearError(): void {
+    errorBox.textContent = '';
+    errorBox.classList.add('hidden');
+  }
+
+  function commonName(subject: string): string {
+    const match = /(?:^|,\s*)CN=([^,]+)/i.exec(subject);
+    return match?.[1] || subject || 'Certificate';
+  }
+
+  function filename(report: CertificateReport): string {
+    const dns = report.subjectAlternativeNames.find(name => name.type === 'dns')?.value;
+    return (dns || commonName(report.subject) || 'certificate').replace(/^\*\./, 'wildcard-').replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'certificate';
+  }
+
+  function chip(value: string): HTMLSpanElement {
+    const item = document.createElement('span');
+    item.className = 'px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs break-all';
+    item.textContent = value;
+    return item;
+  }
+
+  function fillChips(id: string, values: string[], emptyMessage: string): void {
+    const container = element(id);
+    container.replaceChildren();
+    if (!values.length) {
+      const empty = document.createElement('span');
+      empty.className = 'text-sm text-gray-500 dark:text-slate-400';
+      empty.textContent = emptyMessage;
+      container.append(empty);
+      return;
+    }
+    values.forEach(value => container.append(chip(value)));
+  }
+
+  function renderSelected(): void {
+    const report = reports[selectedIndex];
+    if (!report) return;
+    document.querySelectorAll<HTMLButtonElement>('[data-certificate-index]').forEach((button, index) => {
+      const active = index === selectedIndex;
+      button.classList.toggle('bg-indigo-600', active);
+      button.classList.toggle('text-white', active);
+      button.classList.toggle('bg-slate-100', !active);
+      button.classList.toggle('dark:bg-slate-700', !active);
+      button.classList.toggle('text-slate-700', !active);
+      button.classList.toggle('dark:text-slate-200', !active);
+      button.setAttribute('aria-selected', String(active));
+    });
+
+    const statusPill = element('status-pill');
+    statusPill.textContent = report.statusLabel;
+    statusPill.className = 'px-2.5 py-1 rounded-full text-xs font-bold ' + (report.status === 'valid'
+      ? report.daysRemaining <= 30
+        ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300'
+        : 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300'
+      : 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300');
+    element('kind-pill').textContent = report.isCertificateAuthority ? 'Certificate authority' : 'End-entity certificate';
+    element('self-pill').classList.toggle('hidden', !report.selfSigned);
+    element('certificate-heading').textContent = commonName(report.subject);
+    element('valid-until').textContent = report.notAfter.toLocaleDateString(undefined, { dateStyle: 'medium' });
+    element('subject').textContent = report.subject;
+    element('issuer').textContent = report.issuer;
+    element('public-key').textContent = report.publicKey;
+    element('signature').textContent = report.signatureAlgorithm;
+    element('not-before').textContent = report.notBefore.toLocaleString();
+    element('not-after').textContent = report.notAfter.toLocaleString();
+    element('serial').textContent = report.serialNumber;
+    element('sha256').textContent = report.sha256Fingerprint;
+    element('sha1').textContent = report.sha1Fingerprint;
+    element('text-dump').textContent = report.textDump;
+
+    const notice = element('notice-box');
+    if (report.status === 'expired') {
+      notice.textContent = `This certificate expired on ${report.notAfter.toLocaleString()}. Replace or renew it before relying on it.`;
+      notice.className = 'mx-4 mt-4 p-3 rounded-lg text-sm border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300';
+    } else if (report.status === 'not-yet-valid') {
+      notice.textContent = `This certificate is not valid until ${report.notBefore.toLocaleString()}. Check the certificate and system clock.`;
+      notice.className = 'mx-4 mt-4 p-3 rounded-lg text-sm border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300';
+    } else if (report.daysRemaining <= 30) {
+      notice.textContent = `This certificate expires soon: ${report.statusLabel.toLowerCase()}.`;
+      notice.className = 'mx-4 mt-4 p-3 rounded-lg text-sm border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300';
+    } else if (report.selfSigned) {
+      notice.textContent = 'This certificate is self-signed. It can be appropriate for local or private systems when clients are configured to trust it.';
+      notice.className = 'mx-4 mt-4 p-3 rounded-lg text-sm border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300';
+    } else {
+      notice.className = 'hidden mx-4 mt-4 p-3 rounded-lg text-sm';
+      notice.textContent = '';
+    }
+
+    fillChips('san-list', report.subjectAlternativeNames.map(name => `${name.type.toUpperCase()} · ${name.value}`), 'No Subject Alternative Name extension.');
+    fillChips('key-usage', report.keyUsages, 'No Key Usage extension.');
+    fillChips('extended-usage', report.extendedKeyUsages, 'No Extended Key Usage extension.');
+
+    const extensionsBody = element('extensions-body');
+    extensionsBody.replaceChildren();
+    report.extensions.forEach(extension => {
+      const row = document.createElement('tr');
+      row.className = 'align-top text-gray-700 dark:text-slate-200';
+      const values = [extension.name, extension.oid, extension.critical ? 'Yes' : 'No', extension.summary || '—'];
+      values.forEach((value, index) => {
+        const cell = document.createElement('td');
+        cell.className = `px-4 py-3 ${index === 1 ? 'font-mono text-xs' : ''} ${index === 3 ? 'min-w-56 break-words' : ''}`;
+        cell.textContent = value;
+        row.append(cell);
+      });
+      extensionsBody.append(row);
+    });
+    element('extension-count').textContent = `${report.extensions.length} extension${report.extensions.length === 1 ? '' : 's'}`;
+  }
+
+  function renderCertificateList(): void {
+    const list = element('certificate-list');
+    list.replaceChildren();
+    reports.forEach((report, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.certificateIndex = String(index);
+      button.role = 'tab';
+      button.className = 'shrink-0 max-w-72 px-3 py-2 rounded-lg text-left text-sm transition-colors';
+      const title = document.createElement('span');
+      title.className = 'block font-semibold truncate';
+      title.textContent = commonName(report.subject);
+      const detail = document.createElement('span');
+      detail.className = 'block text-[11px] opacity-75 truncate';
+      detail.textContent = index === 0 ? 'Certificate 1' : `Certificate ${index + 1}`;
+      button.append(title, detail);
+      button.addEventListener('click', () => {
+        selectedIndex = index;
+        renderSelected();
+      });
+      list.append(button);
+    });
+  }
+
+  async function inspect(value: string | ArrayBuffer | Uint8Array = input.value): Promise<void> {
+    window.clearTimeout(inspectTimer);
+    clearError();
+    if (typeof value === 'string' && !value.trim()) {
+      parsedInput = null;
+      reports = [];
+      results.classList.add('hidden');
+      return;
+    }
+    try {
+      parsedInput = parseCertificateInput(value);
+      reports = await inspectCertificates(parsedInput.certificates);
+      selectedIndex = 0;
+      element('source-summary').textContent = `${parsedInput.sourceLabel} · parsed and fingerprinted locally`;
+      element('chain-count').textContent = `${reports.length} certificate${reports.length === 1 ? '' : 's'}`;
+      element('bundle-exports').classList.toggle('hidden', reports.length < 2 && parsedInput.sourceFormat !== 'pkcs7');
+      renderCertificateList();
+      renderSelected();
+      results.classList.remove('hidden');
+    } catch (error) {
+      parsedInput = null;
+      reports = [];
+      results.classList.add('hidden');
+      showError(error instanceof Error ? error.message : 'Could not inspect that certificate.');
+    }
+  }
+
+  function download(data: BlobPart, name: string, type: string): void {
+    const url = URL.createObjectURL(new Blob([data], { type }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = name;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  async function copy(value: string, message: string): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(value);
+      showToast(message);
+    } catch {
+      showToast('Clipboard access was blocked by the browser.', true);
+    }
+  }
+
+  async function openFile(file: File): Promise<void> {
+    if (file.size > 5 * 1024 * 1024) {
+      showError('That file is larger than 5 MB.');
+      return;
+    }
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const inspectedBytes = bytes.subarray(0, Math.min(bytes.length, 4096));
+    const printableBytes = inspectedBytes.filter(byte => byte === 9 || byte === 10 || byte === 13 || (byte >= 32 && byte <= 126)).length;
+    const isText = inspectedBytes.length > 0 && printableBytes / inspectedBytes.length > 0.95;
+    if (isText) {
+      input.value = new TextDecoder().decode(bytes);
+      await inspect(input.value);
+    } else {
+      input.value = '';
+      await inspect(bytes);
+    }
+  }
+
+  document.getElementById('inspect-btn')?.addEventListener('click', () => inspect());
+  input.addEventListener('input', () => {
+    window.clearTimeout(inspectTimer);
+    if (!input.value.trim()) {
+      results.classList.add('hidden');
+      clearError();
+      return;
+    }
+    inspectTimer = window.setTimeout(() => inspect(), 350);
+  });
+  document.getElementById('sample-btn')?.addEventListener('click', () => {
+    input.value = sample;
+    inspect();
+  });
+  document.getElementById('clear-btn')?.addEventListener('click', () => {
+    input.value = '';
+    inspect();
+    input.focus();
+  });
+  document.getElementById('paste-btn')?.addEventListener('click', async () => {
+    try {
+      input.value = await navigator.clipboard.readText();
+      inspect();
+    } catch {
+      showToast('Paste permission was blocked. Use Ctrl/Command+V in the input box.', true);
+      input.focus();
+    }
+  });
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (file) await openFile(file);
+    fileInput.value = '';
+  });
+  for (const eventName of ['dragenter', 'dragover']) {
+    dropZone.addEventListener(eventName, event => {
+      event.preventDefault();
+      dropZone.classList.add('ring-4', 'ring-indigo-200');
+    });
+  }
+  for (const eventName of ['dragleave', 'drop']) {
+    dropZone.addEventListener(eventName, event => {
+      event.preventDefault();
+      dropZone.classList.remove('ring-4', 'ring-indigo-200');
+    });
+  }
+  dropZone.addEventListener('drop', async event => {
+    const file = event.dataTransfer?.files?.[0];
+    if (file) await openFile(file);
+  });
+  document.querySelectorAll<HTMLButtonElement>('[data-copy-target]').forEach(button => {
+    button.addEventListener('click', () => copy(element(button.dataset.copyTarget || '').textContent || '', 'Fingerprint copied.'));
+  });
+  document.getElementById('copy-pem')?.addEventListener('click', () => {
+    const report = reports[selectedIndex];
+    if (report) copy(certificatePem(report.certificate), 'PEM certificate copied.');
+  });
+  document.getElementById('download-pem')?.addEventListener('click', () => {
+    const report = reports[selectedIndex];
+    if (report) download(certificatePem(report.certificate), `${filename(report)}.pem`, 'application/x-pem-file;charset=utf-8');
+  });
+  document.getElementById('download-der')?.addEventListener('click', () => {
+    const report = reports[selectedIndex];
+    if (report) download(certificateDer(report.certificate), `${filename(report)}.cer`, 'application/pkix-cert');
+  });
+  document.getElementById('copy-base64')?.addEventListener('click', () => {
+    const report = reports[selectedIndex];
+    if (report) copy(certificateBase64(report.certificate), 'Base64 DER copied.');
+  });
+  document.getElementById('copy-hex')?.addEventListener('click', () => {
+    const report = reports[selectedIndex];
+    if (report) copy(certificateHex(report.certificate), 'Hex DER copied.');
+  });
+  document.getElementById('download-json')?.addEventListener('click', () => {
+    const report = reports[selectedIndex];
+    if (report) download(reportToJson(report), `${filename(report)}.json`, 'application/json;charset=utf-8');
+  });
+  document.getElementById('download-chain')?.addEventListener('click', () => {
+    if (parsedInput) download(certificateChainPem(parsedInput.certificates), 'certificate-chain.pem', 'application/x-pem-file;charset=utf-8');
+  });
+  document.getElementById('download-p7b')?.addEventListener('click', () => {
+    if (parsedInput) download(certificateBundleDer(parsedInput.certificates), 'certificate-bundle.p7b', 'application/pkcs7-mime');
+  });
+  document.getElementById('download-p7b-pem')?.addEventListener('click', () => {
+    if (parsedInput) download(certificateBundlePem(parsedInput.certificates), 'certificate-bundle.p7b.pem', 'application/x-pem-file;charset=utf-8');
+  });
+
+  ShareManager.register({ tool: 'certificate-inspector', actions: { inspect: () => inspect() }, afterLoad: () => inspect() });
+  inspect();
+</script>

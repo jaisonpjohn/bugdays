@@ -1,0 +1,341 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const sampleData = `service,environment,status,replicas,last_deploy
+auth-api,production,healthy,4,2 minutes ago
+web-frontend,production,healthy,8,12 minutes ago
+mail-worker,staging,paused,1,yesterday`;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'ASCII Table Generator',
+    description: 'Generate copyable terminal tables from CSV, TSV, JSON arrays, and HTML tables.',
+    url: 'https://bugdays.com/ascii-table-generator',
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'Any',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    featureList: [
+      'CSV, TSV, JSON, and HTML table input',
+      'Unicode, ASCII, Markdown, and PostgreSQL table styles',
+      'Column width and wrapping controls',
+      'Automatic numeric alignment',
+      'Private client-side processing',
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'How do I turn CSV into an ASCII table?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Paste CSV, choose an output style, and copy the generated table. Quoted commas, escaped quotes, and multiline CSV fields are supported.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Can I generate a terminal table from JSON?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Yes. Paste an array of objects or arrays. Object keys become column headings and nested values are preserved as compact JSON.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Is my data uploaded?',
+        acceptedAnswer: { '@type': 'Answer', text: 'No. Parsing and table generation happen locally in your browser.' },
+      },
+    ],
+  },
+];
+---
+
+<Layout
+  title="ASCII Table Generator - CSV, JSON & HTML to Text Table"
+  description="Generate clean ASCII and Unicode terminal tables from CSV, TSV, JSON, or HTML. Choose borders, wrapping, widths, and Markdown or PostgreSQL styles."
+  keywords="ASCII table generator, CSV to ASCII table, JSON to ASCII table, text table generator, Unicode table generator, Markdown table generator, terminal table maker, HTML table to text"
+  breadcrumb={[{ name: 'Text Tools', href: '/text-tools' }, { name: 'ASCII Table Generator' }]}
+  toolId="ascii-table-generator"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-[1500px] mx-auto">
+    <div class="mb-5">
+      <div class="flex flex-wrap items-center gap-3 mb-2">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100">ASCII Table Generator</h1>
+        <span class="px-2 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-semibold">Data → terminal table</span>
+      </div>
+      <p class="text-gray-600 dark:text-slate-300 max-w-4xl">
+        Paste CSV, TSV, a JSON array, or an HTML table. Get a clean text table for terminals, READMEs, tickets, logs, and chat—generated automatically in this browser.
+      </p>
+    </div>
+
+    <div class="grid xl:grid-cols-2 gap-4 items-start">
+      <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden min-w-0">
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="font-semibold text-gray-800 dark:text-slate-100">1. Paste structured data</h2>
+            <p class="text-xs text-gray-500 dark:text-slate-400">Auto-detect works for CSV, TSV, JSON arrays, and HTML tables.</p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <label class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 cursor-pointer text-sm font-medium">
+              Open file
+              <input id="source-file" type="file" accept=".csv,.tsv,.json,.html,.htm,.txt,text/csv,text/tab-separated-values,application/json,text/html,text/plain" class="hidden" />
+            </label>
+            <button id="paste-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Paste</button>
+            <button id="sample-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Sample</button>
+            <button id="clear-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Clear</button>
+          </div>
+        </div>
+
+        <textarea
+          id="source-input"
+          data-share-key="input"
+          class="w-full h-[420px] p-4 font-mono text-[13px] leading-5 resize-y bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+          spellcheck="false"
+          wrap="off"
+          aria-label="CSV, TSV, JSON, or HTML input"
+          placeholder="Paste CSV, TSV, a JSON array, or an HTML table…"
+        >{sampleData}</textarea>
+
+        <div class="px-4 py-3 border-t border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 grid sm:grid-cols-2 gap-3">
+          <label class="text-xs font-medium text-gray-600 dark:text-slate-300">
+            Input format
+            <select id="input-format" data-share-key="format" class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100">
+              <option value="auto">Auto-detect</option>
+              <option value="csv">CSV</option>
+              <option value="tsv">TSV</option>
+              <option value="json">JSON array</option>
+              <option value="html">HTML table</option>
+            </select>
+          </label>
+          <label class="text-xs font-medium text-gray-600 dark:text-slate-300">
+            Output style
+            <select id="output-style" data-share-key="style" class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100">
+              <option value="rounded">Unicode rounded</option>
+              <option value="single">Unicode square</option>
+              <option value="ascii">Plain ASCII (+-|)</option>
+              <option value="markdown">Markdown pipes</option>
+              <option value="postgres">PostgreSQL</option>
+            </select>
+          </label>
+          <label class="text-xs font-medium text-gray-600 dark:text-slate-300">
+            Long cells
+            <select id="overflow" data-share-key="overflow" class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100">
+              <option value="wrap">Wrap onto more lines</option>
+              <option value="truncate">Truncate with ellipsis</option>
+            </select>
+          </label>
+          <div class="grid grid-cols-2 gap-3">
+            <label class="text-xs font-medium text-gray-600 dark:text-slate-300">
+              Max width
+              <input id="max-width" data-share-key="width" type="number" min="3" max="120" value="32" class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100" />
+            </label>
+            <label class="text-xs font-medium text-gray-600 dark:text-slate-300">
+              Cell padding
+              <select id="padding" data-share-key="padding" class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100">
+                <option value="0">0 spaces</option>
+                <option value="1" selected>1 space</option>
+                <option value="2">2 spaces</option>
+                <option value="3">3 spaces</option>
+              </select>
+            </label>
+          </div>
+          <div class="sm:col-span-2 flex flex-wrap gap-x-5 gap-y-2">
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-slate-200">
+              <input id="header-row" data-share-key="header" type="checkbox" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" />
+              First row is a header
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-700 dark:text-slate-200">
+              <input id="align-numbers" data-share-key="align" type="checkbox" checked class="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500" />
+              Align numeric columns right
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden min-w-0">
+        <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+          <div class="min-w-0">
+            <h2 class="font-semibold text-gray-800 dark:text-slate-100">2. Copy the terminal table</h2>
+            <p id="output-stats" class="text-xs text-gray-500 dark:text-slate-400 truncate">Generating from the sample…</p>
+          </div>
+          <span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Browser only
+          </span>
+        </div>
+
+        <div id="error-box" class="hidden m-4 p-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 text-sm" role="alert"></div>
+        <textarea
+          id="table-output"
+          class="w-full h-[520px] p-4 font-mono text-[13px] leading-5 resize-y bg-slate-950 text-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+          readonly
+          wrap="off"
+          aria-label="Generated ASCII table"
+        ></textarea>
+        <div class="px-4 py-4 border-t border-gray-200 dark:border-slate-700 flex flex-wrap items-center gap-2">
+          <button id="copy-btn" type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold">Copy table</button>
+          <button id="download-btn" type="button" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Download .txt</button>
+          <button id="generate-btn" data-share-action="generate" type="button" class="px-4 py-2 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Refresh</button>
+          <span class="ml-auto text-xs text-gray-500 dark:text-slate-400">Updates automatically as you edit.</span>
+        </div>
+      </section>
+    </div>
+
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-lg bg-slate-900 text-white shadow-xl text-sm" role="status" aria-live="polite"></div>
+
+    <section class="mt-8 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">Readable tables wherever plain text goes</h2>
+      <div class="grid md:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-slate-300">
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Handles real structured data</h3>
+          <p>The CSV parser understands quoted commas, escaped quotes, and line breaks inside fields. JSON object keys become headers, while copied HTML table cells become rows and columns.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Fits terminal-sized spaces</h3>
+          <p>Cap column width and wrap or truncate long cells. Numeric-only columns can align right automatically so values remain easy to compare.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Need the other direction?</h3>
+          <p>Paste terminal output into the <a href="/ascii-table-converter" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">ASCII Table Converter</a> to get a real HTML table, CSV, or Excel workbook.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>
+
+<script>
+  import { parseStructuredTable, renderAsciiTable, type AsciiTableStyle, type CellOverflow, type StructuredTableFormat } from '../lib/ascii-table-generator';
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('source-input') as HTMLTextAreaElement;
+  const sample = input.value;
+  const format = document.getElementById('input-format') as HTMLSelectElement;
+  const style = document.getElementById('output-style') as HTMLSelectElement;
+  const overflow = document.getElementById('overflow') as HTMLSelectElement;
+  const maxWidth = document.getElementById('max-width') as HTMLInputElement;
+  const padding = document.getElementById('padding') as HTMLSelectElement;
+  const headerRow = document.getElementById('header-row') as HTMLInputElement;
+  const alignNumbers = document.getElementById('align-numbers') as HTMLInputElement;
+  const output = document.getElementById('table-output') as HTMLTextAreaElement;
+  const stats = document.getElementById('output-stats') as HTMLElement;
+  const errorBox = document.getElementById('error-box') as HTMLElement;
+  const fileInput = document.getElementById('source-file') as HTMLInputElement;
+  const toast = document.getElementById('toast') as HTMLElement;
+  let generateTimer = 0;
+  let toastTimer = 0;
+
+  function showToast(message: string, isError = false): void {
+    window.clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.classList.toggle('bg-red-700', isError);
+    toast.classList.toggle('bg-slate-900', !isError);
+    toast.classList.remove('hidden');
+    toastTimer = window.setTimeout(() => toast.classList.add('hidden'), 2400);
+  }
+
+  function clearError(): void {
+    errorBox.textContent = '';
+    errorBox.classList.add('hidden');
+  }
+
+  function showError(message: string): void {
+    errorBox.textContent = message;
+    errorBox.classList.remove('hidden');
+  }
+
+  function generate(): void {
+    window.clearTimeout(generateTimer);
+    clearError();
+    if (!input.value.trim()) {
+      output.value = '';
+      stats.textContent = 'Paste CSV, TSV, JSON, or HTML to begin.';
+      return;
+    }
+    try {
+      const parsed = parseStructuredTable(input.value, format.value as StructuredTableFormat);
+      output.value = renderAsciiTable(parsed.rows, {
+        style: style.value as AsciiTableStyle,
+        headerRow: headerRow.checked,
+        padding: Number(padding.value),
+        maxColumnWidth: Number(maxWidth.value) || 32,
+        overflow: overflow.value as CellOverflow,
+        alignNumbers: alignNumbers.checked,
+      });
+      const columns = parsed.rows[0]?.length || 0;
+      stats.textContent = `${parsed.rows.length.toLocaleString()} rows × ${columns.toLocaleString()} columns · ${parsed.formatLabel} → ${style.options[style.selectedIndex].text}`;
+    } catch (error) {
+      output.value = '';
+      stats.textContent = 'Could not generate a table yet.';
+      showError(error instanceof Error ? error.message : 'Could not parse that input.');
+    }
+  }
+
+  function scheduleGenerate(): void {
+    window.clearTimeout(generateTimer);
+    generateTimer = window.setTimeout(generate, 160);
+  }
+
+  input.addEventListener('input', scheduleGenerate);
+  for (const control of [format, style, overflow, maxWidth, padding, headerRow, alignNumbers]) {
+    control.addEventListener('input', generate);
+    control.addEventListener('change', generate);
+  }
+  document.getElementById('generate-btn')?.addEventListener('click', generate);
+  document.getElementById('sample-btn')?.addEventListener('click', () => {
+    input.value = sample;
+    format.value = 'auto';
+    generate();
+  });
+  document.getElementById('clear-btn')?.addEventListener('click', () => {
+    input.value = '';
+    generate();
+    input.focus();
+  });
+  document.getElementById('paste-btn')?.addEventListener('click', async () => {
+    try {
+      input.value = await navigator.clipboard.readText();
+      generate();
+    } catch {
+      showToast('Paste permission was blocked. Use Ctrl/Command+V in the input box.', true);
+      input.focus();
+    }
+  });
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showError('That file is larger than 5 MB.');
+      fileInput.value = '';
+      return;
+    }
+    input.value = await file.text();
+    fileInput.value = '';
+    generate();
+  });
+  document.getElementById('copy-btn')?.addEventListener('click', async () => {
+    if (!output.value) return;
+    try {
+      await navigator.clipboard.writeText(output.value);
+      showToast('ASCII table copied.');
+    } catch {
+      output.select();
+      showToast('Clipboard access was blocked. The table is selected for copying.', true);
+    }
+  });
+  document.getElementById('download-btn')?.addEventListener('click', () => {
+    if (!output.value) return;
+    const url = URL.createObjectURL(new Blob([output.value, '\n'], { type: 'text/plain;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'ascii-table.txt';
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast('Text table downloaded.');
+  });
+
+  ShareManager.register({
+    tool: 'ascii-table-generator',
+    actions: { generate },
+    afterLoad: generate,
+  });
+  generate();
+</script>

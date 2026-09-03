@@ -4,6 +4,7 @@ import Layout from '../layouts/Layout.astro';
 const tools = [
   { name: 'DateTime Converter', href: '/datetime-converter', description: 'Convert between Unix epoch, ISO 8601, and human readable formats' },
   { name: 'Color Converter', href: '/color-converter', description: 'Convert between HEX, RGB, HSL, and other color formats' },
+  { name: 'Certificate Inspector & Converter', href: '/certificate-inspector', description: 'Inspect and convert X.509 PEM, DER, CER, Base64, and PKCS#7 certificates' },
   { name: 'Protobuf Converter', href: '/protobuf-converter', description: 'Convert between JSON and Protocol Buffers format' },
   { name: 'Avro Converter', href: '/avro-converter', description: 'Convert between JSON and Apache Avro binary format' },
   { name: 'TOON Converter', href: '/toon-converter', description: 'Convert JSON/YAML to TOON format for 30-60% LLM token savings' },
@@ -13,8 +14,8 @@ const tools = [
 
 <Layout
   title="Converter Tools"
-  description="Free online converter tools for developers. DateTime, color, Protobuf, Avro, TOON (LLM token optimizer), and Unix permissions converters. Convert between formats quickly and easily."
-  keywords="datetime converter, color converter, protobuf converter, avro converter, toon converter, llm token optimizer, unix permissions, chmod calculator, online converters"
+  description="Free online converter tools for developers. Convert dates, colors, X.509 certificates, Protobuf, Avro, TOON, and Unix permissions directly in your browser."
+  keywords="datetime converter, color converter, certificate converter, PEM to DER, protobuf converter, avro converter, toon converter, unix permissions, online converters"
   breadcrumb={[{ name: "Converter Tools" }]}
 >
   <div class="max-w-6xl mx-auto">

@@ -124,10 +124,10 @@ const jsonLd = [
             </label>
           </div>
           <button id="convert-btn" data-share-action="convert" type="button" class="w-full px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold">
-            Convert to table
+            Refresh table
           </button>
           <p class="text-[11px] leading-4 text-gray-500 dark:text-slate-400">
-            Auto-detects ASCII and Unicode borders, Markdown pipes, PostgreSQL output, tabs, and columns separated by multiple spaces. ANSI terminal colors are removed.
+            Updates automatically as you paste or edit. Detects ASCII and Unicode borders, Markdown pipes, PostgreSQL output, tabs, and columns separated by multiple spaces. ANSI terminal colors are removed.
           </p>
         </div>
       </section>
@@ -218,7 +218,7 @@ const jsonLd = [
         </div>
         <div>
           <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Private and print-ready</h3>
-          <p>The terminal text stays in this tab. Use the browser print dialog to print the clean table or choose <strong>Save as PDF</strong>, with portrait or landscape page sizing.</p>
+          <p>The terminal text stays in this tab. Use the browser print dialog to print the clean table or choose <strong>Save as PDF</strong>. Need the reverse? Use the <a href="/ascii-table-generator" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">ASCII Table Generator</a>.</p>
         </div>
       </div>
     </section>
@@ -313,6 +313,7 @@ const jsonLd = [
 
   let currentRows: string[][] = [];
   let toastTimer = 0;
+  let autoConvertTimer = 0;
 
   function showToast(message: string, isError = false): void {
     window.clearTimeout(toastTimer);
@@ -331,6 +332,15 @@ const jsonLd = [
   function clearError(): void {
     errorBox.textContent = '';
     errorBox.classList.add('hidden');
+  }
+
+  function resetResult(message = 'Paste a table to see the preview.'): void {
+    currentRows = [];
+    previewTable.replaceChildren();
+    resultContent.classList.add('hidden');
+    emptyState.classList.remove('hidden');
+    tableStats.textContent = message;
+    clearError();
   }
 
   function cellElement(value: string, tag: 'th' | 'td', rowIndex: number, columnIndex: number): HTMLTableCellElement {
@@ -380,6 +390,11 @@ const jsonLd = [
   }
 
   function convert(): void {
+    window.clearTimeout(autoConvertTimer);
+    if (!input.value.trim()) {
+      resetResult();
+      return;
+    }
     clearError();
     try {
       const parsed = parseTerminalTable(input.value);
@@ -477,12 +492,8 @@ const jsonLd = [
   });
   document.getElementById('clear-btn')?.addEventListener('click', () => {
     input.value = '';
-    currentRows = [];
-    previewTable.replaceChildren();
-    resultContent.classList.add('hidden');
-    emptyState.classList.remove('hidden');
-    tableStats.textContent = 'Convert a table to see the preview.';
-    clearError();
+    window.clearTimeout(autoConvertTimer);
+    resetResult();
     input.focus();
   });
   document.getElementById('paste-btn')?.addEventListener('click', async () => {
@@ -511,6 +522,14 @@ const jsonLd = [
       event.preventDefault();
       convert();
     }
+  });
+  input.addEventListener('input', () => {
+    window.clearTimeout(autoConvertTimer);
+    if (!input.value.trim()) {
+      resetResult();
+      return;
+    }
+    autoConvertTimer = window.setTimeout(convert, 180);
   });
   headerRow.addEventListener('change', () => {
     captureEdits();
