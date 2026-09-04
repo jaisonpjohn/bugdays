@@ -32,6 +32,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "GZip & Base64", href: "/gzip-base64", description: "Compress & encode text", keywords: ["compress", "decompress", "deflate", "zlib"] },
       { name: "Schema Explorer", href: "/schema-explorer", description: "ER diagram from database DDL", keywords: ["erd", "database", "diagram"] },
       { name: "SOAP Client", href: "/soap-client", description: "WSDL-aware SOAP request workspace", keywords: ["wsdl", "xml", "web service", "soapui"] },
+      { name: "Thread Dump Analyzer", href: "/thread-dump-analyzer", description: "Deadlocks, locks & stack groups", keywords: ["java", "jvm", "jstack", "jcmd", "blocked", "virtual threads"] },
     ]
   },
   {
@@ -136,6 +137,14 @@ export const toolGroups: ToolGroup[] = [
     items: [
       { name: "Schema Explorer", href: "/schema-explorer", description: "ER diagram & data dictionary from DDL", keywords: ["erd", "er diagram", "entity relationship", "table relationships", "data dictionary", "postgres", "mysql", "oracle", "db2", "sql server", "ddl", "annotate"] },
       { name: "DBeaver Decrypt", href: "/dbeaver-password-decrypter", description: "Recover DBeaver saved passwords", keywords: ["credentials", "recover", "database"] },
+    ]
+  },
+  {
+    name: "JVM Diagnostics",
+    href: "/jvm-tools",
+    icon: "activity",
+    items: [
+      { name: "Thread Dump Analyzer", href: "/thread-dump-analyzer", description: "Deadlocks, locks & stack groups", keywords: ["java", "jvm", "jstack", "jcmd", "thread dump", "deadlock", "blocked", "virtual threads", "hotspot", "openjdk"] },
     ]
   },
   {

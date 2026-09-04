@@ -165,6 +165,36 @@ const detectCertificate: Detector = (input) => {
   };
 };
 
+const detectThreadDump: Detector = (input) => {
+  const trimmed = input.trim();
+  let isJsonDump = false;
+  if (trimmed.startsWith('{') && /"threadDump"\s*:/.test(trimmed) && /"threadContainers"\s*:/.test(trimmed)) {
+    try { isJsonDump = Boolean(JSON.parse(trimmed)?.threadDump?.threadContainers); } catch { /* handled as text below */ }
+  }
+  const hasDumpHeader = /Full thread dump\s+(?:Java|OpenJDK|[\w() .+-]*VM)/i.test(trimmed);
+  const stateLines = (trimmed.match(/java\.lang\.Thread\.State:\s+(?:RUNNABLE|BLOCKED|WAITING|TIMED_WAITING)/g) || []).length;
+  const threadHeaders = (trimmed.match(/^"[^"]+"\s+(?:#\d+|daemon\b|prio=|tid=|nid=)/gm) || []).length;
+  const modernHeaders = (trimmed.match(/^#\d+\s+"[^"]+"\s+(?:virtual\s+)?(?:RUNNABLE|BLOCKED|WAITING|TIMED_WAITING)/gm) || []).length;
+  if (!isJsonDump && !hasDumpHeader && !(stateLines >= 2 && threadHeaders + modernHeaders >= 2)) return null;
+  const estimatedThreads = isJsonDump
+    ? (trimmed.match(/"(?:tid|name)"\s*:/g) || []).length / 2
+    : threadHeaders + modernHeaders;
+  const canDeepLink = input.length <= 100_000;
+  return {
+    id: 'thread-dump',
+    title: isJsonDump ? 'JDK JSON thread dump' : 'Java thread dump',
+    confidence: 99,
+    note: `${Math.max(1, Math.round(estimatedThreads)).toLocaleString()} thread${estimatedThreads === 1 ? '' : 's'} detected${canDeepLink ? ' · analyze locally' : ' · large dump; open the analyzer and paste it there'}`,
+    primary: {
+      label: 'Open in Thread Dump Analyzer',
+      toolId: 'thread-dump-analyzer',
+      href: '/thread-dump-analyzer',
+      data: canDeepLink ? { dump: input } : {},
+      action: canDeepLink ? 'analyze' : undefined,
+    },
+  };
+};
+
 const detectDataUriImage: Detector = (input) => {
   const t = input.trim();
   if (!/^data:image\/[a-z+.-]+;base64,/i.test(t)) return null;
@@ -504,7 +534,7 @@ const detectHex: Detector = (input) => {
 // ---------------------------------------------------------------------------
 
 const DETECTORS: Detector[] = [
-  detectJwt, detectDataUriImage, detectJson, detectDdl, detectCertificate, detectXml,
+  detectJwt, detectDataUriImage, detectThreadDump, detectJson, detectDdl, detectCertificate, detectXml,
   detectEpoch, detectIsoDate, detectUuid, detectColor, detectIpCidr,
   detectCron, detectUnixPerms, detectUrl, detectUrlEncoded, detectQueryString,
   detectBase64, detectHex, detectToml, detectAsciiTable, detectYaml, detectCsv,

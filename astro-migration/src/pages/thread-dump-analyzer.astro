@@ -1,0 +1,777 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const sampleDump = `2026-09-03 12:00:00
+Full thread dump OpenJDK 64-Bit Server VM (24 mixed mode):
+
+"main" #1 prio=5 os_prio=0 cpu=120.5ms elapsed=45.2s tid=0x1 nid=0x1 runnable
+   java.lang.Thread.State: RUNNABLE
+        at com.example.Main.loop(Main.java:42)
+        at com.example.Main.main(Main.java:18)
+
+"order-worker-1" #21 prio=5 os_prio=0 tid=0x21 nid=0x21 waiting for monitor entry
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.example.OrderService.reserveInventory(OrderService.java:110)
+        - waiting to lock <0x0000000000000bbb> (a java.lang.Object)
+        - locked <0x0000000000000aaa> (a java.lang.Object)
+        at com.example.OrderService.placeOrder(OrderService.java:72)
+
+"order-worker-2" #22 daemon prio=5 os_prio=0 tid=0x22 nid=0x22 waiting for monitor entry
+   java.lang.Thread.State: BLOCKED (on object monitor)
+        at com.example.OrderService.chargePayment(OrderService.java:145)
+        - waiting to lock <0x0000000000000aaa> (a java.lang.Object)
+        - locked <0x0000000000000bbb> (a java.lang.Object)
+        at com.example.OrderService.placeOrder(OrderService.java:76)
+
+"http-nio-8080-exec-1" #30 daemon prio=5 os_prio=0 tid=0x30 nid=0x30 waiting on condition
+   java.lang.Thread.State: WAITING (parking)
+        at jdk.internal.misc.Unsafe.park(Native Method)
+        - parking to wait for <0x0000000000000ccc> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+        at java.util.concurrent.locks.LockSupport.park(LockSupport.java:211)
+        at java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1062)
+
+"http-nio-8080-exec-2" #31 daemon prio=5 os_prio=0 tid=0x31 nid=0x31 waiting on condition
+   java.lang.Thread.State: WAITING (parking)
+        at jdk.internal.misc.Unsafe.park(Native Method)
+        - parking to wait for <0x0000000000000ddd> (a java.util.concurrent.locks.AbstractQueuedSynchronizer$ConditionObject)
+        at java.util.concurrent.locks.LockSupport.park(LockSupport.java:211)
+        at java.util.concurrent.ThreadPoolExecutor.getTask(ThreadPoolExecutor.java:1062)
+
+"HikariPool-1 housekeeper" #40 daemon prio=5 os_prio=0 tid=0x40 nid=0x40 waiting on condition
+   java.lang.Thread.State: TIMED_WAITING (parking)
+        at jdk.internal.misc.Unsafe.park(Native Method)
+        at java.util.concurrent.locks.LockSupport.parkNanos(LockSupport.java:269)
+        at java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue.take(ScheduledThreadPoolExecutor.java:1182)
+
+Found one Java-level deadlock:
+=============================
+"order-worker-1":
+  waiting to lock monitor 0x1 (object 0x0000000000000bbb, a java.lang.Object),
+  which is held by "order-worker-2"
+"order-worker-2":
+  waiting to lock monitor 0x2 (object 0x0000000000000aaa, a java.lang.Object),
+  which is held by "order-worker-1"
+
+Found 1 deadlock.`;
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Java Thread Dump Analyzer',
+    description: 'Analyze Java thread dumps for deadlocks, blocked threads, lock contention, repeated stack traces, hot frames, and JVM thread states.',
+    url: 'https://bugdays.com/thread-dump-analyzer',
+    applicationCategory: 'DeveloperApplication',
+    operatingSystem: 'Any',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    featureList: [
+      'HotSpot, OpenJDK, jstack, and jcmd text dump parsing',
+      'JDK JSON and virtual thread dump parsing',
+      'Deadlock and lock ownership analysis',
+      'Thread state and category summaries',
+      'Repeated stack and common frame grouping',
+      'Private browser-only processing',
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: 'How do I analyze a Java thread dump?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Paste output from jcmd Thread.print or jstack, or open a text or JSON dump file. The analyzer groups states and stacks, traces lock ownership, and highlights deadlocks and contention.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Does the analyzer support Java virtual threads?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Yes. It reads modern JDK JSON thread dumps produced by Thread.dump_to_file and identifies virtual threads, containers, states, stacks, blockers, and carrier details when present.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Is my thread dump uploaded?',
+        acceptedAnswer: { '@type': 'Answer', text: 'No. Parsing, searching, grouping, lock analysis, and report generation run locally in the browser.' },
+      },
+    ],
+  },
+];
+---
+
+<Layout
+  title="Java Thread Dump Analyzer - Deadlocks, Locks & Stack Groups"
+  description="Analyze Java thread dumps online for deadlocks, blocked threads, lock contention, repeated stacks, hot frames, thread pools, and virtual threads. Runs locally in your browser."
+  keywords="thread dump analyzer, Java thread dump analyzer, jstack analyzer, jcmd Thread.print, deadlock analyzer, blocked threads, JVM thread dump, lock contention, virtual thread dump, thread stack analyzer"
+  breadcrumb={[{ name: 'Developer Tools', href: '/developer-tools' }, { name: 'Thread Dump Analyzer' }]}
+  toolId="thread-dump-analyzer"
+  jsonLd={jsonLd}
+>
+  <div class="max-w-[1500px] mx-auto">
+    <div class="mb-5">
+      <div class="flex flex-wrap items-center gap-3 mb-2">
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100">Java Thread Dump Analyzer</h1>
+        <span class="px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">Free · Browser only</span>
+      </div>
+      <p class="text-gray-600 dark:text-slate-300 max-w-5xl">
+        Turn a wall of JVM stacks into a diagnosis. Find deadlocks, blocked threads, contended monitors, repeated pool stacks, common frames, and virtual-thread activity without uploading the dump.
+      </p>
+    </div>
+
+    <section class="no-print bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+      <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="font-semibold text-gray-800 dark:text-slate-100">Paste or open a thread dump</h2>
+          <p class="text-xs text-gray-500 dark:text-slate-400">HotSpot/OpenJDK text, multiple concatenated captures, or modern JDK JSON · up to 20 MB</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <label id="file-drop" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer text-sm font-semibold">
+            Open dump file
+            <input id="dump-file" type="file" accept=".txt,.log,.out,.tdump,.json,text/plain,application/json" class="hidden" />
+          </label>
+          <button id="paste-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Paste</button>
+          <button id="sample-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Deadlock sample</button>
+          <button id="clear-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-sm font-medium">Clear</button>
+        </div>
+      </div>
+      <textarea
+        id="dump-input"
+        data-share-key="dump"
+        class="w-full h-64 p-4 font-mono text-[12px] leading-5 resize-y bg-slate-950 text-slate-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+        spellcheck="false"
+        wrap="off"
+        aria-label="Java thread dump input"
+        placeholder="Paste output from jcmd <pid> Thread.print -l, jstack -l <pid>, or a JDK JSON thread dump…"
+      >{sampleDump}</textarea>
+      <div class="px-4 py-3 border-t border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex flex-wrap items-center gap-3">
+        <button id="analyze-btn" data-share-action="analyze" type="button" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold">Analyze dump</button>
+        <span id="input-help" class="text-xs text-gray-500 dark:text-slate-400">Pasted text is analyzed automatically. Nothing leaves this browser.</span>
+      </div>
+    </section>
+
+    <div id="error-box" class="hidden no-print mt-4 p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 text-sm" role="alert"></div>
+
+    <div id="results" class="hidden mt-4 space-y-4">
+      <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <div class="px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-slate-700">
+          <div class="min-w-0">
+            <h2 class="font-semibold text-gray-800 dark:text-slate-100">Analysis summary</h2>
+            <p id="source-summary" class="text-xs text-gray-500 dark:text-slate-400 truncate"></p>
+          </div>
+          <div class="no-print flex flex-wrap items-center gap-2">
+            <label id="snapshot-label" class="hidden text-xs font-medium text-gray-600 dark:text-slate-300">
+              Capture
+              <select id="snapshot-select" class="ml-1 px-2.5 py-1.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100"></select>
+            </label>
+            <button id="download-csv" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-xs font-medium">CSV report</button>
+            <button id="download-json" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-xs font-medium">JSON report</button>
+            <button id="print-btn" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-xs font-medium">Print / PDF</button>
+          </div>
+        </div>
+        <div class="p-4 grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
+          <div class="p-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50"><div class="text-xs text-gray-500 dark:text-slate-400">All threads</div><div id="count-all" class="text-2xl font-bold text-gray-800 dark:text-slate-100">0</div></div>
+          <div class="p-3 rounded-lg border border-emerald-200 dark:border-emerald-900 bg-emerald-50 dark:bg-emerald-900/20"><div class="text-xs text-emerald-700 dark:text-emerald-300">Runnable</div><div id="count-runnable" class="text-2xl font-bold text-emerald-800 dark:text-emerald-200">0</div></div>
+          <div class="p-3 rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/20"><div class="text-xs text-red-700 dark:text-red-300">Blocked</div><div id="count-blocked" class="text-2xl font-bold text-red-800 dark:text-red-200">0</div></div>
+          <div class="p-3 rounded-lg border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-900/20"><div class="text-xs text-blue-700 dark:text-blue-300">Waiting</div><div id="count-waiting" class="text-2xl font-bold text-blue-800 dark:text-blue-200">0</div></div>
+          <div class="p-3 rounded-lg border border-violet-200 dark:border-violet-900 bg-violet-50 dark:bg-violet-900/20"><div class="text-xs text-violet-700 dark:text-violet-300">Timed waiting</div><div id="count-timed" class="text-2xl font-bold text-violet-800 dark:text-violet-200">0</div></div>
+          <div class="p-3 rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-900/20"><div class="text-xs text-amber-700 dark:text-amber-300">Deadlock cycles</div><div id="count-deadlocks" class="text-2xl font-bold text-amber-800 dark:text-amber-200">0</div></div>
+        </div>
+      </section>
+
+      <nav class="no-print bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-1.5 flex gap-1 overflow-x-auto" aria-label="Analysis views">
+        <button data-view-button="overview" type="button" class="view-button shrink-0 px-4 py-2 rounded-md text-sm font-semibold">Overview</button>
+        <button data-view-button="threads" type="button" class="view-button shrink-0 px-4 py-2 rounded-md text-sm font-semibold">Threads <span id="threads-tab-count" class="opacity-70"></span></button>
+        <button data-view-button="groups" type="button" class="view-button shrink-0 px-4 py-2 rounded-md text-sm font-semibold">Stack groups <span id="groups-tab-count" class="opacity-70"></span></button>
+        <button data-view-button="locks" type="button" class="view-button shrink-0 px-4 py-2 rounded-md text-sm font-semibold">Locks <span id="locks-tab-count" class="opacity-70"></span></button>
+      </nav>
+
+      <div data-view="overview" class="analysis-view space-y-4">
+        <div class="grid xl:grid-cols-[1.15fr_0.85fr] gap-4 items-start">
+          <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700"><h2 class="font-semibold text-gray-800 dark:text-slate-100">What deserves attention</h2></div>
+            <div id="findings-list" class="p-4 space-y-3"></div>
+          </section>
+          <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+            <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700"><h2 class="font-semibold text-gray-800 dark:text-slate-100">Thread distribution</h2></div>
+            <div class="p-4 grid sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-5">
+              <div><h3 class="text-xs uppercase tracking-wide text-gray-400 mb-3">By state</h3><div id="state-distribution" class="space-y-2"></div></div>
+              <div><h3 class="text-xs uppercase tracking-wide text-gray-400 mb-3">By role</h3><div id="category-distribution" class="space-y-2"></div></div>
+            </div>
+          </section>
+        </div>
+        <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+          <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between gap-3"><h2 class="font-semibold text-gray-800 dark:text-slate-100">Common stack frames</h2><span class="text-xs text-gray-500 dark:text-slate-400">Across distinct threads</span></div>
+          <div id="hot-frames" class="divide-y divide-gray-100 dark:divide-slate-700"></div>
+        </section>
+        <section id="comparison-card" class="hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+          <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700"><h2 class="font-semibold text-gray-800 dark:text-slate-100">Capture comparison</h2></div>
+          <div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-slate-50 dark:bg-slate-900/50 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400"><tr><th class="px-4 py-3">Capture</th><th class="px-4 py-3">Threads</th><th class="px-4 py-3">Runnable</th><th class="px-4 py-3">Blocked</th><th class="px-4 py-3">Waiting</th><th class="px-4 py-3">Timed waiting</th><th class="px-4 py-3">Deadlocks</th></tr></thead><tbody id="comparison-body" class="divide-y divide-gray-100 dark:divide-slate-700"></tbody></table></div>
+        </section>
+      </div>
+
+      <div data-view="threads" class="analysis-view hidden">
+        <div class="grid xl:grid-cols-[390px_minmax(0,1fr)] gap-4 items-start">
+          <section class="no-print bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+            <div class="p-3 border-b border-gray-200 dark:border-slate-700 space-y-2">
+              <input id="thread-search" type="search" placeholder="Search name, stack, lock, ID…" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100" />
+              <div class="grid grid-cols-2 gap-2">
+                <select id="state-filter" class="px-2.5 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100"><option value="">All states</option></select>
+                <select id="category-filter" class="px-2.5 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 text-sm text-gray-900 dark:text-slate-100"><option value="">All roles</option></select>
+              </div>
+              <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-300"><input id="waiting-filter" type="checkbox" class="rounded text-indigo-600" /> Only threads waiting on a lock</label>
+            </div>
+            <div class="px-3 py-2 bg-slate-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700 flex justify-between gap-2 text-xs text-gray-500 dark:text-slate-400"><span id="filtered-count"></span><button id="reset-filters" type="button" class="text-indigo-600 dark:text-indigo-400 hover:underline">Reset filters</button></div>
+            <div id="thread-list" class="max-h-[720px] overflow-y-auto p-2 space-y-1"></div>
+          </section>
+
+          <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden min-w-0">
+            <div id="thread-detail-empty" class="p-12 text-center text-gray-500 dark:text-slate-400">Select a thread to inspect its complete stack and lock relationships.</div>
+            <div id="thread-detail" class="hidden">
+              <div class="px-4 py-4 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0"><div class="flex flex-wrap items-center gap-2 mb-1"><span id="detail-state" class="px-2 py-0.5 rounded-full text-xs font-bold"></span><span id="detail-category" class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs"></span></div><h2 id="detail-name" class="text-lg font-bold text-gray-800 dark:text-slate-100 break-all"></h2></div>
+                <div class="no-print flex gap-2"><button id="copy-stack" type="button" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-xs font-semibold">Copy stack</button><button id="copy-thread" type="button" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 text-xs font-medium">Copy original</button></div>
+              </div>
+              <div id="detail-meta" class="p-4 flex flex-wrap gap-2 border-b border-gray-200 dark:border-slate-700"></div>
+              <div id="waiting-card" class="hidden m-4 p-3 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 text-sm"></div>
+              <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex justify-between gap-3"><h3 class="font-semibold text-gray-800 dark:text-slate-100">Stack trace</h3><span id="frame-count" class="text-xs text-gray-500 dark:text-slate-400"></span></div>
+              <ol id="stack-list" class="max-h-[640px] overflow-auto divide-y divide-gray-100 dark:divide-slate-800 bg-slate-950 text-slate-100"></ol>
+              <div class="p-4 border-t border-gray-200 dark:border-slate-700"><h3 class="text-xs uppercase tracking-wide text-gray-400 mb-2">Locks held</h3><div id="held-locks" class="flex flex-wrap gap-2"></div></div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div data-view="groups" class="analysis-view hidden">
+        <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+          <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700"><h2 class="font-semibold text-gray-800 dark:text-slate-100">Repeated stack groups</h2><p class="text-xs text-gray-500 dark:text-slate-400">Threads with the same state and stack are grouped together. Large groups often expose saturated or idle pools.</p></div>
+          <div id="groups-list" class="divide-y divide-gray-100 dark:divide-slate-700"></div>
+        </section>
+      </div>
+
+      <div data-view="locks" class="analysis-view hidden space-y-4">
+        <section id="deadlocks-card" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+          <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700"><h2 class="font-semibold text-gray-800 dark:text-slate-100">Deadlock cycles</h2></div>
+          <div id="deadlocks-list" class="p-4 space-y-3"></div>
+        </section>
+        <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+          <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700"><h2 class="font-semibold text-gray-800 dark:text-slate-100">Lock ownership and waiters</h2><p class="text-xs text-gray-500 dark:text-slate-400">Locks with identifiable contention, shared waiters, or unusual multiple owners are listed.</p></div>
+          <div class="overflow-x-auto"><table class="w-full text-sm"><thead class="bg-slate-50 dark:bg-slate-900/50 text-left text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400"><tr><th class="px-4 py-3">Lock</th><th class="px-4 py-3">Type</th><th class="px-4 py-3">Owner</th><th class="px-4 py-3">Waiting threads</th></tr></thead><tbody id="locks-body" class="divide-y divide-gray-100 dark:divide-slate-700"></tbody></table></div>
+          <div id="locks-empty" class="hidden p-8 text-center text-gray-500 dark:text-slate-400">No contended locks were identified in this capture.</div>
+        </section>
+      </div>
+    </div>
+
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-lg bg-slate-900 text-white shadow-xl text-sm" role="status" aria-live="polite"></div>
+
+    <section class="no-print mt-8 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">From capture to diagnosis</h2>
+      <div class="grid md:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-slate-300">
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Capture useful lock data</h3><p>For platform threads, use <code class="text-xs">jcmd &lt;pid&gt; Thread.print -l</code> or <code class="text-xs">jstack -l &lt;pid&gt;</code>. The lock option adds ownable synchronizers, improving waiter-to-owner analysis.</p></div>
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Compare several moments</h3><p>For hangs or suspected CPU loops, capture multiple dumps several seconds apart and paste them together. A thread that stays RUNNABLE at the same frame across captures deserves closer investigation.</p></div>
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Modern virtual-thread dumps</h3><p>JSON output from <code class="text-xs">jcmd &lt;pid&gt; Thread.dump_to_file -format=json file.json</code> preserves thread containers and scales better for large virtual-thread workloads.</p></div>
+      </div>
+      <p class="mt-4 text-xs text-gray-500 dark:text-slate-400">This is static evidence analysis, not a profiler. RUNNABLE can mean CPU work, native execution, or I/O; confirm suspicious patterns with repeated captures, JFR, or a profiler.</p>
+    </section>
+  </div>
+</Layout>
+
+<style is:global>
+  @media print {
+    body * { visibility: hidden !important; }
+    #results, #results * { visibility: visible !important; }
+    #results { position: absolute; inset: 0 auto auto 0; width: 100%; margin: 0 !important; }
+    .analysis-view.hidden { display: none !important; }
+    #thread-list, #stack-list { max-height: none !important; overflow: visible !important; }
+  }
+</style>
+
+<script>
+  import { analyzeThreadDump, snapshotReportJson, threadReportCsv, type JavaThread, type JavaThreadState, type ThreadCategory, type ThreadDumpAnalysis, type ThreadDumpSnapshot } from '../lib/thread-dump';
+  import { ShareManager } from '../lib/share';
+
+  const input = document.getElementById('dump-input') as HTMLTextAreaElement;
+  const sample = input.value;
+  const fileInput = document.getElementById('dump-file') as HTMLInputElement;
+  const dropZone = document.getElementById('file-drop') as HTMLLabelElement;
+  const results = document.getElementById('results') as HTMLElement;
+  const errorBox = document.getElementById('error-box') as HTMLElement;
+  const toast = document.getElementById('toast') as HTMLElement;
+  const snapshotSelect = document.getElementById('snapshot-select') as HTMLSelectElement;
+  const searchInput = document.getElementById('thread-search') as HTMLInputElement;
+  const stateFilter = document.getElementById('state-filter') as HTMLSelectElement;
+  const categoryFilter = document.getElementById('category-filter') as HTMLSelectElement;
+  const waitingFilter = document.getElementById('waiting-filter') as HTMLInputElement;
+  let analysis: ThreadDumpAnalysis | null = null;
+  let snapshot: ThreadDumpSnapshot | null = null;
+  let selectedThreadId: string | null = null;
+  let analyzeTimer = 0;
+  let toastTimer = 0;
+
+  const element = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
+  const stateOrder: JavaThreadState[] = ['RUNNABLE', 'BLOCKED', 'WAITING', 'TIMED_WAITING', 'NEW', 'TERMINATED', 'UNKNOWN'];
+  const categoryOrder: ThreadCategory[] = ['Application', 'Web / HTTP', 'Database', 'Messaging', 'Scheduler', 'JVM / GC', 'Virtual thread'];
+
+  stateOrder.forEach(state => stateFilter.append(new Option(state.replace('_', ' '), state)));
+  categoryOrder.forEach(category => categoryFilter.append(new Option(category, category)));
+
+  function showToast(message: string, isError = false): void {
+    window.clearTimeout(toastTimer);
+    toast.textContent = message;
+    toast.classList.toggle('bg-red-700', isError);
+    toast.classList.toggle('bg-slate-900', !isError);
+    toast.classList.remove('hidden');
+    toastTimer = window.setTimeout(() => toast.classList.add('hidden'), 2500);
+  }
+
+  function clearError(): void { errorBox.textContent = ''; errorBox.classList.add('hidden'); }
+  function showError(message: string): void { errorBox.textContent = message; errorBox.classList.remove('hidden'); }
+
+  function stateClasses(state: JavaThreadState): string {
+    if (state === 'BLOCKED') return 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300';
+    if (state === 'RUNNABLE') return 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300';
+    if (state === 'WAITING') return 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300';
+    if (state === 'TIMED_WAITING') return 'bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-300';
+    return 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300';
+  }
+
+  function threadName(id: string): string {
+    return snapshot?.threads.find(thread => thread.id === id)?.name || id;
+  }
+
+  function makeChip(text: string, className = ''): HTMLSpanElement {
+    const chip = document.createElement('span');
+    chip.className = `px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs break-all ${className}`;
+    chip.textContent = text;
+    return chip;
+  }
+
+  function setView(view: string): void {
+    document.querySelectorAll<HTMLElement>('[data-view]').forEach(panel => panel.classList.toggle('hidden', panel.dataset.view !== view));
+    document.querySelectorAll<HTMLButtonElement>('[data-view-button]').forEach(button => {
+      const active = button.dataset.viewButton === view;
+      button.className = `view-button shrink-0 px-4 py-2 rounded-md text-sm font-semibold transition-colors ${active ? 'bg-indigo-600 text-white' : 'text-gray-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`;
+    });
+  }
+
+  function distributionRow(label: string, count: number, total: number, color: string): HTMLElement {
+    const row = document.createElement('div');
+    const top = document.createElement('div');
+    top.className = 'flex justify-between gap-3 text-xs text-gray-600 dark:text-slate-300 mb-1';
+    const name = document.createElement('span');
+    name.textContent = label;
+    const value = document.createElement('span');
+    value.className = 'font-semibold';
+    value.textContent = count.toLocaleString();
+    top.append(name, value);
+    const track = document.createElement('div');
+    track.className = 'h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden';
+    const bar = document.createElement('div');
+    bar.className = `h-full rounded-full ${color}`;
+    bar.style.width = `${total ? Math.max(2, count / total * 100) : 0}%`;
+    track.append(bar);
+    row.append(top, track);
+    return row;
+  }
+
+  function showThreads(threadIds?: string[]): void {
+    setView('threads');
+    searchInput.value = '';
+    stateFilter.value = '';
+    categoryFilter.value = '';
+    waitingFilter.checked = false;
+    renderThreadList(threadIds ? new Set(threadIds) : undefined);
+  }
+
+  function renderOverview(): void {
+    if (!snapshot) return;
+    const findings = element('findings-list');
+    findings.replaceChildren();
+    snapshot.findings.forEach(finding => {
+      const card = document.createElement('div');
+      const styles = finding.severity === 'critical'
+        ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20'
+        : finding.severity === 'warning'
+          ? 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20'
+          : finding.severity === 'good'
+            ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20'
+            : 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20';
+      card.className = `p-3 rounded-lg border ${styles}`;
+      const title = document.createElement('div');
+      title.className = 'font-semibold text-sm text-gray-800 dark:text-slate-100';
+      title.textContent = finding.title;
+      const detail = document.createElement('p');
+      detail.className = 'mt-1 text-xs leading-5 text-gray-600 dark:text-slate-300';
+      detail.textContent = finding.detail;
+      card.append(title, detail);
+      if (finding.threadIds?.length) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'no-print mt-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:underline';
+        button.textContent = `Inspect ${finding.threadIds.length} affected thread${finding.threadIds.length === 1 ? '' : 's'} →`;
+        button.addEventListener('click', () => showThreads(finding.threadIds));
+        card.append(button);
+      }
+      findings.append(card);
+    });
+
+    const stateDistribution = element('state-distribution');
+    stateDistribution.replaceChildren();
+    const stateColors: Record<JavaThreadState, string> = { RUNNABLE: 'bg-emerald-500', BLOCKED: 'bg-red-500', WAITING: 'bg-blue-500', TIMED_WAITING: 'bg-violet-500', NEW: 'bg-slate-400', TERMINATED: 'bg-slate-400', UNKNOWN: 'bg-slate-400' };
+    stateOrder.filter(state => snapshot!.stateCounts[state]).forEach(state => stateDistribution.append(distributionRow(state.replace('_', ' '), snapshot!.stateCounts[state], snapshot!.threads.length, stateColors[state])));
+    const categoryDistribution = element('category-distribution');
+    categoryDistribution.replaceChildren();
+    categoryOrder.filter(category => snapshot!.categoryCounts[category]).forEach(category => categoryDistribution.append(distributionRow(category, snapshot!.categoryCounts[category], snapshot!.threads.length, 'bg-indigo-500')));
+
+    const hotFrames = element('hot-frames');
+    hotFrames.replaceChildren();
+    if (!snapshot.hotFrames.length) {
+      const empty = document.createElement('div');
+      empty.className = 'p-8 text-center text-gray-500 dark:text-slate-400';
+      empty.textContent = 'No stack frame appears in more than one thread.';
+      hotFrames.append(empty);
+    } else snapshot.hotFrames.slice(0, 12).forEach(item => {
+      const row = document.createElement('button');
+      row.type = 'button';
+      row.className = 'no-print w-full p-3 text-left hover:bg-slate-50 dark:hover:bg-slate-700/40 grid sm:grid-cols-[70px_1fr] gap-2';
+      const count = document.createElement('span');
+      count.className = 'font-semibold text-indigo-600 dark:text-indigo-400 text-sm';
+      count.textContent = `${item.count} threads`;
+      const frame = document.createElement('code');
+      frame.className = 'text-xs text-gray-700 dark:text-slate-200 break-all';
+      frame.textContent = item.frame;
+      row.append(count, frame);
+      row.addEventListener('click', () => showThreads(item.threadIds));
+      hotFrames.append(row);
+    });
+  }
+
+  function filteredThreads(allowedIds?: Set<string>): JavaThread[] {
+    if (!snapshot) return [];
+    const query = searchInput.value.trim().toLowerCase();
+    return snapshot.threads.filter(thread => {
+      if (allowedIds && !allowedIds.has(thread.id)) return false;
+      if (stateFilter.value && thread.state !== stateFilter.value) return false;
+      if (categoryFilter.value && thread.category !== categoryFilter.value) return false;
+      if (waitingFilter.checked && !thread.waitingOn) return false;
+      if (!query) return true;
+      return `${thread.name}\n${thread.javaId || ''}\n${thread.tid || ''}\n${thread.nid || ''}\n${thread.state}\n${thread.category}\n${thread.waitingOn || ''}\n${thread.stack.map(frame => frame.raw).join('\n')}`.toLowerCase().includes(query);
+    });
+  }
+
+  function renderThreadList(allowedIds?: Set<string>): void {
+    const threads = filteredThreads(allowedIds);
+    const visibleThreads = threads.slice(0, 1000);
+    element('filtered-count').textContent = `${threads.length.toLocaleString()} of ${snapshot?.threads.length.toLocaleString() || 0} threads${threads.length > visibleThreads.length ? ` · showing first ${visibleThreads.length.toLocaleString()}` : ''}`;
+    const list = element('thread-list');
+    list.replaceChildren();
+    if (!threads.length) {
+      const empty = document.createElement('div');
+      empty.className = 'p-8 text-center text-sm text-gray-500 dark:text-slate-400';
+      empty.textContent = 'No threads match these filters.';
+      list.append(empty);
+      selectedThreadId = null;
+      renderThreadDetail();
+      return;
+    }
+    if (!visibleThreads.some(thread => thread.id === selectedThreadId)) selectedThreadId = visibleThreads[0].id;
+    visibleThreads.forEach(thread => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      const active = thread.id === selectedThreadId;
+      button.className = `w-full p-2.5 rounded-lg text-left border transition-colors ${active ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-700/40'}`;
+      const top = document.createElement('div');
+      top.className = 'flex items-start justify-between gap-2';
+      const name = document.createElement('span');
+      name.className = 'text-sm font-semibold text-gray-800 dark:text-slate-100 truncate';
+      name.textContent = thread.name;
+      const state = document.createElement('span');
+      state.className = `shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold ${stateClasses(thread.state)}`;
+      state.textContent = thread.state.replace('_', ' ');
+      top.append(name, state);
+      const frame = document.createElement('div');
+      frame.className = 'mt-1 text-[11px] text-gray-500 dark:text-slate-400 truncate font-mono';
+      frame.textContent = thread.topFrame;
+      button.append(top, frame);
+      button.addEventListener('click', () => { selectedThreadId = thread.id; renderThreadList(allowedIds); });
+      list.append(button);
+    });
+    renderThreadDetail();
+  }
+
+  function renderThreadDetail(): void {
+    const thread = snapshot?.threads.find(item => item.id === selectedThreadId);
+    element('thread-detail-empty').classList.toggle('hidden', Boolean(thread));
+    element('thread-detail').classList.toggle('hidden', !thread);
+    if (!thread) return;
+    const detailState = element('detail-state');
+    detailState.textContent = thread.state.replace('_', ' ');
+    detailState.className = `px-2 py-0.5 rounded-full text-xs font-bold ${stateClasses(thread.state)}`;
+    element('detail-category').textContent = thread.category;
+    element('detail-name').textContent = thread.name;
+    const meta = element('detail-meta');
+    meta.replaceChildren();
+    const values = [
+      thread.javaId ? `Java ID #${thread.javaId}` : '', thread.tid ? `tid ${thread.tid}` : '', thread.nid ? `nid ${thread.nid}` : '',
+      thread.daemon ? 'Daemon' : '', thread.virtual ? 'Virtual' : 'Platform', thread.priority === undefined ? '' : `Priority ${thread.priority}`,
+      thread.cpuMs === undefined ? '' : `CPU ${thread.cpuMs.toLocaleString()} ms`, thread.elapsedSeconds === undefined ? '' : `Elapsed ${thread.elapsedSeconds.toLocaleString()} s`, thread.container ? `Container ${thread.container}` : '',
+    ].filter(Boolean);
+    values.forEach(value => meta.append(makeChip(value)));
+
+    const waitingCard = element('waiting-card');
+    if (thread.waitingOn) {
+      const lock = snapshot!.locks.find(item => item.id === thread.waitingOn);
+      const owners = lock?.ownerThreadIds.map(threadName) || [];
+      const waitingAction = thread.waitingKind === 'waiting-to-lock'
+        ? 'Waiting to acquire'
+        : thread.waitingKind === 'parking'
+          ? 'Parked waiting for'
+          : 'Waiting on';
+      waitingCard.textContent = `${waitingAction} lock <${thread.waitingOn}>${owners.length ? ` owned by ${owners.join(', ')}` : '; no owner was identifiable in this dump'}.`;
+      waitingCard.classList.remove('hidden');
+    } else {
+      waitingCard.classList.add('hidden');
+      waitingCard.textContent = '';
+    }
+
+    element('frame-count').textContent = `${thread.stack.length} frame${thread.stack.length === 1 ? '' : 's'}`;
+    const stackList = element('stack-list');
+    stackList.replaceChildren();
+    if (!thread.stack.length) {
+      const empty = document.createElement('li');
+      empty.className = 'p-5 text-sm text-slate-400';
+      empty.textContent = 'No Java stack frames were included for this thread.';
+      stackList.append(empty);
+    } else thread.stack.forEach((frame, index) => {
+      const row = document.createElement('li');
+      row.className = 'grid grid-cols-[36px_minmax(0,1fr)] gap-2 px-3 py-2 font-mono text-xs';
+      const number = document.createElement('span');
+      number.className = 'text-slate-500 text-right select-none';
+      number.textContent = String(index + 1);
+      const text = document.createElement('code');
+      text.className = `${frame.nativeMethod ? 'text-amber-300' : 'text-slate-200'} break-all`;
+      text.textContent = frame.raw;
+      row.append(number, text);
+      stackList.append(row);
+    });
+    const heldLocks = element('held-locks');
+    heldLocks.replaceChildren();
+    if (!thread.locksHeld.length) heldLocks.append(makeChip('No owned locks listed'));
+    else thread.locksHeld.forEach(lock => heldLocks.append(makeChip(`<${lock}>`, 'font-mono')));
+  }
+
+  function renderGroups(): void {
+    if (!snapshot) return;
+    const groups = snapshot.groups.filter(group => group.count > 1);
+    element('groups-tab-count').textContent = groups.length ? `(${groups.length})` : '';
+    const list = element('groups-list');
+    list.replaceChildren();
+    if (!groups.length) {
+      const empty = document.createElement('div');
+      empty.className = 'p-10 text-center text-gray-500 dark:text-slate-400';
+      empty.textContent = 'Every thread has a unique state and stack in this capture.';
+      list.append(empty);
+      return;
+    }
+    groups.slice(0, 100).forEach(group => {
+      const details = document.createElement('details');
+      details.className = 'group';
+      const summary = document.createElement('summary');
+      summary.className = 'p-4 cursor-pointer list-none flex flex-wrap items-start justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-700/30';
+      const left = document.createElement('div');
+      left.className = 'min-w-0';
+      const title = document.createElement('code');
+      title.className = 'block text-sm font-semibold text-gray-800 dark:text-slate-100 break-all';
+      title.textContent = group.title;
+      const names = document.createElement('div');
+      names.className = 'mt-1 text-xs text-gray-500 dark:text-slate-400 truncate';
+      names.textContent = group.threadIds.slice(0, 8).map(threadName).join(', ') + (group.threadIds.length > 8 ? ` +${group.threadIds.length - 8} more` : '');
+      left.append(title, names);
+      const badges = document.createElement('div');
+      badges.className = 'flex gap-2 shrink-0';
+      badges.append(makeChip(`${group.count} threads`, 'font-semibold text-indigo-700 dark:text-indigo-300'), makeChip(group.state.replace('_', ' '), stateClasses(group.state)));
+      summary.append(left, badges);
+      const body = document.createElement('div');
+      body.className = 'px-4 pb-4';
+      const pre = document.createElement('pre');
+      pre.className = 'p-3 rounded-lg bg-slate-950 text-slate-200 text-xs leading-5 overflow-auto max-h-72';
+      pre.textContent = group.stack.map(frame => `at ${frame.raw}`).join('\n') || '(no Java stack frames)';
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'no-print mt-2 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline';
+      button.textContent = 'Inspect threads in this group →';
+      button.addEventListener('click', () => showThreads(group.threadIds));
+      body.append(pre, button);
+      details.append(summary, body);
+      list.append(details);
+    });
+  }
+
+  function renderLocks(): void {
+    if (!snapshot) return;
+    element('locks-tab-count').textContent = snapshot.locks.length ? `(${snapshot.locks.length})` : '';
+    const deadlocks = element('deadlocks-list');
+    deadlocks.replaceChildren();
+    if (!snapshot.deadlocks.length) {
+      const okay = document.createElement('div');
+      okay.className = 'p-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 text-sm';
+      okay.textContent = 'No circular lock dependency was found in the available ownership data.';
+      deadlocks.append(okay);
+    } else snapshot.deadlocks.forEach((cycle, index) => {
+      const card = document.createElement('div');
+      card.className = 'p-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20';
+      const title = document.createElement('div');
+      title.className = 'font-semibold text-red-900 dark:text-red-200';
+      title.textContent = `Deadlock cycle ${index + 1}${cycle.explicit ? ' · confirmed by JVM output' : ''}`;
+      const path = document.createElement('div');
+      path.className = 'mt-2 font-mono text-xs text-red-800 dark:text-red-300 break-all';
+      path.textContent = [...cycle.threadIds.map(threadName), threadName(cycle.threadIds[0])].join(' → ');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'no-print mt-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300 hover:underline';
+      button.textContent = 'Inspect deadlocked threads →';
+      button.addEventListener('click', () => showThreads(cycle.threadIds));
+      card.append(title, path, button);
+      deadlocks.append(card);
+    });
+
+    const body = element('locks-body');
+    body.replaceChildren();
+    element('locks-empty').classList.toggle('hidden', snapshot.locks.length > 0);
+    snapshot.locks.slice(0, 500).forEach(lock => {
+      const row = document.createElement('tr');
+      row.className = 'align-top text-gray-700 dark:text-slate-200';
+      const values = [`<${lock.id}>`, lock.className || '—', lock.ownerThreadIds.map(threadName).join(', ') || 'Not identified', lock.waiterThreadIds.map(threadName).join(', ') || '—'];
+      values.forEach((value, index) => {
+        const cell = document.createElement('td');
+        cell.className = `px-4 py-3 break-words ${index === 0 ? 'font-mono text-xs' : ''} ${index >= 2 ? 'min-w-48' : ''}`;
+        cell.textContent = value;
+        row.append(cell);
+      });
+      body.append(row);
+    });
+  }
+
+  function renderComparison(): void {
+    if (!analysis) return;
+    element('comparison-card').classList.toggle('hidden', analysis.snapshots.length < 2);
+    const body = element('comparison-body');
+    body.replaceChildren();
+    analysis.snapshots.forEach((item, index) => {
+      const row = document.createElement('tr');
+      row.className = 'text-gray-700 dark:text-slate-200';
+      const values = [item.timestamp || `Capture ${index + 1}`, item.threads.length, item.stateCounts.RUNNABLE, item.stateCounts.BLOCKED, item.stateCounts.WAITING, item.stateCounts.TIMED_WAITING, item.deadlocks.length];
+      values.forEach(value => { const cell = document.createElement('td'); cell.className = 'px-4 py-3 whitespace-nowrap'; cell.textContent = String(value); row.append(cell); });
+      body.append(row);
+    });
+  }
+
+  function renderSnapshot(): void {
+    if (!snapshot || !analysis) return;
+    element('source-summary').textContent = [snapshot.formatLabel, snapshot.timestamp, snapshot.runtimeVersion, snapshot.processId ? `PID ${snapshot.processId}` : '', analysis.snapshots.length > 1 ? `${analysis.snapshots.length} captures` : '', ...snapshot.warnings].filter(Boolean).join(' · ');
+    element('count-all').textContent = snapshot.threads.length.toLocaleString();
+    element('count-runnable').textContent = snapshot.stateCounts.RUNNABLE.toLocaleString();
+    element('count-blocked').textContent = snapshot.stateCounts.BLOCKED.toLocaleString();
+    element('count-waiting').textContent = snapshot.stateCounts.WAITING.toLocaleString();
+    element('count-timed').textContent = snapshot.stateCounts.TIMED_WAITING.toLocaleString();
+    element('count-deadlocks').textContent = snapshot.deadlocks.length.toLocaleString();
+    element('threads-tab-count').textContent = `(${snapshot.threads.length.toLocaleString()})`;
+    selectedThreadId = snapshot.threads[0]?.id || null;
+    searchInput.value = '';
+    stateFilter.value = '';
+    categoryFilter.value = '';
+    waitingFilter.checked = false;
+    renderOverview();
+    renderThreadList();
+    renderGroups();
+    renderLocks();
+    renderComparison();
+  }
+
+  function populateSnapshots(): void {
+    if (!analysis) return;
+    snapshotSelect.replaceChildren();
+    analysis.snapshots.forEach((item, index) => snapshotSelect.append(new Option(item.timestamp ? `${index + 1} · ${item.timestamp}` : `Capture ${index + 1}`, String(index))));
+    element('snapshot-label').classList.toggle('hidden', analysis.snapshots.length < 2);
+  }
+
+  function analyze(): void {
+    window.clearTimeout(analyzeTimer);
+    clearError();
+    if (!input.value.trim()) {
+      analysis = null;
+      snapshot = null;
+      results.classList.add('hidden');
+      return;
+    }
+    try {
+      analysis = analyzeThreadDump(input.value);
+      snapshot = analysis.snapshots[0];
+      populateSnapshots();
+      renderSnapshot();
+      results.classList.remove('hidden');
+      setView('overview');
+    } catch (error) {
+      analysis = null;
+      snapshot = null;
+      results.classList.add('hidden');
+      showError(error instanceof Error ? error.message : 'Could not parse that thread dump.');
+    }
+  }
+
+  function scheduleAnalyze(): void {
+    window.clearTimeout(analyzeTimer);
+    if (!input.value.trim()) { analyze(); return; }
+    analyzeTimer = window.setTimeout(analyze, 280);
+  }
+
+  function safeName(value: string): string { return value.replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'thread-dump'; }
+  function download(value: string, extension: string, type: string): void {
+    const url = URL.createObjectURL(new Blob([value], { type }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${safeName(snapshot?.timestamp || 'thread-dump-report')}.${extension}`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  async function copy(value: string, message: string): Promise<void> {
+    try { await navigator.clipboard.writeText(value); showToast(message); }
+    catch { showToast('Clipboard access was blocked by the browser.', true); }
+  }
+
+  document.querySelectorAll<HTMLButtonElement>('[data-view-button]').forEach(button => button.addEventListener('click', () => setView(button.dataset.viewButton || 'overview')));
+  input.addEventListener('input', scheduleAnalyze);
+  document.getElementById('analyze-btn')?.addEventListener('click', analyze);
+  document.getElementById('sample-btn')?.addEventListener('click', () => { input.value = sample; analyze(); });
+  document.getElementById('clear-btn')?.addEventListener('click', () => { input.value = ''; analyze(); input.focus(); });
+  document.getElementById('paste-btn')?.addEventListener('click', async () => {
+    try { input.value = await navigator.clipboard.readText(); analyze(); }
+    catch { showToast('Paste permission was blocked. Use Ctrl/Command+V in the input box.', true); input.focus(); }
+  });
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) showError('That file is larger than 20 MB. Split it into smaller captures first.');
+    else { input.value = await file.text(); analyze(); }
+    fileInput.value = '';
+  });
+  for (const eventName of ['dragenter', 'dragover']) dropZone.addEventListener(eventName, event => { event.preventDefault(); dropZone.classList.add('ring-4', 'ring-indigo-200'); });
+  for (const eventName of ['dragleave', 'drop']) dropZone.addEventListener(eventName, event => { event.preventDefault(); dropZone.classList.remove('ring-4', 'ring-indigo-200'); });
+  dropZone.addEventListener('drop', async event => {
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) showError('That file is larger than 20 MB. Split it into smaller captures first.');
+    else { input.value = await file.text(); analyze(); }
+  });
+  snapshotSelect.addEventListener('change', () => { snapshot = analysis?.snapshots[Number(snapshotSelect.value)] || null; renderSnapshot(); });
+  for (const control of [searchInput, stateFilter, categoryFilter, waitingFilter]) {
+    control.addEventListener('input', () => renderThreadList());
+    control.addEventListener('change', () => renderThreadList());
+  }
+  document.getElementById('reset-filters')?.addEventListener('click', () => { searchInput.value = ''; stateFilter.value = ''; categoryFilter.value = ''; waitingFilter.checked = false; renderThreadList(); });
+  document.getElementById('copy-stack')?.addEventListener('click', () => { const thread = snapshot?.threads.find(item => item.id === selectedThreadId); if (thread) copy(thread.stack.map(frame => `at ${frame.raw}`).join('\n'), 'Stack trace copied.'); });
+  document.getElementById('copy-thread')?.addEventListener('click', () => { const thread = snapshot?.threads.find(item => item.id === selectedThreadId); if (thread) copy(thread.raw, 'Original thread block copied.'); });
+  document.getElementById('download-csv')?.addEventListener('click', () => { if (snapshot) download('\ufeff' + threadReportCsv(snapshot), 'csv', 'text/csv;charset=utf-8'); });
+  document.getElementById('download-json')?.addEventListener('click', () => { if (snapshot) download(snapshotReportJson(snapshot), 'json', 'application/json;charset=utf-8'); });
+  document.getElementById('print-btn')?.addEventListener('click', () => window.print());
+
+  ShareManager.register({ tool: 'thread-dump-analyzer', actions: { analyze }, afterLoad: analyze });
+  analyze();
+</script>
