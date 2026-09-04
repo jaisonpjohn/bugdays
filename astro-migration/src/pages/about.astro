@@ -1,0 +1,31 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="About Bug Days"
+  description="How Bug Days builds open-source, browser-based developer tools, what local processing means, and how to inspect or contribute to the public source code."
+  keywords="about Bug Days, open source developer tools, browser based developer tools, private developer utilities"
+  breadcrumb={[{ name: 'About Bug Days' }]}
+>
+  <article class="max-w-3xl mx-auto bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 md:p-8">
+    <h1 class="text-3xl font-bold text-slate-900 dark:text-white">Developer tools built for real incident work</h1>
+    <p class="mt-4 text-lg leading-8 text-slate-600 dark:text-slate-300">Bug Days is an open-source collection of small, focused tools for the awkward jobs that interrupt a developer’s day: reading a JVM thread dump, inspecting an unfamiliar certificate, testing a SOAP operation, documenting a database schema, or rescuing a terminal table for a spreadsheet.</p>
+
+    <h2 class="mt-8 text-xl font-semibold text-slate-900 dark:text-white">How the tools work</h2>
+    <p class="mt-2 leading-7 text-slate-600 dark:text-slate-300">Parsers, converters, visualizers, and generators execute in the browser. Files and pasted text are not uploaded to Bug Days. Tools that make network requests—such as the SOAP, REST, SSE, and WebSocket clients—connect to the endpoint you enter. A share link is an explicit action and may contain compressed tool input, so it should be reviewed before sending.</p>
+
+    <h2 class="mt-8 text-xl font-semibold text-slate-900 dark:text-white">Built in public</h2>
+    <p class="mt-2 leading-7 text-slate-600 dark:text-slate-300">The implementation is available in the <a href="https://github.com/jaisonpjohn/bugdays" target="_blank" rel="noopener" class="text-indigo-600 dark:text-indigo-400 hover:underline">public Bug Days source repository</a>. That makes the privacy model inspectable and gives developers a direct place to report a parsing edge case, suggest a diagnostic, or contribute a fix.</p>
+
+    <h2 class="mt-8 text-xl font-semibold text-slate-900 dark:text-white">What we optimize for</h2>
+    <ul class="mt-3 list-disc pl-6 space-y-2 text-slate-600 dark:text-slate-300">
+      <li>Useful output within seconds, without an account or installation.</li>
+      <li>Clear limitations instead of security or diagnostic claims the browser cannot prove.</li>
+      <li>Exports that fit the next step: CSV, Excel, JSON, Markdown, SQL, PEM, or printable reports.</li>
+      <li>Examples grounded in the formats developers encounter in terminals, logs, IDEs, and enterprise systems.</li>
+    </ul>
+
+    <p class="mt-8 text-sm text-slate-500 dark:text-slate-400">Questions or feedback? Use the feedback button on any tool or visit the <a href="/contact" class="text-indigo-600 dark:text-indigo-400 hover:underline">contact page</a>.</p>
+  </article>
+</Layout>

@@ -68,12 +68,16 @@ const jsonLd = [
 ---
 
 <Layout
-  title="Certificate Inspector & Converter - X.509 PEM, DER, CER"
-  description="Inspect X.509 TLS certificates and convert PEM, DER, CER, Base64, hex, and PKCS#7 formats. View SANs, validity, key usage, fingerprints, and chains locally."
+  title="X.509 Certificate Decoder & PEM/DER Converter"
+  description="Decode X.509 TLS certificates and convert PEM, DER, CER, Base64, hex, and PKCS#7. Inspect SANs, expiry, key usage, fingerprints, extensions, and chains locally."
   keywords="certificate inspector, certificate decoder, PEM to DER, DER to PEM, CER converter, X509 certificate viewer, SSL certificate decoder, TLS certificate checker, P7B converter, certificate fingerprint"
   breadcrumb={[{ name: 'Security Tools', href: '/security-tools' }, { name: 'Certificate Inspector' }]}
   toolId="certificate-inspector"
   jsonLd={jsonLd}
+  image="/og/certificate-inspector.png"
+  imageAlt="X.509 certificate decoder showing identity, validity, fingerprints, and format exports"
+  imageWidth={1280}
+  imageHeight={720}
 >
   <div class="max-w-[1450px] mx-auto">
     <div class="mb-5">
@@ -275,6 +279,17 @@ const jsonLd = [
           <p>The inspector decodes public X.509 data and computes fingerprints locally. It does not send private keys anywhere or contact revocation, Certificate Transparency, or trust-store services.</p>
         </div>
       </div>
+      <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 grid md:grid-cols-2 gap-6 text-sm text-gray-600 dark:text-slate-300">
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">PEM, DER, CER, and P7B without guesswork</h3>
+          <p>PEM is Base64-wrapped DER with readable boundary lines; DER is the binary X.509 encoding. A <code class="text-xs">.cer</code> or <code class="text-xs">.crt</code> filename may contain either one, while PKCS#7 files commonly carry a certificate chain without a private key. Open the file and let the decoder identify the actual encoding before converting it.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">A certificate viewer, not a live trust check</h3>
+          <p>The report explains the certificate presented in the file: subject, issuer, Subject Alternative Names, dates, algorithms, usages, extensions, and fingerprints. It does not prove that a remote server currently presents that certificate or that your operating system trusts the chain.</p>
+        </div>
+      </div>
+      <p class="mt-5 text-sm text-gray-600 dark:text-slate-300">Testing the service that uses this certificate? Open the <a href="/soap-client" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">online SOAP and WSDL client</a>. For encoded certificate fragments, the <a href="/base64-encoder-decoder" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">Base64 encoder and decoder</a> is available separately.</p>
     </section>
   </div>
 </Layout>

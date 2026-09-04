@@ -2,6 +2,27 @@
 import Layout from '../layouts/Layout.astro';
 import MagicBox from '../components/MagicBox.astro';
 
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': 'https://bugdays.com/#website',
+    url: 'https://bugdays.com/',
+    name: 'Bug Days',
+    alternateName: 'BugDays Developer Tools',
+    description: 'Open-source, browser-based utilities for developers, database engineers, API testers, and JVM troubleshooters.',
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    '@id': 'https://bugdays.com/#organization',
+    name: 'Bug Days',
+    url: 'https://bugdays.com/',
+    logo: 'https://bugdays.com/og-image.png',
+    sameAs: ['https://github.com/jaisonpjohn/bugdays'],
+  },
+];
+
 const categories = [
   {
     name: 'JSON Tools',
@@ -90,9 +111,10 @@ const categories = [
 ---
 
 <Layout
-  title="Free Online Developer Tools"
-  description="Free browser-based developer tools. JSON formatter, Base64 encoder, text diff, hash generator, and 30+ more tools. All processing happens locally - your data never leaves your browser."
-  keywords="developer tools, online tools, JSON formatter, Base64 encoder, text diff, hash generator, free dev tools, browser tools"
+  title="Private, Browser-Based Developer Tools"
+  description="Free, open-source developer tools that run in your browser: inspect JVM thread dumps and X.509 certificates, test SOAP APIs, diagram SQL DDL, convert terminal tables, and more."
+  keywords="browser developer tools, private developer tools, Java thread dump analyzer, SOAP client, X.509 certificate inspector, DDL ER diagram, terminal table converter"
+  jsonLd={jsonLd}
 >
   <div class="max-w-6xl mx-auto">
     <!-- Hero Section -->
@@ -101,7 +123,7 @@ const categories = [
         Developer Tools That Respect Your Privacy
       </h1>
       <p class="text-lg text-gray-600 dark:text-slate-300 mb-6 max-w-2xl mx-auto">
-        30+ free tools for JSON, text, encoding, and more. Everything runs in your browser — your data never touches our servers.
+        Practical tools for JVM diagnostics, SOAP and HTTP testing, database documentation, certificates, terminal output, and everyday data work. Processing stays in your browser; network clients connect only to endpoints you choose.
       </p>
 
       <!-- Paste Anything magic box -->
@@ -133,20 +155,23 @@ const categories = [
 
       <!-- Quick Access -->
       <div class="flex flex-wrap justify-center gap-2">
-        <a href="/json-formatter" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
-          JSON Formatter
+        <a href="/thread-dump-analyzer" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium">
+          Java Thread Dump Analyzer
         </a>
         <a href="/schema-explorer" class="px-4 py-2 bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border border-indigo-400 dark:border-indigo-500 rounded-lg hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
-          Schema Explorer <span class="ml-1 text-[10px] font-bold uppercase tracking-wide text-indigo-500 dark:text-indigo-400">New</span>
+          DDL → ER Diagram
         </a>
-        <a href="/json-diff" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
-          JSON Diff
+        <a href="/soap-client" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+          SOAP & WSDL Client
         </a>
-        <a href="/text-diff" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
-          Text Diff
+        <a href="/certificate-inspector" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+          X.509 Certificate Decoder
         </a>
-        <a href="/gzip-base64" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
-          GZip + Base64
+        <a href="/ascii-table-converter" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+          Terminal Table → Excel
+        </a>
+        <a href="/dbeaver-password-decrypter" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+          DBeaver Credential Recovery
         </a>
       </div>
     </div>

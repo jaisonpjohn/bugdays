@@ -66,12 +66,16 @@ const jsonLd = [
 ---
 
 <Layout
-  title="ASCII Table Converter - Terminal Table to HTML, CSV & Excel"
-  description="Convert terminal ASCII tables and Unicode box-drawing tables into clean HTML tables. Copy to Excel, Word, or Outlook; download CSV or XLSX; print or save as PDF."
+  title="Terminal Table to Excel, CSV & HTML - ASCII Converter"
+  description="Paste an ASCII or Unicode terminal table and turn it into editable rows and columns. Copy cleanly to Excel, Word, or Outlook; export CSV/XLSX; print to PDF."
   keywords="ASCII table converter, terminal table to Excel, text table to HTML, ASCII table to CSV, terminal output to XLSX, box drawing table converter, copy terminal table to Word, print ASCII table"
   breadcrumb={[{ name: 'Text Tools', href: '/text-tools' }, { name: 'ASCII Table Converter' }]}
   toolId="ascii-table-converter"
   jsonLd={jsonLd}
+  image="/og/ascii-table-converter.png"
+  imageAlt="Terminal ASCII table converted into an editable HTML table for Excel and CSV export"
+  imageWidth={1280}
+  imageHeight={720}
 >
   <div class="max-w-[1500px] mx-auto">
     <div class="mb-5">
@@ -220,6 +224,10 @@ const jsonLd = [
           <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Private and print-ready</h3>
           <p>The terminal text stays in this tab. Use the browser print dialog to print the clean table or choose <strong>Save as PDF</strong>. Need the reverse? Use the <a href="/ascii-table-generator" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">ASCII Table Generator</a>.</p>
         </div>
+      </div>
+      <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 grid md:grid-cols-2 gap-6 text-sm text-gray-600 dark:text-slate-300">
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Terminal formats it recognizes</h3><p>Convert classic <code class="text-xs">+---+</code> borders, pipe tables, Unicode box-drawing output, PostgreSQL-style query results, Markdown tables, tab-separated rows, and consistently aligned columns. Headings and footer noise around the table can remain in the pasted text.</p></div>
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Spreadsheet-safe output</h3><p>The optional formula guard protects cells beginning with <code class="text-xs">=</code>, <code class="text-xs">+</code>, <code class="text-xs">-</code>, or <code class="text-xs">@</code> when exporting untrusted terminal data to CSV or a clipboard destined for spreadsheet software.</p></div>
       </div>
     </section>
   </div>

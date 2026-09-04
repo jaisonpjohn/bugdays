@@ -63,12 +63,16 @@ const jsonLd = [
 ---
 
 <Layout
-  title="SOAP Client - Secure Online WSDL Tester & Request Builder"
-  description="Test SOAP APIs from a private browser workspace. Import WSDL, generate SOAP 1.1/1.2 envelopes, send direct XML requests, add auth and headers, and inspect responses."
+  title="Online SOAP Client & WSDL Tester for SOAP 1.1/1.2"
+  description="Import a WSDL, generate SOAP 1.1 or 1.2 envelopes, send XML requests with auth and headers, and inspect faults and responses. No install; optional local CORS bridge."
   keywords="SOAP client, WSDL tester, SOAP API tester, online SOAP client, SOAP request builder, WSDL parser, XML web service, SOAP envelope generator, SOAP 1.1, SOAP 1.2, SOAP response viewer"
   breadcrumb={[{ name: 'Network Tools', href: '/network-tools' }, { name: 'SOAP Client' }]}
   toolId="soap-client"
   jsonLd={jsonLd}
+  image="/og/soap-client.png"
+  imageAlt="Online SOAP client with WSDL operation browser, XML request editor, and response inspector"
+  imageWidth={1280}
+  imageHeight={720}
 >
   <div class="max-w-[1600px] mx-auto">
     <div class="mb-4 flex flex-wrap items-start justify-between gap-4">
@@ -262,7 +266,7 @@ const jsonLd = [
     </section>
 
     <section class="mt-8 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm p-6">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-4">A focused SOAP workspace—with explicit security boundaries</h2>
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-4">An online SOAP client for focused request debugging</h2>
       <div class="grid md:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-slate-300">
         <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Contract-driven when available</h3><p>Import WSDL from a URL, local file, or pasted XML. Browse operations and start from generated envelopes, endpoint addresses, namespaces, and SOAPAction values.</p></div>
         <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Manual when it isn’t</h3><p>A WSDL is optional. Direct mode keeps the endpoint, version, headers, authentication, request XML, and response inspector in one working surface.</p></div>
@@ -271,6 +275,11 @@ const jsonLd = [
       <div class="mt-5 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
         <strong>Request path:</strong> Browser → your SOAP endpoint. When enabled, the path is Browser → Holy CORS on your localhost → your SOAP endpoint. Normal requests are not relayed through Bug Days infrastructure.
       </div>
+      <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 grid md:grid-cols-2 gap-6 text-sm text-gray-600 dark:text-slate-300">
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">WSDL tester or direct SOAP request</h3><p>Load a WSDL when you want service names, ports, operations, endpoint addresses, namespaces, SOAPAction values, and starter envelopes. Switch to direct mode when you already have the endpoint and XML body or when a contract URL is unavailable.</p></div>
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">SOAP 1.1 versus SOAP 1.2</h3><p>SOAP 1.1 commonly sends <code class="text-xs">text/xml</code> plus a separate <code class="text-xs">SOAPAction</code> header. SOAP 1.2 uses <code class="text-xs">application/soap+xml</code> and can carry the action as a content-type parameter. Choosing the matching version avoids many otherwise opaque HTTP 415 and action-routing failures.</p></div>
+      </div>
+      <p class="mt-5 text-sm text-gray-600 dark:text-slate-300">Useful companions: inspect a service chain with the <a href="/certificate-inspector" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">X.509 certificate decoder</a>, clean up a payload in the <a href="/xml-formatter" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">XML formatter</a>, or run data-driven REST requests with the <a href="/bulk-api-invoker" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">CSV bulk API runner</a>.</p>
       <div class="mt-3 text-right"><button id="inline-feedback-btn" type="button" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Send feedback about this SOAP client</button></div>
     </section>
 

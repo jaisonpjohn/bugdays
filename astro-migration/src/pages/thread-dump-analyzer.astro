@@ -98,12 +98,16 @@ const jsonLd = [
 ---
 
 <Layout
-  title="Java Thread Dump Analyzer - Deadlocks, Locks & Stack Groups"
-  description="Analyze Java thread dumps online for deadlocks, blocked threads, lock contention, repeated stacks, hot frames, thread pools, and virtual threads. Runs locally in your browser."
+  title="Java Thread Dump Analyzer for jstack, jcmd & Deadlocks"
+  description="Paste a jstack or jcmd thread dump to find Java deadlocks, blocked threads, lock owners, repeated stacks, hot frames, and virtual threads. Private browser analysis."
   keywords="thread dump analyzer, Java thread dump analyzer, jstack analyzer, jcmd Thread.print, deadlock analyzer, blocked threads, JVM thread dump, lock contention, virtual thread dump, thread stack analyzer"
   breadcrumb={[{ name: 'Developer Tools', href: '/developer-tools' }, { name: 'Thread Dump Analyzer' }]}
   toolId="thread-dump-analyzer"
   jsonLd={jsonLd}
+  image="/og/thread-dump-analyzer.png"
+  imageAlt="Java thread dump analyzer showing thread states, deadlocks, and diagnostic findings"
+  imageWidth={1280}
+  imageHeight={720}
 >
   <div class="max-w-[1500px] mx-auto">
     <div class="mb-5">
@@ -268,7 +272,18 @@ const jsonLd = [
         <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Compare several moments</h3><p>For hangs or suspected CPU loops, capture multiple dumps several seconds apart and paste them together. A thread that stays RUNNABLE at the same frame across captures deserves closer investigation.</p></div>
         <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Modern virtual-thread dumps</h3><p>JSON output from <code class="text-xs">jcmd &lt;pid&gt; Thread.dump_to_file -format=json file.json</code> preserves thread containers and scales better for large virtual-thread workloads.</p></div>
       </div>
-      <p class="mt-4 text-xs text-gray-500 dark:text-slate-400">This is static evidence analysis, not a profiler. RUNNABLE can mean CPU work, native execution, or I/O; confirm suspicious patterns with repeated captures, JFR, or a profiler.</p>
+      <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 grid md:grid-cols-2 gap-6 text-sm text-gray-600 dark:text-slate-300">
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">What the Java thread states tell you</h3>
+          <p><strong>BLOCKED</strong> means a thread is waiting to enter synchronized code. <strong>WAITING</strong> and <strong>TIMED_WAITING</strong> commonly describe parked pool workers, sleeps, joins, or condition waits. <strong>RUNNABLE</strong> is broader than “using CPU”: it can include native work and some I/O. The analyzer keeps these states separate and connects monitor waiters to identifiable lock owners.</p>
+        </div>
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Supported thread-dump sources</h3>
+          <p>Use traditional HotSpot or OpenJDK output from <code class="text-xs">jstack</code>, <code class="text-xs">jcmd Thread.print</code>, a <code class="text-xs">kill -3</code> capture, or several captures concatenated into one file. Modern <code class="text-xs">Thread.dump_to_file -format=json</code> output is also supported for container and virtual-thread inspection.</p>
+        </div>
+      </div>
+      <p class="mt-5 text-sm text-gray-600 dark:text-slate-300">Investigating a JVM incident often exposes adjacent configuration problems. Use the <a href="/certificate-inspector" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">X.509 certificate inspector</a> for TLS material or the <a href="/schema-explorer" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">DDL schema explorer</a> when a database call in the stack needs context.</p>
+      <p class="mt-3 text-xs text-gray-500 dark:text-slate-400">This is static evidence analysis, not a profiler. Confirm suspicious patterns with repeated captures, JFR, application metrics, or a profiler.</p>
     </section>
   </div>
 </Layout>

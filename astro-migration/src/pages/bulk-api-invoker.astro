@@ -43,12 +43,16 @@ const jsonLd = [
 ---
 
 <Layout
-  title="Bulk API Invoker - Batch HTTP Request Tool"
-  description="Execute multiple API calls from CSV data with URL templates. Test APIs in bulk with configurable concurrency, headers, body templates. Free online batch API tester."
-  keywords="bulk API tester, batch API calls, API load testing, CSV API requests, bulk HTTP requests, API automation, batch REST calls, parallel API requests, API testing tool"
+  title="Bulk API Request Runner from CSV - Batch HTTP Calls"
+  description="Run batch GET, POST, PUT, PATCH, or DELETE requests from CSV rows. Substitute columns into URLs, headers, and JSON bodies; control concurrency and export every response."
+  keywords="bulk API request runner, API requests from CSV, batch HTTP requests, CSV REST API calls, URL template API runner, concurrent API requests, response export"
   breadcrumb={[{ name: "Network Tools", href: "/network-tools" }, { name: "Bulk API Invoker" }]}
   toolId="bulk-api-invoker"
   jsonLd={jsonLd}
+  image="/og/bulk-api-invoker.png"
+  imageAlt="Bulk API request runner using CSV placeholders, request templates, and controlled concurrency"
+  imageWidth={1280}
+  imageHeight={720}
 >
   <div class="max-w-7xl mx-auto">
     <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Bulk API Invoker</h1>
@@ -254,7 +258,7 @@ const jsonLd = [
       <div>
         <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Bulk API Testing Tool</h2>
         <p class="text-gray-600 dark:text-slate-300">
-          Execute multiple API calls using data from a CSV file. Perfect for batch operations, data migration, load testing, or validating API endpoints with different inputs. All processing happens in your browser.
+          Execute multiple API calls using data from a CSV file. Useful for controlled batch operations, data migration, test setup, and validating endpoints with different inputs. Request generation and result handling happen in your browser.
         </p>
       </div>
 
@@ -285,6 +289,13 @@ SKU003,WH-A</pre>
           <pre class="bg-gray-200 dark:bg-slate-700 p-2 rounded">{`{"warehouse": "{warehouse}", "check_stock": true}`}</pre>
         </div>
       </div>
+
+      <div class="grid md:grid-cols-3 gap-6 pt-2 text-sm text-gray-600 dark:text-slate-300">
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">One CSV row, one HTTP request</h3><p>Column names become placeholders in the URL, HTTP headers, and request body. That makes the runner useful for targeted migrations, record validation, test-data setup, cache warming, and controlled administrative updates.</p></div>
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Concurrency you can control</h3><p>Choose 1–50 browser workers, pause or stop the run, and watch per-request status, timing, and response data. Start conservatively: this is a batch request utility, not a capacity or load-testing substitute.</p></div>
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Browser CORS is still enforced</h3><p>If the API does not allow browser origins, use the optional Holy CORS bridge on your own machine. Requests go to the endpoint you configure and are not relayed through Bug Days servers.</p></div>
+      </div>
+      <p class="text-sm text-gray-600 dark:text-slate-300">For a single exploratory call, use the <a href="/api-client" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">REST API client</a>. For WSDL operations and XML envelopes, use the <a href="/soap-client" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">online SOAP client</a>.</p>
     </div>
 
     <!-- CORS Proxy Modal -->

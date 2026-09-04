@@ -30,9 +30,9 @@ export const toolGroups: ToolGroup[] = [
       { name: "Join Lines", href: "/join-lines", description: "Join lines with a delimiter", keywords: ["merge", "concatenate", "comma"] },
       { name: "Compare Lists", href: "/list-compare", description: "Set operations on two lists", keywords: ["intersection", "union", "difference", "set ops"] },
       { name: "GZip & Base64", href: "/gzip-base64", description: "Compress & encode text", keywords: ["compress", "decompress", "deflate", "zlib"] },
-      { name: "Schema Explorer", href: "/schema-explorer", description: "ER diagram from database DDL", keywords: ["erd", "database", "diagram"] },
-      { name: "SOAP Client", href: "/soap-client", description: "WSDL-aware SOAP request workspace", keywords: ["wsdl", "xml", "web service", "soapui"] },
-      { name: "Thread Dump Analyzer", href: "/thread-dump-analyzer", description: "Deadlocks, locks & stack groups", keywords: ["java", "jvm", "jstack", "jcmd", "blocked", "virtual threads"] },
+      { name: "Schema Explorer", href: "/schema-explorer", description: "DDL to ER diagram & data dictionary", keywords: ["erd", "database", "diagram"] },
+      { name: "SOAP Client", href: "/soap-client", description: "Online WSDL tester & SOAP requests", keywords: ["wsdl", "xml", "web service", "soapui"] },
+      { name: "Thread Dump Analyzer", href: "/thread-dump-analyzer", description: "Analyze jstack, jcmd & deadlocks", keywords: ["java", "jvm", "jstack", "jcmd", "blocked", "virtual threads"] },
     ]
   },
   {
@@ -114,7 +114,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "Certificate Inspector", href: "/certificate-inspector", description: "Inspect & convert X.509 certificates", keywords: ["ssl", "tls", "x509", "pem", "der", "cer", "crt", "p7b", "pkcs7", "certificate decoder"] },
       { name: "JWT Decoder", href: "/jwt-decoder", description: "Decode & inspect JWT tokens", keywords: ["token", "json web token", "claims"] },
       { name: "Password Gen", href: "/password-generator", description: "Generate strong passwords", keywords: ["random", "secure", "passphrase"] },
-      { name: "DBeaver Decrypt", href: "/dbeaver-password-decrypter", description: "Recover DBeaver saved passwords", keywords: ["credentials", "recover", "database"] },
+      { name: "DBeaver Decrypt", href: "/dbeaver-password-decrypter", description: "Recover credentials-config.json", keywords: ["credentials", "recover", "database"] },
     ]
   },
   {
@@ -136,7 +136,7 @@ export const toolGroups: ToolGroup[] = [
     icon: "database",
     items: [
       { name: "Schema Explorer", href: "/schema-explorer", description: "ER diagram & data dictionary from DDL", keywords: ["erd", "er diagram", "entity relationship", "table relationships", "data dictionary", "postgres", "mysql", "oracle", "db2", "sql server", "ddl", "annotate"] },
-      { name: "DBeaver Decrypt", href: "/dbeaver-password-decrypter", description: "Recover DBeaver saved passwords", keywords: ["credentials", "recover", "database"] },
+      { name: "DBeaver Decrypt", href: "/dbeaver-password-decrypter", description: "Recover credentials-config.json", keywords: ["credentials", "recover", "database"] },
     ]
   },
   {
@@ -144,7 +144,7 @@ export const toolGroups: ToolGroup[] = [
     href: "/jvm-tools",
     icon: "activity",
     items: [
-      { name: "Thread Dump Analyzer", href: "/thread-dump-analyzer", description: "Deadlocks, locks & stack groups", keywords: ["java", "jvm", "jstack", "jcmd", "thread dump", "deadlock", "blocked", "virtual threads", "hotspot", "openjdk"] },
+      { name: "Thread Dump Analyzer", href: "/thread-dump-analyzer", description: "Analyze jstack, jcmd & virtual threads", keywords: ["java", "jvm", "jstack", "jcmd", "thread dump", "deadlock", "blocked", "virtual threads", "hotspot", "openjdk"] },
     ]
   },
   {
@@ -154,8 +154,8 @@ export const toolGroups: ToolGroup[] = [
     items: [
       { name: "CIDR Calculator", href: "/cidr-calculator", description: "Subnet & IP range calculator", keywords: ["subnet", "netmask", "ip range"] },
       { name: "API Client", href: "/api-client", description: "Send HTTP requests from the browser", keywords: ["http", "rest", "postman", "curl", "request"] },
-      { name: "Bulk API Invoker", href: "/bulk-api-invoker", description: "Batch-call an API with CSV data", keywords: ["batch", "http", "load"] },
-      { name: "SOAP Client", href: "/soap-client", description: "WSDL-aware SOAP request workspace", keywords: ["wsdl", "xml", "web service", "soapui", "soap 1.1", "soap 1.2"] },
+      { name: "Bulk API Invoker", href: "/bulk-api-invoker", description: "Run templated API requests from CSV", keywords: ["batch", "http", "csv", "runner"] },
+      { name: "SOAP Client", href: "/soap-client", description: "Online WSDL tester & SOAP requests", keywords: ["wsdl", "xml", "web service", "soapui", "soap 1.1", "soap 1.2"] },
       { name: "gRPC Client", href: "/grpc-client", description: "Call gRPC services", keywords: ["proto", "rpc"] },
       { name: "WebSocket", href: "/websocket-client", description: "Test WebSocket connections", keywords: ["ws", "wss", "socket"] },
       { name: "SSE Client", href: "/sse-client", description: "Test Server-Sent Events streams", keywords: ["eventsource", "stream"] },

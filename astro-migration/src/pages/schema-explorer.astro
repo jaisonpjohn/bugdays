@@ -5,8 +5,8 @@ const jsonLd = [
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "Database Schema Explorer",
-    "description": "Free online database schema explorer and ER diagram generator. Paste DDL from PostgreSQL, MySQL, Oracle, SQL Server or DB2 and visualize table relationships, annotate tables and columns, and export a data dictionary.",
+    "name": "DDL to ER Diagram and Data Dictionary",
+    "description": "Turn SQL DDL into an interactive ER diagram, annotate tables and columns, and export Markdown documentation, Mermaid ERD, JSON, or database comment SQL.",
     "url": "https://bugdays.com/schema-explorer",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any",
@@ -64,12 +64,16 @@ const jsonLd = [
 ---
 
 <Layout
-  title="Database Schema Explorer - ER Diagram from DDL Online Free"
-  description="Visualize your database schema as an interactive ER diagram. Paste DDL from PostgreSQL, MySQL, Oracle, SQL Server or DB2 — see table relationships, annotate columns, export a data dictionary. 100% in your browser."
+  title="DDL to ER Diagram & Data Dictionary - Schema Explorer"
+  description="Paste PostgreSQL, MySQL, Oracle, SQL Server, DB2, or SQLite DDL to build an interactive ER diagram. Annotate columns and export Markdown, Mermaid, JSON, or comment SQL."
   keywords="database schema explorer, ER diagram generator, erd online, visualize database schema, ddl to diagram, table relationships, data dictionary generator, postgres schema diagram, mysql er diagram, oracle schema visualization, database documentation tool"
   breadcrumb={[{ name: "Database", href: "/database-tools" }, { name: "Schema Explorer" }]}
   toolId="schema-explorer"
   jsonLd={jsonLd}
+  image="/og/schema-explorer.png"
+  imageAlt="Database schema explorer turning SQL DDL into an interactive ER diagram"
+  imageWidth={1280}
+  imageHeight={720}
 >
   <div class="max-w-7xl mx-auto">
     <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-1">Database Schema Explorer</h1>
@@ -281,6 +285,17 @@ CREATE TABLE orders (
       <pre id="export-output" class="flex-1 overflow-auto text-xs font-mono bg-slate-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg p-3 whitespace-pre text-gray-800 dark:text-slate-200"></pre>
     </div>
   </div>
+
+  <section class="mt-8 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6">
+    <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100">Turn existing SQL DDL into useful database documentation</h2>
+    <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-slate-300">This is a reverse-engineering workspace for schemas you already have. Paste <code class="text-xs">CREATE TABLE</code>, primary-key, foreign-key, and comment statements to produce an interactive entity-relationship diagram. Click a table to inspect its columns and follow incoming or outgoing relationships without connecting Bug Days to the database.</p>
+    <div class="mt-5 grid md:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-slate-300">
+      <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Multi-dialect DDL parser</h3><p>Understands common PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, DB2, and SQLite schema syntax, including inline constraints and later <code class="text-xs">ALTER TABLE</code> foreign keys.</p></div>
+      <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">ERD plus data dictionary</h3><p>The diagram is only the start. Add plain-language table and column annotations, then export a Markdown data dictionary, Mermaid ER diagram, JSON model, or dialect-specific database comments.</p></div>
+      <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Designed for real schemas</h3><p>Search tables, zoom and rearrange the canvas, isolate relationships, reopen raw table DDL, and keep annotations in local browser storage while you work.</p></div>
+    </div>
+    <p class="mt-5 text-sm text-gray-600 dark:text-slate-300">Need to correlate recovered connection names first? Use the <a href="/dbeaver-password-decrypter" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">DBeaver credentials-config.json recovery tool</a>. Need a diagram you can paste into documentation? Export Mermaid directly from this page.</p>
+  </section>
 </Layout>
 
 <style is:global>
