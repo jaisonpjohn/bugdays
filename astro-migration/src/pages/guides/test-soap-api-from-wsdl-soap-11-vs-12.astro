@@ -1,0 +1,93 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+
+const guide = guideBySlug('test-soap-api-from-wsdl-soap-11-vs-12');
+---
+
+<GuideLayout guide={guide} keywords="test SOAP API from WSDL, SOAP 1.1 vs SOAP 1.2, WSDL tester, SOAPAction header, application soap+xml, SOAP fault debugging, online SOAP client">
+  <p>SOAP failures often look more mysterious than they are. A service returns HTTP 415, “action not supported,” or a namespace fault, and the request XML looks perfectly reasonable. The missing clue is usually in the contract: SOAP version, binding, endpoint, action, or qualified element names.</p>
+
+  <blockquote><strong>The reliable workflow:</strong> choose an operation from the correct WSDL binding, start with its generated envelope, preserve its namespaces, send the version-appropriate content type and action, and read the SOAP fault before changing the business payload.</blockquote>
+
+  <h2>What the WSDL gives you</h2>
+  <p>A WSDL is not merely a sample request. Depending on its version and structure, it connects several pieces:</p>
+  <ul>
+    <li><strong>Service and port:</strong> where a particular binding is exposed.</li>
+    <li><strong>Binding:</strong> the protocol details, including SOAP 1.1 or SOAP 1.2.</li>
+    <li><strong>Operation:</strong> the callable action and its input/output messages.</li>
+    <li><strong>Schema:</strong> element names, namespaces, types, and required structure.</li>
+  </ul>
+  <p>A contract can expose multiple ports or bindings. Do not assume the first endpoint and the first operation belong together.</p>
+
+  <h2>Start with one operation, not a blank editor</h2>
+  <ol>
+    <li>Load the WSDL from a URL, local file, or pasted XML.</li>
+    <li>Select the intended service, port, and operation.</li>
+    <li>Confirm the generated endpoint is appropriate for the environment.</li>
+    <li>Fill in required values without removing namespace declarations.</li>
+    <li>Check authentication and any application-specific headers.</li>
+  </ol>
+  <p>Imported WSDL endpoints are often production URLs, obsolete hosts, or internal names. Treat the address as contract data to verify, not an instruction to send blindly.</p>
+
+  <h2>SOAP 1.1 and SOAP 1.2 use different HTTP conventions</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Detail</th><th>SOAP 1.1</th><th>SOAP 1.2</th></tr></thead>
+    <tbody>
+      <tr><td>Envelope namespace</td><td><code>http://schemas.xmlsoap.org/soap/envelope/</code></td><td><code>http://www.w3.org/2003/05/soap-envelope</code></td></tr>
+      <tr><td>Typical content type</td><td><code>text/xml; charset=utf-8</code></td><td><code>application/soap+xml; charset=utf-8</code></td></tr>
+      <tr><td>Action</td><td>Usually a separate <code>SOAPAction</code> HTTP header</td><td>Can be an <code>action</code> content-type parameter</td></tr>
+      <tr><td>Fault shape</td><td><code>faultcode</code>, <code>faultstring</code>, <code>detail</code></td><td><code>Code</code>, <code>Reason</code>, <code>Detail</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>Typical SOAP 1.1 request headers</h3>
+  <pre><code>POST /CustomerService HTTP/1.1
+Content-Type: text/xml; charset=utf-8
+SOAPAction: "urn:GetCustomer"</code></pre>
+
+  <h3>Typical SOAP 1.2 request headers</h3>
+  <pre><code>POST /CustomerService HTTP/1.1
+Content-Type: application/soap+xml; charset=utf-8; action="urn:GetCustomer"</code></pre>
+  <p>The binding is the authority. Some SOAP stacks are lenient; enterprise gateways often are not. An HTTP 415 commonly points to the content type or version before it points to the payload.</p>
+
+  <h2>Namespaces matter more than prefixes</h2>
+  <p>In XML, the prefix is shorthand. The namespace URI carries the identity. These two elements are equivalent if both prefixes resolve to the same URI:</p>
+  <pre><code>&lt;cus:GetCustomer xmlns:cus="urn:customers"&gt;...&lt;/cus:GetCustomer&gt;
+&lt;c:GetCustomer xmlns:c="urn:customers"&gt;...&lt;/c:GetCustomer&gt;</code></pre>
+  <p>Removing the namespace, however, produces a different element. “Operation not found” and deserialization errors frequently come from a correct local name in the wrong namespace.</p>
+
+  <h2>Read the fault before rewriting the request</h2>
+  <p>A SOAP fault is structured diagnostic output. Preserve the HTTP status, response headers, fault code, human-readable reason, and detail block. Then classify the failure:</p>
+  <ul>
+    <li><strong>HTTP 401 or 403:</strong> authentication or authorization happened before the operation.</li>
+    <li><strong>HTTP 404:</strong> verify the concrete endpoint, not just the WSDL URL.</li>
+    <li><strong>HTTP 415:</strong> verify SOAP version and content type.</li>
+    <li><strong>Action mismatch:</strong> compare the binding’s action with the HTTP action.</li>
+    <li><strong>XML/schema fault:</strong> inspect qualified element names, ordering, cardinality, and value formats.</li>
+  </ul>
+
+  <h2>Authentication is not the same as WS-Security</h2>
+  <p>HTTP Basic authentication is an HTTP header. WS-Security places tokens, timestamps, signatures, or encryption inside the SOAP header and may require canonicalization and certificate material. A client that can send Basic auth does not automatically implement a service’s WS-Security policy.</p>
+  <p>Start from a known-good request or the organization’s policy when signatures, client certificates, NTLM/Kerberos, or vendor-specific security handlers are involved.</p>
+
+  <h2>Understand browser CORS before blaming SOAP</h2>
+  <p>A browser can reach a service only when the service permits the web origin and required headers, or when a local bridge handles the request. A CORS failure means the browser blocked access to the response; it does not prove the SOAP endpoint rejected the envelope.</p>
+  <p>Bug Days sends directly to the endpoint you enter. If browser CORS blocks the request, the optional Holy CORS bridge runs on your own machine. It is not a hosted relay. For mTLS, integrated Windows authentication, private PKI policy, or sensitive production workflows, use an approved internal or desktop client.</p>
+
+  <h2>Minimal SOAP debugging checklist</h2>
+  <ul>
+    <li>Confirm the selected port, binding, and endpoint belong together.</li>
+    <li>Match the envelope namespace and content type to SOAP 1.1 or 1.2.</li>
+    <li>Use the exact action required by the binding.</li>
+    <li>Preserve operation and child-element namespaces.</li>
+    <li>Separate HTTP authentication from WS-Security requirements.</li>
+    <li>Capture the complete fault and HTTP status before editing the payload.</li>
+    <li>Distinguish service errors from browser CORS enforcement.</li>
+  </ul>
+
+  <p>For the protocol definitions, the <a href="https://www.w3.org/TR/soap/" target="_blank" rel="noopener">W3C SOAP specifications index</a> links to SOAP 1.1 and the SOAP 1.2 recommendations.</p>
+
+  <a slot="related" href="/guides/pem-vs-der-vs-cer-vs-p7b-certificate-formats" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Understand certificate files</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Identify PEM, DER, CER, and certificate bundles.</span></a>
+  <a slot="related" href="/guides/sql-ddl-to-er-diagram-data-dictionary" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Document a database schema</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Turn existing DDL into an ER diagram and dictionary.</span></a>
+</GuideLayout>

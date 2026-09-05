@@ -1,0 +1,83 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+
+const guide = guideBySlug('sql-ddl-to-er-diagram-data-dictionary');
+---
+
+<GuideLayout guide={guide} keywords="DDL to ER diagram, SQL schema visualization, database data dictionary, PostgreSQL ERD from DDL, MySQL schema diagram, database documentation, foreign key diagram">
+  <p>The most accurate database documentation is often trapped in the database itself: table definitions, keys, constraints, and comments. A stale diagram can still look convincing, which makes it dangerous. Starting from current DDL gives you an evidence-based picture without granting a diagramming service database access.</p>
+
+  <blockquote><strong>The workflow:</strong> export schema definitions without data, parse tables and foreign keys into an ER diagram, add the business meaning SQL cannot express, and publish both the visual model and a searchable data dictionary.</blockquote>
+
+  <h2>Export structure, not production rows</h2>
+  <p>For PostgreSQL, a plain-text schema-only dump provides the definitions needed for reverse engineering:</p>
+  <pre><code>pg_dump --schema-only --no-owner --no-privileges \
+  --file=schema.sql database_name</code></pre>
+  <p><code>--schema-only</code> excludes table data. <code>--no-owner</code> and <code>--no-privileges</code> reduce deployment-specific noise when the goal is documentation. Review the output anyway: comments, object names, defaults, and extensions can reveal internal details.</p>
+  <p>Other databases provide similar “DDL only” or “no data” export options through their command-line clients and administration tools. Prefer plain SQL containing <code>CREATE TABLE</code>, constraints, indexes, comments, and later <code>ALTER TABLE ... FOREIGN KEY</code> statements.</p>
+
+  <h2>A small schema already tells a story</h2>
+  <pre><code>CREATE TABLE customers (
+  id bigint PRIMARY KEY,
+  email varchar(320) NOT NULL UNIQUE
+);
+
+CREATE TABLE orders (
+  id bigint PRIMARY KEY,
+  customer_id bigint NOT NULL,
+  status varchar(30) NOT NULL,
+  placed_at timestamp NOT NULL,
+  CONSTRAINT fk_orders_customer
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+);</code></pre>
+  <p>From this alone, a parser can identify two entities, their columns, primary keys, uniqueness, required fields, and the child-to-parent relationship from <code>orders.customer_id</code> to <code>customers.id</code>. It cannot infer what “status” values are legal unless the DDL includes a check constraint, enum, lookup table, or comment.</p>
+
+  <h2>Read relationships in both directions</h2>
+  <p>A foreign key has two useful narratives:</p>
+  <ul>
+    <li>From the child: every order’s <code>customer_id</code> refers to an existing customer.</li>
+    <li>From the parent: a customer may be referenced by many orders.</li>
+  </ul>
+  <p>Nullability affects the story. A nullable foreign key makes the association optional at the database level. Uniqueness can turn a many-to-one shape into one-to-one. Composite foreign keys must be interpreted as a set rather than as unrelated columns.</p>
+
+  <h2>The diagram is navigation; the dictionary is explanation</h2>
+  <p>An ER diagram answers “what connects to what?” A data dictionary should answer the questions the names and types leave unresolved:</p>
+  <ul>
+    <li>What business concept does this table represent?</li>
+    <li>Which system owns each field?</li>
+    <li>What are the allowed states and transitions?</li>
+    <li>Does a timestamp mean event time, ingestion time, or last update?</li>
+    <li>Is a value sensitive, derived, deprecated, or safe for analytics?</li>
+  </ul>
+  <p>“Customer’s email address” merely restates <code>customers.email</code>. “Normalized login identifier; changed only through verified-address workflow; restricted personal data” is useful documentation.</p>
+
+  <h2>Choose exports for the next reader</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Export</th><th>Best destination</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Markdown dictionary</strong></td><td>Repository docs, wikis, architecture reviews</td><td>Readable in diffs and searchable</td></tr>
+      <tr><td><strong>Mermaid ER diagram</strong></td><td>Markdown platforms that render Mermaid</td><td>Diagram source stays versionable</td></tr>
+      <tr><td><strong>JSON model</strong></td><td>Automation and custom generators</td><td>Preserves parsed structure for another tool</td></tr>
+      <tr><td><strong>COMMENT SQL</strong></td><td>The database catalog</td><td>Keeps descriptions close to the schema</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>What static DDL cannot prove</h2>
+  <p>DDL is strong evidence of declared structure, not the entire data model. Application-enforced relationships, dynamic SQL, triggers, views, ORM inheritance, cross-database references, and conventions without constraints may not appear as ER edges. A missing foreign key can mean “no relationship,” or merely “a relationship the database does not enforce.”</p>
+  <p>Label inferred or application-level relationships explicitly rather than drawing them as though they were declared constraints.</p>
+
+  <h2>Keep documentation reviewable</h2>
+  <ol>
+    <li>Store the schema extraction command next to the documentation.</li>
+    <li>Regenerate the model after migrations.</li>
+    <li>Review diagram changes in the same pull request as schema changes.</li>
+    <li>Assign owners for business descriptions, not only SQL definitions.</li>
+    <li>Keep sensitive examples and real row data out of the documentation artifact.</li>
+  </ol>
+
+  <div class="guide-note"><p><strong>Why browser-only matters here:</strong> the Bug Days explorer parses pasted DDL locally and never connects to the database. You control exactly which definitions enter the workspace.</p></div>
+
+  <a slot="related" href="/guides/convert-terminal-table-to-excel" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Rescue a terminal table</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Move command output into Excel, CSV, or a document.</span></a>
+  <a slot="related" href="/guides/read-java-thread-dump-find-deadlock" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Diagnose a Java deadlock</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Read thread states, monitor ownership, and cycles.</span></a>
+</GuideLayout>

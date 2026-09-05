@@ -1,0 +1,80 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+
+const guide = guideBySlug('read-java-thread-dump-find-deadlock');
+---
+
+<GuideLayout guide={guide} keywords="how to read Java thread dump, find Java deadlock, jstack deadlock analysis, jcmd Thread.print, BLOCKED thread, monitor lock owner, JVM troubleshooting">
+  <p>A production JVM stops making progress. CPU is ordinary, memory is not exhausted, and restarting “fixes” it. This is exactly where a thread dump earns its keep: it records every Java thread’s state and stack, plus the monitor locks the JVM can identify, at one moment in time.</p>
+
+  <blockquote><strong>The fast path:</strong> locate BLOCKED threads, note the monitor each one is waiting to lock, find the thread that already owns that monitor, and follow the chain. A cycle—A waits for B while B waits for A—is a deadlock.</blockquote>
+
+  <h2>Capture evidence before restarting</h2>
+  <p>When the JVM is still reachable, capture more than one dump. A single snapshot can make healthy waiting look suspicious; repeated snapshots show which stacks are stuck.</p>
+  <pre><code># Rich text dump with lock information
+jcmd &lt;pid&gt; Thread.print -l &gt; thread-1.txt
+
+# Capture two more, several seconds apart
+jcmd &lt;pid&gt; Thread.print -l &gt; thread-2.txt
+jcmd &lt;pid&gt; Thread.print -l &gt; thread-3.txt</code></pre>
+  <p><code>jstack -l &lt;pid&gt;</code> is also useful on supported JDKs. On Unix-like systems, <code>kill -3 &lt;pid&gt;</code> asks HotSpot to print a dump to the process output; it does not terminate the JVM. Keep timestamps and application metrics alongside the captures.</p>
+
+  <h2>Read a thread block from the top down</h2>
+  <p>Start with the thread name and Java state, then read the first few application frames. The top frame is where execution was observed; the whole stack provides context about how it got there.</p>
+  <pre><code>"checkout-1" #42 prio=5 tid=0x42 waiting for monitor entry
+   java.lang.Thread.State: BLOCKED (on object monitor)
+    at example.Inventory.reserve(Inventory.java:88)
+    - waiting to lock &lt;0x000000071a01b2c0&gt;
+    - locked &lt;0x000000071a01a110&gt;
+    at example.Checkout.submit(Checkout.java:51)</code></pre>
+  <p>This thread already owns monitor <code>...a110</code> and is waiting for <code>...b2c0</code>. Search the dump for another <code>- locked &lt;...b2c0&gt;</code> line. That thread is the current owner and the next link in the wait chain.</p>
+
+  <h2>Recognize the cycle, not just the symptoms</h2>
+  <pre><code>"inventory-refresh" #57 prio=5 tid=0x57 waiting for monitor entry
+   java.lang.Thread.State: BLOCKED (on object monitor)
+    at example.Checkout.refreshPrices(Checkout.java:130)
+    - waiting to lock &lt;0x000000071a01a110&gt;
+    - locked &lt;0x000000071a01b2c0&gt;</code></pre>
+  <p>Now the cycle is explicit:</p>
+  <ol>
+    <li><code>checkout-1</code> owns <code>...a110</code> and waits for <code>...b2c0</code>.</li>
+    <li><code>inventory-refresh</code> owns <code>...b2c0</code> and waits for <code>...a110</code>.</li>
+    <li>Neither can release its lock because neither can continue.</li>
+  </ol>
+  <p>The durable fix is usually consistent lock ordering or less work inside synchronized regions—not a larger thread pool. A pool can add more blocked participants without breaking the cycle.</p>
+
+  <h2>Do not treat every wait as a deadlock</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>State</th><th>What it establishes</th><th>Common interpretation</th></tr></thead>
+    <tbody>
+      <tr><td><strong>BLOCKED</strong></td><td>Waiting to enter a Java monitor</td><td>Investigate the owner and duration</td></tr>
+      <tr><td><strong>WAITING</strong></td><td>Waiting indefinitely for another action</td><td>Often normal for parked pool workers, joins, and conditions</td></tr>
+      <tr><td><strong>TIMED_WAITING</strong></td><td>Waiting with a deadline</td><td>Common for sleeps, timed parks, and scheduled work</td></tr>
+      <tr><td><strong>RUNNABLE</strong></td><td>Runnable from the JVM’s perspective</td><td>May be CPU work, native execution, or some I/O—not proof of high CPU</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>A healthy server can contain hundreds of WAITING threads. The stronger signals are cycles, many request threads blocked behind one owner, the same application frame recurring across captures, and correlation with stalled requests or exhausted pools.</p>
+
+  <h2>Use repeated captures for hangs and CPU loops</h2>
+  <p>If a RUNNABLE thread remains at the same application frame in three captures, it deserves attention. If its stack moves each time, it may simply be doing work. Compare the evidence with per-thread CPU data, Java Flight Recorder, application metrics, or a profiler before concluding that a line of code is “hot.”</p>
+
+  <h2>Virtual threads need a different scale of view</h2>
+  <p>Traditional text dumps become unwieldy with large virtual-thread populations. Recent JDKs can write structured thread dumps with <code>Thread.dump_to_file -format=json</code>. The JSON preserves containers and makes grouping repeated virtual-thread stacks more practical.</p>
+
+  <h2>A defensible incident checklist</h2>
+  <ul>
+    <li>Preserve at least three timestamped captures before restarting when possible.</li>
+    <li>Record the JVM version, process ID, host, traffic symptoms, and relevant metrics.</li>
+    <li>Trace monitor identifiers from waiter to owner; look specifically for cycles.</li>
+    <li>Group identical stacks to find pool saturation and shared bottlenecks.</li>
+    <li>Treat thread names, packages, URLs, and SQL fragments as potentially sensitive.</li>
+    <li>Confirm static evidence with repeat captures or runtime telemetry.</li>
+  </ul>
+
+  <div class="guide-note"><p><strong>Privacy note:</strong> the Bug Days analyzer parses thread dumps inside the browser. Even so, review a dump before sharing screenshots or exported reports because stack traces can reveal internal class names, endpoints, and operational details.</p></div>
+
+  <a slot="related" href="/guides/test-soap-api-from-wsdl-soap-11-vs-12" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Debug a SOAP request</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Move from a WSDL operation to a correctly versioned envelope.</span></a>
+  <a slot="related" href="/guides/pem-vs-der-vs-cer-vs-p7b-certificate-formats" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Identify certificate formats</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Understand PEM, DER, CER, and certificate bundles.</span></a>
+</GuideLayout>

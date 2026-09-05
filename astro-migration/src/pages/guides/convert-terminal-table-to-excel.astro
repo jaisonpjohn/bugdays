@@ -1,0 +1,82 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+
+const guide = guideBySlug('convert-terminal-table-to-excel');
+---
+
+<GuideLayout guide={guide} keywords="convert terminal table to Excel, ASCII table to CSV, Unicode table converter, copy console output to spreadsheet, PostgreSQL output Excel, terminal table to HTML, ASCII table to XLSX">
+  <p>Terminal tables are designed for human eyes, not spreadsheet parsers. Pipes look like column boundaries, rows are padded with spaces, Unicode lines make a convincing grid, and then a direct paste into Excel deposits the whole circus into one column.</p>
+
+  <blockquote><strong>The clean route:</strong> parse the visual borders into actual cells, review ambiguous rows, then copy a real HTML/TSV table or export CSV/XLSX. Do not repair every column by hand.</blockquote>
+
+  <h2>Why the table is not already a table</h2>
+  <pre><code>Deployment summary
+
+┌────┬──────────────┬─────────┬────────────────┐
+│ ID │ Service      │ Status  │ Last deploy    │
+├────┼──────────────┼─────────┼────────────────┤
+│ 17 │ auth-api     │ healthy │ 2 minutes ago  │
+│ 18 │ web-frontend │ healthy │ 12 minutes ago │
+│ 19 │ mail-worker  │ paused  │ yesterday      │
+└────┴──────────────┴─────────┴────────────────┘
+
+3 services returned</code></pre>
+  <p>This is a sequence of characters. The terminal does not attach row or column semantics. A useful converter must recognize border rows, split data rows at the correct separators, preserve meaningful spaces, and ignore surrounding headings or row counts.</p>
+
+  <h2>Paste the whole useful excerpt</h2>
+  <p>Do not spend time deleting every top border, separator, title, or footer before conversion. A parser can usually identify the strongest rectangular region and report ignored non-table lines. Keep enough context to verify that the detected header and row count are correct.</p>
+  <ol>
+    <li>Copy the terminal output as plain text.</li>
+    <li>Paste it into the terminal-table converter.</li>
+    <li>Confirm the detected format, row count, and column count.</li>
+    <li>Mark whether the first row is a header.</li>
+    <li>Edit any ambiguous cell in the preview.</li>
+  </ol>
+
+  <h2>Choose the output for where it is going</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Output</th><th>Use it when</th><th>What it preserves</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Copy table</strong></td><td>Pasting into Excel, Word, Outlook, or another rich editor</td><td>HTML table structure plus a plain TSV fallback</td></tr>
+      <tr><td><strong>CSV</strong></td><td>Importing into data tools, scripts, or databases</td><td>Values and standard quoting; little presentation</td></tr>
+      <tr><td><strong>XLSX</strong></td><td>Handing someone a ready-to-open workbook</td><td>Typed-safe cells, headers, widths, filters, and styling</td></tr>
+      <tr><td><strong>Print / PDF</strong></td><td>Attaching a clean snapshot to a ticket or report</td><td>Visual presentation, not editable data semantics</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>CSV is simple until a value contains punctuation</h2>
+  <p>A valid CSV exporter must quote fields containing commas, double quotes, or line breaks and must escape quotes inside quoted fields. Joining cells with commas is not enough. UTF-8 handling also matters when service names, customer data, or database values contain non-ASCII characters.</p>
+  <p>XLSX is often the better handoff when the recipient explicitly asked for “an Excel file.” CSV is the better interoperable format when another system will ingest the result.</p>
+
+  <h2>Protect spreadsheets from formula execution</h2>
+  <p>Spreadsheet applications may interpret a cell beginning with <code>=</code>, <code>+</code>, <code>-</code>, or <code>@</code> as a formula. Terminal output can contain attacker-controlled values such as usernames, imported labels, or API data. A value that looked inert in the console can become active after export.</p>
+  <p>Enable the spreadsheet formula guard when the source is not fully trusted. It prefixes risky cells so the spreadsheet treats them as text. Review whether preserving exact byte-for-byte values or protecting the person opening the workbook is more important for the workflow.</p>
+
+  <h2>Know when aligned columns are ambiguous</h2>
+  <p>Tables with explicit pipes or box-drawing characters are easier to parse than columns aligned only with spaces. In fixed-width output, a long value may wrap onto another line, two spaces may occur inside a legitimate value, or proportional-font copying may destroy alignment.</p>
+  <ul>
+    <li>Prefer the command’s native CSV or JSON output when it exists.</li>
+    <li>Use the table converter when the visual table is the only artifact you have.</li>
+    <li>Review wrapped descriptions and multiline cells before exporting.</li>
+    <li>Compare the detected row count with any footer emitted by the command.</li>
+  </ul>
+
+  <h2>The reverse workflow is useful too</h2>
+  <p>Tickets, README files, chat, and terminal demos often need a text table rather than a spreadsheet. The companion ASCII table generator accepts CSV, TSV, JSON arrays, and HTML tables and produces classic ASCII, Unicode, PostgreSQL-style, or Markdown output with width and wrapping controls.</p>
+
+  <h2>A thirty-second quality check</h2>
+  <ul>
+    <li>The header is not accidentally included as the first data row.</li>
+    <li>No title, border, or “rows returned” footer became a cell.</li>
+    <li>Wrapped text stayed with its original row.</li>
+    <li>Leading zeros in identifiers were preserved where necessary.</li>
+    <li>Potential spreadsheet formulas are guarded.</li>
+    <li>The exported row and column counts match the preview.</li>
+  </ul>
+
+  <div class="guide-note"><p><strong>Local workflow:</strong> pasted terminal text and generated workbooks are processed in the browser. The source data is not uploaded to Bug Days.</p></div>
+
+  <a slot="related" href="/guides/sql-ddl-to-er-diagram-data-dictionary" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Document an SQL schema</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Build an ER diagram and dictionary from existing DDL.</span></a>
+  <a slot="related" href="/ascii-table-generator" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Generate an ASCII table</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Convert CSV, JSON, TSV, or HTML into clean terminal output.</span></a>
+</GuideLayout>

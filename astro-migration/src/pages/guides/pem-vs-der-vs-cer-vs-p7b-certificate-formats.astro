@@ -1,0 +1,79 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+
+const guide = guideBySlug('pem-vs-der-vs-cer-vs-p7b-certificate-formats');
+---
+
+<GuideLayout guide={guide} keywords="PEM vs DER, CER vs CRT, P7B certificate, PKCS7 certificate bundle, convert PEM DER OpenSSL, X.509 certificate formats, certificate file extension">
+  <p>A certificate ticket often begins with an unhelpful sentence: “The vendor sent a CER, but the server needs PEM.” The extension sounds like a format, yet <code>.cer</code> and <code>.crt</code> frequently describe the role of a file rather than its actual encoding.</p>
+
+  <blockquote><strong>The useful distinction:</strong> X.509 describes the certificate structure. DER is its binary encoding. PEM is Base64-encoded DER wrapped in readable header and footer lines. CER and CRT are ambiguous filename conventions. P7B is usually a certificate bundle.</blockquote>
+
+  <h2>Identify the contents before converting</h2>
+  <p>Open the file in a text editor or inspect its first bytes. A PEM certificate is immediately recognizable:</p>
+  <pre><code>-----BEGIN CERTIFICATE-----
+MIID...base64 data...
+-----END CERTIFICATE-----</code></pre>
+  <p>If the file looks binary, it may be DER. Do not rename it and assume the encoding changed; renaming <code>server.cer</code> to <code>server.pem</code> changes only the label.</p>
+  <pre><code># Try PEM input first
+openssl x509 -in server.cer -noout -subject -issuer -dates
+
+# If that fails and the file is binary, try DER
+openssl x509 -inform DER -in server.cer -noout -subject -issuer -dates</code></pre>
+
+  <h2>The formats at a glance</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Name</th><th>Typical contents</th><th>Encoding</th><th>Important caveat</th></tr></thead>
+    <tbody>
+      <tr><td><strong>PEM</strong></td><td>Certificate, chain, public key, or private key</td><td>Base64 text with BEGIN/END labels</td><td>The label tells you what the block contains</td></tr>
+      <tr><td><strong>DER</strong></td><td>Usually one certificate or key object</td><td>Binary ASN.1 DER</td><td>Not readable in a normal text editor</td></tr>
+      <tr><td><strong>CER / CRT</strong></td><td>Usually an X.509 certificate</td><td>Could be PEM or DER</td><td>The extension alone is not enough</td></tr>
+      <tr><td><strong>P7B / P7C</strong></td><td>Certificates and chains</td><td>PEM or DER PKCS#7/CMS</td><td>Normally does not contain private keys</td></tr>
+      <tr><td><strong>P12 / PFX</strong></td><td>Certificates plus private keys</td><td>Binary PKCS#12</td><td>Often password-protected and must be handled as secret material</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Convert PEM and DER without changing the certificate</h2>
+  <p>Encoding conversion should preserve the certificate’s signed data. After conversion, subject, issuer, serial number, validity, public key, extensions, and fingerprints should describe the same certificate.</p>
+  <pre><code># PEM certificate to binary DER
+openssl x509 -in certificate.pem -outform DER -out certificate.der
+
+# Binary DER certificate to PEM
+openssl x509 -inform DER -in certificate.der -outform PEM -out certificate.pem</code></pre>
+  <p>Verify both sides rather than trusting the extension:</p>
+  <pre><code>openssl x509 -in certificate.pem -noout -fingerprint -sha256
+openssl x509 -inform DER -in certificate.der -noout -fingerprint -sha256</code></pre>
+  <p>The SHA-256 certificate fingerprint should match because the underlying DER certificate is unchanged.</p>
+
+  <h2>Extract certificates from a P7B bundle</h2>
+  <p>A PKCS#7 bundle commonly arrives from a Windows or enterprise PKI workflow. It can carry the leaf certificate and intermediate certificates together.</p>
+  <pre><code># PEM-encoded PKCS#7 bundle
+openssl pkcs7 -in chain.p7b -print_certs -out chain.pem
+
+# Binary DER-encoded PKCS#7 bundle
+openssl pkcs7 -inform DER -in chain.p7b -print_certs -out chain.pem</code></pre>
+  <p>Inspect how many certificates were extracted and identify each subject and issuer. Bundle order is not always proof of the intended trust path, and the presence of a root certificate does not make that root trusted by a particular operating system or application.</p>
+
+  <h2>Certificate validity is not the same as trust</h2>
+  <p>A file decoder can establish what a certificate says: names, dates, key usage, extensions, fingerprints, and signatures within a supplied bundle. It cannot establish how a remote server presents the chain, whether hostname verification succeeds, whether revocation is enforced, or whether a specific machine trusts the root.</p>
+  <p>For a live endpoint, inspect the handshake from the relevant network and runtime. For a local file, use the certificate inspector to answer the narrower—and still valuable—question: “What exactly is in this file?”</p>
+
+  <h2>Avoid the dangerous conversion mistake</h2>
+  <p>Certificates contain public keys and are normally safe to inspect. Private keys are secrets. A PEM private key has a label such as <code>BEGIN PRIVATE KEY</code>, <code>BEGIN ENCRYPTED PRIVATE KEY</code>, or an algorithm-specific private-key label. Do not paste one into a public site, support ticket, chat, or certificate-only converter.</p>
+
+  <h2>Practical handoff checklist</h2>
+  <ul>
+    <li>Record the actual encoding, not only the filename extension.</li>
+    <li>Confirm subject alternative names match the service hostnames.</li>
+    <li>Check both not-before and not-after dates.</li>
+    <li>Preserve the original file and compare SHA-256 fingerprints after conversion.</li>
+    <li>Keep leaf, intermediate, and root roles distinct.</li>
+    <li>Never include a private key unless the destination explicitly requires it and the transfer is approved.</li>
+  </ul>
+
+  <div class="guide-note"><p><strong>Tool boundary:</strong> Bug Days inspects public certificate material locally in the browser. It intentionally does not accept PKCS#12/PFX private-key archives.</p></div>
+
+  <a slot="related" href="/guides/test-soap-api-from-wsdl-soap-11-vs-12" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Test a SOAP service</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Build a request from WSDL and interpret version errors.</span></a>
+  <a slot="related" href="/guides/read-java-thread-dump-find-deadlock" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Read a Java thread dump</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Trace monitor owners and confirm a deadlock cycle.</span></a>
+</GuideLayout>

@@ -25,6 +25,9 @@ interface Props {
   imageAlt?: string;
   imageWidth?: number;
   imageHeight?: number;
+  ogType?: 'website' | 'article';
+  articlePublished?: string;
+  articleModified?: string;
 }
 
 const {
@@ -37,7 +40,10 @@ const {
   image = '/og-image.png',
   imageAlt = 'Bug Days browser-based developer tools',
   imageWidth = 1200,
-  imageHeight = 630
+  imageHeight = 630,
+  ogType = 'website',
+  articlePublished,
+  articleModified
 } = Astro.props;
 
 const currentPath = Astro.url.pathname;
@@ -84,9 +90,10 @@ const allJsonLd = breadcrumbSchema ? [breadcrumbSchema, ...jsonLd] : jsonLd;
     <meta name="author" content="Bug Days" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <link rel="canonical" href={canonicalURL} />
+    <link rel="alternate" type="application/rss+xml" title="Bug Days Developer Guides" href="/guides/rss.xml" />
 
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:locale" content="en_US" />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:title" content={fullTitle} />
@@ -96,6 +103,8 @@ const allJsonLd = breadcrumbSchema ? [breadcrumbSchema, ...jsonLd] : jsonLd;
     <meta property="og:image:width" content={String(imageWidth)} />
     <meta property="og:image:height" content={String(imageHeight)} />
     <meta property="og:image:alt" content={imageAlt} />
+    {ogType === 'article' && articlePublished && <meta property="article:published_time" content={articlePublished} />}
+    {ogType === 'article' && articleModified && <meta property="article:modified_time" content={articleModified} />}
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
@@ -296,6 +305,7 @@ const allJsonLd = breadcrumbSchema ? [breadcrumbSchema, ...jsonLd] : jsonLd;
       <footer class="py-6 px-6 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div class="max-w-4xl mx-auto">
           <div class="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-slate-500 dark:text-slate-400 mb-3">
+            <a href="/guides" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Guides</a>
             <a href="/about" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">About</a>
             <a href="/privacy" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Privacy</a>
             <a href="/terms" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">Terms</a>
