@@ -1,0 +1,73 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import GzipExample from '../../components/GzipExample.astro';
+import { guideBySlug } from '../../lib/guides';
+import { gzipExamples } from '../../lib/gzip-examples';
+
+const guide = guideBySlug('gzip-base64-python-nodejs');
+const example = gzipExamples[1];
+const pythonCode = `import base64
+import gzip
+
+text = ${JSON.stringify(example.text)}
+encoded = base64.b64encode(
+    gzip.compress(text.encode("utf-8"), compresslevel=6, mtime=0)
+).decode("ascii")
+
+# Replace encoded with a captured Base64 GZip value to decode it.
+decoded = gzip.decompress(
+    base64.b64decode(encoded, validate=True)
+).decode("utf-8")
+
+assert decoded == text
+print(encoded)
+print(decoded)`;
+const nodeCode = `import { gzipSync, gunzipSync } from 'node:zlib';
+import { Buffer } from 'node:buffer';
+
+const text = ${JSON.stringify(example.text)};
+const encoded = gzipSync(Buffer.from(text, 'utf8'), {
+  level: 6,
+}).toString('base64');
+
+// Replace encoded with a captured Base64 GZip value to decode it.
+const decoded = gunzipSync(Buffer.from(encoded, 'base64'))
+  .toString('utf8');
+
+if (decoded !== text) throw new Error('Round trip failed');
+console.log(encoded);
+console.log(decoded);`;
+---
+
+<GuideLayout guide={guide} keywords="gzip base64 Python, base64 gzip Node.js, Python gzip decompress base64, Node.js gunzipSync Base64, UTF-8 gzip example">
+  <p>Two services can agree to use “GZip and Base64” and still disagree about the bytes. One compresses a UTF-8 string; another Base64-encodes first. A third produces zlib data instead of a GZip stream. A small round-trip test makes that contract explicit.</p>
+
+  <blockquote><strong>The contract for these examples:</strong> UTF-8 text → GZip bytes → standard Base64 string. Decoding must recover exactly the original text, including accented characters and emoji.</blockquote>
+
+  <h2>Python: compress, encode, decode, and verify</h2>
+  <p>Run this as a Python 3 script. It needs no third-party packages. The input deliberately includes <code>café</code>, <code>Montréal</code>, and an emoji, so an ASCII-only implementation cannot pass unnoticed.</p>
+  <pre><code data-recipe="python">{pythonCode}</code></pre>
+  <p><code>gzip.compress</code> expects bytes, hence the UTF-8 encoding first. Setting <code>mtime=0</code> avoids putting the current time into the GZip header. <code>validate=True</code> makes Python reject non-alphabet characters instead of silently discarding them. These behaviors are documented in Python's <a href="https://docs.python.org/3/library/gzip.html">gzip module</a> and <a href="https://docs.python.org/3/library/base64.html">base64 module</a>.</p>
+
+  <h2>Node.js: the same text and transformation order</h2>
+  <p>Save this as an <code>.mjs</code> file and run it with Node.js. The synchronous functions keep a short diagnostic script easy to follow. In a request-handling service or a large-file workflow, use asynchronous or streaming APIs so compression does not block other work.</p>
+  <pre><code data-recipe="node">{nodeCode}</code></pre>
+  <p><code>gzipSync</code> returns compressed bytes; calling <code>toString('base64')</code> encodes those bytes, not the original message. The reverse uses <code>gunzipSync</code>. See the official <a href="https://nodejs.org/api/zlib.html">Node.js zlib documentation</a>.</p>
+  <p>Node's <code>Buffer.from(value, 'base64')</code> is more permissive than the strict Python call: for example, it accepts whitespace and the URL-safe alphabet. A payload accepted by Node is not necessarily valid under a stricter transport contract. See the <a href="https://nodejs.org/api/buffer.html#buffers-and-character-encodings">Buffer encoding documentation</a>.</p>
+
+  <h2>Check both implementations against a browser example</h2>
+  <p>Here is a known-good encoded version of the same text. Paste either script's first output line into the <a href="/gzip-base64/">online GZip Base64 decoder</a> and select <strong>Decode & Decompress</strong>. The text should match the expected result below.</p>
+  <GzipExample example={example} />
+  <p>For a cross-language test, take the Base64 line printed by Python and assign it to <code>encoded</code> in the Node decoding step. Then try Node's output in Python. A self-test only proves that an implementation agrees with itself; this exchange checks the boundary between them.</p>
+
+  <h2>Why the Base64 output can differ and still be correct</h2>
+  <p>Do not use literal equality of the two Base64 strings as your interoperability test. A different compression level, compressor version, or GZip header can produce different compressed bytes that expand to identical text. Python's <a href="https://docs.python.org/3/library/gzip.html#gzip.compress">gzip.compress version notes</a> include changes to header behavior.</p>
+  <p>For byte-preserving transport, compare the decompressed bytes. For an application that cares only about JSON values, parse and compare those values separately. Pretty-printing a JSON document changes its text, even when its meaning stays the same.</p>
+
+  <h2>Measure the value you actually send</h2>
+  <p>Compression savings can disappear once you wrap a tiny message in a GZip header and Base64. The wire value in this workflow is the final Base64 string. Compare its length with the original UTF-8 byte count, not just the intermediate compressed length.</p>
+  <p>Also confirm that the receiving endpoint expects Base64 inside a field. A raw compressed HTTP body is a different contract; do not add an extra Base64 layer merely because you used it in this diagnostic example.</p>
+
+  <a slot="related" href="/guides/decode-base64-gzip-to-json/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Decode an API response without a script</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">A JSON example you can open and share.</span></a>
+  <a slot="related" href="/guides/fix-base64-gzip-decode-errors/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Troubleshoot the failing layer</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Check Base64, the compression format, and decoded text.</span></a>
+</GuideLayout>

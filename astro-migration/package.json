@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "test:gzip-seo": "node scripts/check-gzip-seo.mjs",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -18,10 +19,14 @@
     "astro": "^5.16.15",
     "jsqr": "^1.4.0",
     "lz-string": "^1.5.0",
+    "pako": "2.1.0",
     "qrcode": "^1.5.4",
     "reflect-metadata": "0.2.2",
     "smol-toml": "^1.6.0",
     "svgo": "^4.0.0",
     "tailwindcss": "^4.1.18"
+  },
+  "devDependencies": {
+    "@types/pako": "2.0.4"
   }
 }

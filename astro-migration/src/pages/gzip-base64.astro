@@ -1,58 +1,144 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import { gzipExamples } from '../lib/gzip-examples';
+import { guides } from '../lib/guides';
+
+const gzipGuides = guides.filter((guide) => guide.toolHref === '/gzip-base64');
+const jsonLd = [{
+  '@context': 'https://schema.org',
+  '@type': 'WebApplication',
+  name: 'GZip Base64 Encoder and Decoder',
+  url: 'https://bugdays.com/gzip-base64/',
+  description: 'Compress text with GZip and encode it as Base64, or decode Base64 GZip payloads into readable UTF-8 text in your browser.',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Any',
+  browserRequirements: 'Requires JavaScript',
+  isAccessibleForFree: true,
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  featureList: ['GZip compression with Base64 output', 'Base64 decoding and GZip decompression', 'UTF-8 text input and output', 'Shareable examples'],
+}];
 ---
 
 <Layout
-  title="GZip Compress & Base64 Encode"
-  description="Compress text with GZip and encode to Base64, or decode and decompress. Free online tool for reducing data size in URLs, localStorage, and API payloads."
-  keywords="GZip compress, GZip Base64, compress text online, GZip encoder, decompress GZip, Base64 GZip, data compression, text compression"
+  title="GZip Base64 Encoder & Decoder Online"
+  description="Decode Base64 GZip to text or compress text to Base64 online. Inspect JSON and XML payloads in your browser, with working examples and shareable links."
+  keywords="gzip base64, base64 gzip, gzip base64 decoder, base64 gzip decompress, gzip base64 encoder, H4sI decode, gzip to text"
   breadcrumb={[{ name: "Encoding Tools", href: "/encoding-tools" }, { name: "GZip & Base64" }]}
   toolId="gzip-base64"
+  jsonLd={jsonLd}
+  image="/og/gzip-base64.png"
+  imageAlt="GZip Base64 decoder showing a compressed sample and readable JSON output"
+  imageWidth={1280}
+  imageHeight={720}
 >
   <div class="max-w-6xl mx-auto">
-    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">GZip & Base64</h1>
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100 mb-2">GZip Base64 Encoder & Decoder</h1>
+    <p class="max-w-3xl text-gray-600 dark:text-slate-300 mb-3">Decode a Base64 GZip payload into readable text, or compress text with GZip and encode it as Base64. Works with UTF-8 text, including JSON and XML.</p>
+    <p class="text-xs text-gray-500 dark:text-slate-400 mb-5">Browser-based processing · No account required · Share a reproducible example</p>
 
     <div class="grid md:grid-cols-2 gap-4">
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Input</label>
-        <textarea id="input" data-share-key="input" class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none" placeholder="Enter text to compress..."></textarea>
+        <label for="input" class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Input: text or Base64 GZip</label>
+        <textarea id="input" data-share-key="input" spellcheck="false" class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none" placeholder="Paste a Base64 GZip string (often H4sI…), or text to compress..."></textarea>
       </div>
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Output</label>
+        <label for="output" class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Output</label>
         <textarea id="output" readonly class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none" placeholder="Result..."></textarea>
       </div>
     </div>
 
-    <div id="stats" class="hidden mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800"></div>
+    <div id="stats" role="status" aria-live="polite" class="hidden mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800"></div>
 
     <div class="flex flex-wrap gap-3 mt-4">
       <button id="compress-btn" data-share-action="compress" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Compress (GZip + Base64)</button>
-      <button id="decompress-btn" data-share-action="decompress" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Decompress</button>
+      <button id="decompress-btn" data-share-action="decompress" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Decode & Decompress</button>
       <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 font-medium">Clear</button>
       <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 font-medium">Copy Output</button>
     </div>
 
-    <div class="mt-8">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online GZip Compression Tool</h2>
-      <p class="text-gray-600 dark:text-slate-300">Compress text using GZip and encode as Base64.</p>
+    <section class="mt-6" aria-labelledby="examples-heading">
+      <h2 id="examples-heading" class="text-sm font-semibold text-gray-800 dark:text-slate-100">Try a working Base64 GZip example</h2>
+      <div class="mt-2 grid sm:grid-cols-3 gap-3">
+        {gzipExamples.map((example) => (
+          <a href={example.decodeHref} data-gzip-example data-example-input={example.base64} class="rounded-lg border border-indigo-200 dark:border-indigo-800 bg-white dark:bg-slate-800 p-3 hover:border-indigo-500">
+            <span class="block text-sm font-semibold text-indigo-600 dark:text-indigo-400">{example.title} →</span>
+            <span class="mt-1 block text-xs text-gray-600 dark:text-slate-300">{example.description}</span>
+          </a>
+        ))}
+      </div>
+    </section>
+
+    <div class="mt-9 space-y-8 text-sm leading-7 text-gray-600 dark:text-slate-300">
+      <section>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">How to decode Base64 GZip to text</h2>
+        <ol class="list-decimal pl-5 space-y-1">
+          <li>Paste the encoded payload into Input. Copy the string value itself, without surrounding JSON quotes.</li>
+          <li>Select <strong>Decode & Decompress</strong>. The tool decodes Base64 into bytes, then decompresses the GZip data.</li>
+          <li>Read the UTF-8 text in Output and use <strong>Copy Output</strong>. For JSON, continue in the <a href="/json-formatter" class="text-indigo-600 dark:text-indigo-400 underline">JSON formatter</a>; for XML, use the <a href="/xml-formatter" class="text-indigo-600 dark:text-indigo-400 underline">XML formatter</a>.</li>
+        </ol>
+        <p class="mt-3">To go the other way, paste ordinary text and select <strong>Compress (GZip + Base64)</strong>. The output is a Base64 string containing compressed bytes, ready for a text field that expects this format.</p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">GZip vs Base64: compression and encoding are different</h2>
+        <p>GZip compresses bytes. Base64 represents bytes as printable characters; it does not compress or encrypt them. For the format handled here, the order is <strong>text → UTF-8 → GZip → Base64</strong>. Decoding reverses those steps. See the <a href="https://www.rfc-editor.org/info/rfc1952/" class="text-indigo-600 dark:text-indigo-400 underline">GZip format</a> and <a href="https://www.rfc-editor.org/info/rfc4648/" class="text-indigo-600 dark:text-indigo-400 underline">Base64 specification</a>.</p>
+        <p class="mt-3">Base64 adds roughly one third to the compressed byte count. Small inputs may therefore produce a longer result than the original text. Check the final Base64 length when a destination has a size limit.</p>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Share the input and the operation</h2>
+        <p>After a conversion, use <strong>Share</strong> to let someone open the same input and operation. The embedded-data option keeps the sample in the link without uploading it to the sharing service. The optional short-link service stores it for 30 days. Anyone with either link can read the included data, so choose a small example you are happy to share.</p>
+        <p class="mt-3">The guide examples below use synthetic data and self-contained links. When posting a question or writing documentation, include the important input and expected output in the text, with the runnable link alongside them.</p>
+      </section>
+
+      <section aria-labelledby="gzip-guides-heading">
+        <h2 id="gzip-guides-heading" class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">GZip and Base64 guides with runnable examples</h2>
+        <div class="grid md:grid-cols-3 gap-4">
+          {gzipGuides.map((guide) => (
+            <a href={`/guides/${guide.slug}/`} class="block rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400">
+              <h3 class="font-semibold leading-6 text-indigo-600 dark:text-indigo-400">{guide.title}</h3>
+              <p class="mt-2 text-sm leading-6">{guide.description}</p>
+            </a>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">Common Base64 GZip questions</h2>
+        <div class="space-y-3">
+          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">Why does my encoded string start with H4sI?</summary><p class="mt-2">The usual GZip header starts with bytes <code>1f 8b 08</code>, which encode as <code>H4sI</code> in Base64. It is a useful clue, not a guarantee that the entire payload is intact. Try the <a href="/guides/decode-base64-gzip-to-json/" class="text-indigo-600 dark:text-indigo-400 underline">worked decoding example</a>.</p></details>
+          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">Why does Base64 decoding alone produce unreadable text?</summary><p class="mt-2">You may be looking at compressed bytes rather than text. If the producer used GZip, those bytes must be decompressed before being decoded as UTF-8. Ordinary uncompressed Base64 belongs in the <a href="/base64-encoder-decoder" class="text-indigo-600 dark:text-indigo-400 underline">Base64 decoder</a>.</p></details>
+          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">Can this open ZIP files or raw .gz uploads?</summary><p class="mt-2">This page accepts text and Base64-encoded GZip, not file uploads. ZIP archives, zlib-wrapped data, and raw DEFLATE are different formats. Check the producer's format before choosing a decoder.</p></details>
+          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">What should I check when decompression fails?</summary><p class="mt-2">Check that you copied the whole payload, selected only the Base64 string, and are using GZip rather than another compression format. Follow the <a href="/guides/fix-base64-gzip-decode-errors/" class="text-indigo-600 dark:text-indigo-400 underline">padding, header, and truncation troubleshooting guide</a> to isolate the failing step.</p></details>
+        </div>
+      </section>
     </div>
   </div>
 </Layout>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-
 <script>
+  import { gzip, ungzip } from 'pako';
   import { ShareManager } from '../lib/share';
 
   const input = document.getElementById('input') as HTMLTextAreaElement;
   const output = document.getElementById('output') as HTMLTextAreaElement;
   const stats = document.getElementById('stats');
 
+  // A same-page fragment navigation does not run page-load share restoration.
+  document.querySelectorAll<HTMLAnchorElement>('[data-gzip-example]').forEach(link => {
+    link.addEventListener('click', (event) => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
+      event.preventDefault();
+      input.value = link.dataset.exampleInput || '';
+      document.getElementById('decompress-btn')!.click();
+    });
+  });
+
   document.getElementById('compress-btn').addEventListener('click', () => {
     try {
       const inputBytes = new TextEncoder().encode(input.value);
-      const compressed = (window as any).pako.gzip(inputBytes);
-      const base64 = btoa(String.fromCharCode.apply(null, compressed));
+      const compressed = gzip(inputBytes);
+      const base64 = btoa(String.fromCharCode.apply(null, Array.from(compressed)));
       output.value = base64;
       const ratio = ((1 - compressed.length / inputBytes.length) * 100).toFixed(1);
       stats.textContent = `Original: ${inputBytes.length} bytes → Compressed: ${compressed.length} bytes (${ratio}% reduction)`;
@@ -68,7 +154,7 @@ import Layout from '../layouts/Layout.astro';
       const binaryString = atob(input.value);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-      const decompressed = (window as any).pako.ungzip(bytes);
+      const decompressed = ungzip(bytes);
       output.value = new TextDecoder().decode(decompressed);
       stats.textContent = `Compressed: ${bytes.length} bytes → Decompressed: ${decompressed.length} bytes`;
       stats.classList.remove('hidden');

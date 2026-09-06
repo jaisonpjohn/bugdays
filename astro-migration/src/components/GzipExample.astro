@@ -1,0 +1,18 @@
+---
+import type { GzipExample } from '../lib/gzip-examples';
+
+interface Props { example: GzipExample; }
+const { example } = Astro.props;
+---
+
+<section data-gzip-example-id={example.id} aria-label={`${example.title}: runnable example`}>
+  <p><strong>Base64-encoded GZip input</strong></p>
+  <pre><code data-example-base64>{example.base64}</code></pre>
+  <p><strong>Expected decoded text</strong></p>
+  <pre><code data-example-text>{example.text}</code></pre>
+  <p class="flex flex-wrap gap-x-5 gap-y-2">
+    <a href={example.decodeHref} data-example-decode><strong>Open this decoding example →</strong></a>
+    <a href={example.encodeHref} data-example-encode>Try the reverse: compress this text →</a>
+  </p>
+  <p class="!text-sm">These links carry the synthetic sample and operation in the URL. They do not depend on a 30-day stored short link.</p>
+</section>

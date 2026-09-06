@@ -1,0 +1,51 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import GzipExample from '../../components/GzipExample.astro';
+import { guideBySlug } from '../../lib/guides';
+import { gzipExamples } from '../../lib/gzip-examples';
+
+const guide = guideBySlug('decode-base64-gzip-to-json');
+const example = gzipExamples[0];
+---
+
+<GuideLayout guide={guide} keywords="decode base64 gzip to JSON, base64 gzip decoder, gzip base64 example, H4sI decode, decompress API payload">
+  <p>You copy a value from an API response or log, paste it into a Base64 decoder, and get unreadable characters. The value may be Base64-encoded <em>compressed data</em>, not Base64-encoded text. If the sender used GZip, there is one more step before you can read it.</p>
+
+  <blockquote><strong>The decoding order:</strong> Base64 string → compressed bytes → GZip decompression → UTF-8 text. Parse or format the JSON only after those steps.</blockquote>
+
+  <h2>A complete Base64 GZip example</h2>
+  <p>This small order-status message is synthetic. The link opens the <a href="/gzip-base64/">GZip Base64 decoder</a> with the input and decompression action already selected, so you can compare the result without assembling a test yourself.</p>
+  <GzipExample example={example} />
+
+  <h2>Decode your own payload in the browser</h2>
+  <ol>
+    <li>Copy the complete Base64 string. If it is a JSON property, copy its value, not the key, surrounding quotes, or comma.</li>
+    <li>Open the decoder and replace Input with that value.</li>
+    <li>Select <strong>Decode & Decompress</strong>.</li>
+    <li>Compare Output with what the producer says it sent. Use <strong>Copy Output</strong> to move JSON into the <a href="/json-formatter/">JSON formatter</a> for indentation and validation.</li>
+  </ol>
+  <p>Decompression does not guarantee JSON. The producer might have compressed XML, a log line, or another text format. The tool displays decoded text as supplied; it does not silently rename fields, reorder properties, or pretty-print the payload.</p>
+
+  <h2>What does the H4sI prefix tell you?</h2>
+  <p>A usual GZip stream begins with the bytes <code>1f 8b 08</code>: two identifying bytes followed by the DEFLATE compression-method byte. Their Base64 representation is <code>H4sI</code>. That makes the prefix a useful clue when examining a captured string. The header layout is defined in <a href="https://www.rfc-editor.org/info/rfc1952/">RFC 1952</a>.</p>
+  <p>A matching prefix is not an integrity check. A truncated copy can retain its first four characters and still fail to decompress. If the example above works but your payload does not, follow the <a href="/guides/fix-base64-gzip-decode-errors/">Base64 GZip troubleshooting guide</a>.</p>
+
+  <h2>GZip and Base64 do different jobs</h2>
+  <p>GZip is the compression layer. Base64 makes its binary result convenient to carry inside a text field. Neither step is encryption. The standard Base64 representation uses printable characters and may end with <code>=</code> padding; see <a href="https://www.rfc-editor.org/info/rfc4648/">RFC 4648</a>.</p>
+  <p>“Base64 GZip” describes the payload, but is an ambiguous instruction for creating one. To produce the format used here, start with text, encode it as UTF-8, compress those bytes with GZip, and Base64-encode the compressed result. The reverse-example link above follows that order.</p>
+
+  <h2>Share an example someone else can reproduce</h2>
+  <p>A useful question includes the encoded value, the result you expected, and the operation that failed. Add a runnable link beside that explanation so a reader can try it immediately. The text should remain understandable even without following the link.</p>
+  <ol>
+    <li>Replace customer values or credentials with a small synthetic message <em>before</em> compressing it.</li>
+    <li>Run the operation in Bug Days, then select <strong>Share</strong>.</li>
+    <li>Choose the embedded-data link for an example that should not depend on short-link storage. Copy the link offered by the Share dialog.</li>
+  </ol>
+  <p>Embedded links contain the sample itself; anyone with the link can read it. The separate short-link option stores a sample for 30 days. The worked examples on this page use embedded links, with no stored short-link record.</p>
+
+  <h2>When to use a script instead</h2>
+  <p>The browser is convenient for checking one message. For a repeated job, move the same steps into your application or a local script. Our <a href="/guides/gzip-base64-python-nodejs/">Python and Node.js recipes</a> use the standard libraries and include a Unicode example to catch character-encoding mistakes.</p>
+
+  <a slot="related" href="/guides/gzip-base64-python-nodejs/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Create the payload in Python or Node.js</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Copyable recipes and a UTF-8 round-trip check.</span></a>
+  <a slot="related" href="/guides/fix-base64-gzip-decode-errors/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Find why decoding fails</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Separate Base64, compression, and text-encoding errors.</span></a>
+</GuideLayout>

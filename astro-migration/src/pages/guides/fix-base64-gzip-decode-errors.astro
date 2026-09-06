@@ -1,0 +1,56 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import GzipExample from '../../components/GzipExample.astro';
+import { guideBySlug } from '../../lib/guides';
+import { gzipExamples } from '../../lib/gzip-examples';
+
+const guide = guideBySlug('fix-base64-gzip-decode-errors');
+const example = gzipExamples[2];
+const headerCode = `import base64
+
+encoded = ${JSON.stringify(example.base64)}
+raw = base64.b64decode(encoded, validate=True)
+print(raw[:3].hex(" "))  # Expected: 1f 8b 08`;
+---
+
+<GuideLayout guide={guide} keywords="base64 gzip invalid data, gzip incorrect header check, H4sI decode error, Base64 incorrect padding, gzip truncated payload">
+  <p>“Invalid data” does not tell you which transformation failed. A Base64 GZip decoder handles three different layers: the Base64 string, the compressed byte stream, and the character encoding of the decompressed result. Check them separately before changing your application's compression code.</p>
+
+  <h2>First, establish a known-good input</h2>
+  <p>Open this synthetic XML example in the <a href="/gzip-base64/">GZip Base64 decoder</a>. If it works, compare your payload with this one and continue through the checks below. If even this sample fails, reload the page and check whether browser extensions or network filtering prevented the tool's scripts from loading.</p>
+  <GzipExample example={example} />
+
+  <h2>1. Is the Base64 string complete and correctly copied?</h2>
+  <p>Copy the field value rather than an entire JSON object. Remove surrounding quotation marks or a log prefix by selecting the original value again. If a logging system shortened the string or inserted an ellipsis, changing decoders will not restore the missing bytes.</p>
+  <p>Standard Base64 uses <code>+</code> and <code>/</code>; Base64url uses <code>-</code> and <code>_</code>. Padding conventions can also differ. Confirm the sender's format rather than guessing replacements. The two alphabets and padding rules are described in <a href="https://www.rfc-editor.org/info/rfc4648/">RFC 4648</a>.</p>
+  <p>A plus sign can also be damaged by transport through a form or query parameter. Compare the value before and after that boundary. Do not repair spaces into plus signs unless you have established that this was the transformation.</p>
+
+  <h2>2. Do the decoded bytes actually contain GZip?</h2>
+  <p>For a small captured sample, this Python check decodes only the Base64 layer and prints the first three bytes. Replace <code>encoded</code> with the string you are investigating.</p>
+  <pre><code data-recipe="header">{headerCode}</code></pre>
+  <p>Python's <code>validate=True</code> rejects non-alphabet characters, including line breaks. If your source deliberately wraps Base64, remove only that known wrapping first. See the <a href="https://docs.python.org/3/library/base64.html#base64.b64decode">Python decoder documentation</a>.</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Observation</th><th>What to check next</th></tr></thead>
+    <tbody>
+      <tr><td><code>1f 8b 08</code> / Base64 prefix <code>H4sI</code></td><td>Looks like a GZip header. Check that the rest of the stream is complete.</td></tr>
+      <tr><td>Readable JSON or XML immediately after Base64 decoding</td><td>The sender may not have compressed it. Skip GZip decompression.</td></tr>
+      <tr><td>A different binary header</td><td>Confirm whether the sender used zlib, raw DEFLATE, ZIP, or another format.</td></tr>
+    </tbody>
+  </table></div>
+  <p>GZip and zlib are distinct wrappers around compressed data. An “incorrect header check” can mean you chose a decompressor for the wrong wrapper, rather than that the Base64 was corrupt. Their formats are documented separately in <a href="https://www.rfc-editor.org/info/rfc1952/">RFC 1952</a> and <a href="https://www.rfc-editor.org/info/rfc1950/">RFC 1950</a>.</p>
+
+  <h2>3. Does the header survive, but decompression still fail?</h2>
+  <p>Check the full string length at the producer and at the decoder. Log viewers, database columns, and copy operations can truncate the end while leaving the recognizable prefix intact. Ask for a complete sample rather than repeatedly appending padding.</p>
+  <p>A checksum or end-of-stream error is a reason to investigate corruption or truncation. It is not a reason to ignore the error and trust partial output. Keep the original sample unchanged while testing a copy.</p>
+
+  <h2>4. Did decompression succeed, but the result looks wrong?</h2>
+  <p>Confirm the original content type and character encoding. This browser tool displays output as UTF-8 text. A compressed image or a non-UTF-8 document does not become readable JSON just because GZip decompression succeeded.</p>
+  <p>If the text is readable but a JSON parser rejects it, you have reached a different problem. It might be XML, several newline-delimited JSON records, or malformed JSON from the producer. Use the appropriate parser after checking the decoded text.</p>
+
+  <h2>Turn the failure into a useful question</h2>
+  <p>Include the producer's compression and encoding steps, the exact error, and a small synthetic input that reproduces it. Add a Bug Days share link alongside the input and expected output. Someone helping you can then test the same operation without reconstructing the setup.</p>
+  <p>For a working producer to compare against, use the <a href="/guides/gzip-base64-python-nodejs/">Python and Node.js GZip Base64 recipes</a>. Share a synthetic reproduction rather than editing arbitrary characters inside a compressed production payload.</p>
+
+  <a slot="related" href="/guides/decode-base64-gzip-to-json/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Walk through a successful decode</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">From an H4sI payload to readable JSON.</span></a>
+  <a slot="related" href="/guides/gzip-base64-python-nodejs/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Compare Python and Node.js output</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Verify the encoding contract across languages.</span></a>
+</GuideLayout>

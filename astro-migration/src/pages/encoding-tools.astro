@@ -5,7 +5,7 @@ const tools = [
   { name: 'Base64 Encoder/Decoder', href: '/base64-encoder-decoder', description: 'Encode and decode Base64 strings with UTF-8 support' },
   { name: 'URL Encoder/Decoder', href: '/url-encoder', description: 'Encode and decode URL strings and query parameters' },
   { name: 'Image ↔ Base64', href: '/image-base64', description: 'Convert images to Base64 data URIs and vice versa' },
-  { name: 'GZip & Base64', href: '/gzip-base64', description: 'Compress with GZip and encode to Base64 in one step' },
+  { name: 'GZip Base64 Encoder & Decoder', href: '/gzip-base64', description: 'Decode Base64 GZip payloads to text, or compress and encode JSON, XML, and other UTF-8 text' },
   { name: 'QR Code Generator', href: '/qr-code', description: 'Generate and read QR codes for text, URLs, and data' },
 ];
 ---
@@ -31,6 +31,8 @@ const tools = [
         </a>
       ))}
     </div>
+
+    <p class="mt-6 text-sm text-gray-600 dark:text-slate-300">Payload starts with <code>H4sI</code>? Follow the <a href="/guides/decode-base64-gzip-to-json/" class="text-indigo-600 dark:text-indigo-400 underline">Base64 GZip decoding example</a>, or try the <a href="/guides/gzip-base64-python-nodejs/" class="text-indigo-600 dark:text-indigo-400 underline">Python and Node.js compression recipes</a>.</p>
 
     <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
       <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About Encoding Tools</h2>

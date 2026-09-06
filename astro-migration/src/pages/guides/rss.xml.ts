@@ -26,7 +26,7 @@ export const GET: APIRoute = () => {
   <channel>
     <title>Bug Days Developer Guides</title>
     <link>https://bugdays.com/guides/</link>
-    <description>Practical field guides for JVM diagnostics, APIs, certificates, databases, and developer workflows.</description>
+    <description>Practical field guides for payload encoding, JVM diagnostics, APIs, certificates, databases, and developer workflows.</description>
     <language>en-us</language>
     <atom:link href="https://bugdays.com/guides/rss.xml" rel="self" type="application/rss+xml" />
     ${items}

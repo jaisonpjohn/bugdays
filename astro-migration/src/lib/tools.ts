@@ -29,7 +29,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "Text Diff", href: "/text-diff", description: "Compare two texts line by line", keywords: ["compare", "difference"] },
       { name: "Join Lines", href: "/join-lines", description: "Join lines with a delimiter", keywords: ["merge", "concatenate", "comma"] },
       { name: "Compare Lists", href: "/list-compare", description: "Set operations on two lists", keywords: ["intersection", "union", "difference", "set ops"] },
-      { name: "GZip & Base64", href: "/gzip-base64", description: "Compress & encode text", keywords: ["compress", "decompress", "deflate", "zlib"] },
+      { name: "GZip & Base64", href: "/gzip-base64", description: "Decode Base64 GZip or compress text", keywords: ["gzip base64", "base64 gzip", "compress", "decompress", "decode", "encode", "H4sI"] },
       { name: "Schema Explorer", href: "/schema-explorer", description: "DDL to ER diagram & data dictionary", keywords: ["erd", "database", "diagram"] },
       { name: "SOAP Client", href: "/soap-client", description: "Online WSDL tester & SOAP requests", keywords: ["wsdl", "xml", "web service", "soapui"] },
       { name: "Thread Dump Analyzer", href: "/thread-dump-analyzer", description: "Analyze jstack, jcmd & deadlocks", keywords: ["java", "jvm", "jstack", "jcmd", "blocked", "virtual threads"] },
@@ -83,7 +83,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "Base64", href: "/base64-encoder-decoder", description: "Encode & decode Base64", keywords: ["b64", "encode", "decode"] },
       { name: "URL Encoder", href: "/url-encoder", description: "Encode & decode URLs", keywords: ["percent encoding", "uri", "escape", "unescape"] },
       { name: "Image ↔ Base64", href: "/image-base64", description: "Convert images to Base64", keywords: ["data uri", "png", "jpg", "encode"] },
-      { name: "GZip & Base64", href: "/gzip-base64", description: "Compress & encode text", keywords: ["compress", "decompress", "deflate", "zlib"] },
+      { name: "GZip & Base64", href: "/gzip-base64", description: "Decode Base64 GZip or compress text", keywords: ["gzip base64", "base64 gzip", "compress", "decompress", "decode", "encode", "H4sI"] },
       { name: "QR Code", href: "/qr-code", description: "Generate & scan QR codes", keywords: ["barcode", "scanner"] },
     ]
   },
