@@ -27,8 +27,8 @@ const jsonLd = [
     mainEntity: [
       {
         '@type': 'Question',
-        name: 'Can a browser call a native gRPC server?',
-        acceptedAnswer: { '@type': 'Answer', text: 'Yes, with the optional Holy CORS local bridge. It translates browser-safe gRPC-Web framing into native HTTP/2 gRPC and returns trailers in a format the browser can read.' }
+        name: 'How do I call a native gRPC server from the browser?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Run Holy CORS locally, import your .proto files, enter the service URL, and choose Native gRPC (bridge). For gRPC-Web services, choose Direct gRPC-Web.' }
       },
       {
         '@type': 'Question',
@@ -38,7 +38,7 @@ const jsonLd = [
       {
         '@type': 'Question',
         name: 'Which gRPC calls are supported?',
-        acceptedAnswer: { '@type': 'Answer', text: 'Unary and server-streaming calls are supported. Browser fetch APIs cannot provide the full bidirectional stream control needed for client-streaming and bidirectional gRPC calls.' }
+        acceptedAnswer: { '@type': 'Answer', text: 'Unary and server-streaming calls are supported. Client-streaming and bidirectional methods can be browsed but cannot be sent from this page.' }
       }
     ]
   }
@@ -60,7 +60,7 @@ const jsonLd = [
           <h1 class="text-2xl font-bold text-gray-900 dark:text-slate-100">gRPC Client</h1>
           <span class="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">protobuf-native</span>
         </div>
-        <p class="max-w-3xl text-sm text-gray-600 dark:text-slate-300">Import your contract, choose a method, and inspect real protobuf responses. Call gRPC-Web directly or let Holy CORS bridge the browser to a native HTTP/2 gRPC service.</p>
+        <p class="max-w-3xl text-sm text-gray-600 dark:text-slate-300">Import your .proto files, choose a method, and send a request. Call a gRPC-Web service directly or connect to a native gRPC service with the Holy CORS local bridge.</p>
       </div>
       <div class="flex flex-wrap items-center gap-2 text-xs">
         <span class="text-gray-500 dark:text-slate-400">Local bridge</span>
@@ -152,15 +152,15 @@ const jsonLd = [
       <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"><div class="mb-3 flex items-center justify-between"><h2 class="font-semibold">Local history</h2><button id="clear-history-btn" class="text-xs text-gray-500">Clear</button></div><div id="history-list" class="space-y-2 text-sm text-gray-500 dark:text-slate-400">No requests yet.</div></div>
     </section>
     <section class="rounded-xl border border-indigo-200 bg-indigo-50 p-5 dark:border-indigo-900 dark:bg-indigo-950/30">
-      <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100">Native gRPC without an Envoy configuration</h2>
-      <p class="mt-2 max-w-4xl text-sm leading-6 text-gray-700 dark:text-slate-300">Browsers cannot expose the HTTP/2 controls and trailing metadata required by native gRPC. Holy CORS fills that narrow gap locally: the page creates a real protobuf request, the bridge sends it as native gRPC over HTTP/2, and response trailers are translated back for inspection here.</p>
-      <div class="mt-4 grid gap-3 md:grid-cols-3 text-sm"><div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>1. Install once (macOS)</strong><code class="mt-2 block text-xs">brew trust bugdays-com/tap<br />brew install bugdays-com/tap/holy-cors</code></div><div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>2. Run locally</strong><code class="mt-2 block text-xs">holy-cors</code></div><div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>3. Send</strong><p class="mt-2 text-xs text-gray-500 dark:text-slate-400">The status badge turns green when the bridge is ready.</p></div></div>
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100">Connect to a native gRPC service</h2>
+      <p class="mt-2 max-w-4xl text-sm leading-6 text-gray-700 dark:text-slate-300">Run Holy CORS on your computer, enter your service URL above, and send a request. Inspect decoded messages, gRPC status, response headers, and trailers here. If your service supports gRPC-Web, select Direct gRPC-Web and connect without the bridge.</p>
+      <div class="mt-4 grid gap-3 md:grid-cols-3 text-sm"><div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>1. Install once (macOS)</strong><code class="mt-2 block text-xs">brew trust bugdays-com/tap<br />brew install bugdays-com/tap/holy-cors</code></div><div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>2. Run locally</strong><code class="mt-2 block text-xs">holy-cors</code></div><div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>3. Connect and send</strong><p class="mt-2 text-xs text-gray-500 dark:text-slate-400">Choose Connect bridge, then send your request.</p></div></div>
       <p class="mt-3 text-xs text-gray-600 dark:text-slate-300">On Windows or Linux, <a class="underline" href="https://github.com/bugdays-com/holy-cors/releases/latest" target="_blank" rel="noopener noreferrer">download the Holy CORS binary</a> and run it locally. Your browser may ask permission to connect to this local service when you choose Connect bridge or Send.</p>
     </section>
     <section class="space-y-5 py-4 text-gray-600 dark:text-slate-300">
-      <div><h2 class="text-xl font-semibold text-gray-900 dark:text-slate-100">A practical online gRPC client</h2><p class="mt-2 max-w-5xl leading-7">This client parses real Protocol Buffer definitions rather than guessing at fields with regular expressions. It validates JSON against the selected request type, serializes protobuf bytes, frames a gRPC-Web request, incrementally decodes streamed response frames, and displays gRPC status and trailing metadata separately.</p></div>
+      <div><h2 class="text-xl font-semibold text-gray-900 dark:text-slate-100">Explore and test gRPC methods</h2><p class="mt-2 max-w-5xl leading-7">Import one or more .proto files to browse services and methods. Choose an RPC, edit the JSON request, and send it. Decoded messages, gRPC status, headers, trailers, timing, and raw response bytes are available in the response panel.</p></div>
       <div class="grid gap-5 md:grid-cols-3"><div><h3 class="font-semibold text-gray-900 dark:text-slate-100">Contract-aware requests</h3><p class="mt-1 text-sm leading-6">Load multiple imported proto files, browse services, generate request templates, and catch type errors before sending.</p></div><div><h3 class="font-semibold text-gray-900 dark:text-slate-100">Useful debugging context</h3><p class="mt-1 text-sm leading-6">Inspect decoded messages, HTTP headers, gRPC trailers, status codes, elapsed time, and raw response bytes.</p></div><div><h3 class="font-semibold text-gray-900 dark:text-slate-100">Local by design</h3><p class="mt-1 text-sm leading-6">Proto parsing and saved history stay in the browser. Authentication secrets are excluded from saved requests, history, shares, and exports.</p></div></div>
-      <details class="rounded-lg border border-gray-200 p-4 dark:border-slate-700"><summary class="cursor-pointer font-semibold text-gray-900 dark:text-slate-100">Streaming support and browser limits</summary><p class="mt-2 text-sm leading-6">Unary and server-streaming RPCs work in binary mode. Client-streaming and bidirectional-streaming methods remain visible for contract exploration, but Send is disabled because the browser Fetch API does not provide portable full-duplex request streaming. Use grpcurl or a native SDK for those calls.</p></details>
+      <details class="rounded-lg border border-gray-200 p-4 dark:border-slate-700"><summary class="cursor-pointer font-semibold text-gray-900 dark:text-slate-100">Supported RPC types</summary><p class="mt-2 text-sm leading-6">Send unary and server-streaming calls. Client-streaming and bidirectional methods appear in the contract browser, but sending them is not supported here. Use grpcurl or a native SDK for those calls.</p></details>
     </section>
   </div>
 </Layout>
