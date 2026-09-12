@@ -51,6 +51,7 @@ message HelloReply {
 const SAVED_KEY = 'bugdays-grpc-saved-v1';
 const HISTORY_KEY = 'bugdays-grpc-history-v1';
 const INSTALL_COMMAND = 'brew trust bugdays-com/tap && brew install bugdays-com/tap/holy-cors && holy-cors';
+const DOCKER_COMMAND = 'docker run --rm -p 127.0.0.1:2345:2345 ghcr.io/bugdays-com/holy-cors:latest';
 const SECRET_METADATA = /^(authorization|proxy-authorization|cookie|set-cookie|x-api-key|api-key)$/i;
 const RESERVED_METADATA = /^(content-length|content-type|connection|host|origin|referer|te|trailer|transfer-encoding|grpc-timeout|grpc-encoding|grpc-accept-encoding|x-grpc-web|x-holy-cors-mode|x-user-agent)$/i;
 
@@ -373,7 +374,7 @@ export function initGrpcClient() {
       const status = byId('bridge-status').textContent;
       showError(status === 'Browser access blocked' || status === 'Permission needed'
         ? 'Your browser blocked access to the local bridge. Allow local network access for bugdays.com in its site permissions, then choose Connect bridge and retry.'
-        : `Holy CORS is not reachable at ${bridgeInput.value}.\n\nRun: ${INSTALL_COMMAND}\nThen choose Connect bridge and retry.`);
+        : `Holy CORS is not reachable at ${bridgeInput.value}.\n\nStart it with Homebrew:\n${INSTALL_COMMAND}\n\nOr with Docker:\n${DOCKER_COMMAND}\n\nThen choose Connect bridge and retry.`);
       return;
     }
 

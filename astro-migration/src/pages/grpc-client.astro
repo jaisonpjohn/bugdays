@@ -71,11 +71,11 @@ const jsonLd = [
 
     <section id="bridge-notice" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div id="bridge-start-copy"><strong>Start the local bridge to call native gRPC.</strong><span class="ml-1">It runs on your machine and connects this page to your HTTP/2 service.</span> <a class="underline" href="https://github.com/bugdays-com/holy-cors/releases/latest" target="_blank" rel="noopener noreferrer">Windows/Linux downloads</a></div>
+        <div id="bridge-start-copy"><strong>Start the local bridge to call native gRPC.</strong><span class="ml-1">It runs on your machine and connects this page to your HTTP/2 service.</span> <a class="underline" href="#bridge-setup">Homebrew, Docker, and downloads</a></div>
         <div id="bridge-permission-copy" class="hidden"><strong>Allow this browser to connect to your local bridge.</strong><span class="ml-1">Open the site permissions for bugdays.com, allow local network access, then choose Connect bridge again.</span></div>
         <div id="bridge-install-command" class="flex flex-wrap gap-2">
           <span class="self-center text-xs font-semibold">macOS</span><code class="rounded bg-white/80 px-3 py-1.5 text-xs dark:bg-slate-900">brew trust bugdays-com/tap && brew install bugdays-com/tap/holy-cors && holy-cors</code>
-          <button id="copy-install-btn" class="rounded-lg bg-amber-900 px-3 py-1.5 text-xs font-semibold text-white dark:bg-amber-200 dark:text-amber-950">Copy command</button>
+          <button id="copy-install-btn" class="rounded-lg bg-amber-900 px-3 py-1.5 text-xs font-semibold text-white dark:bg-amber-200 dark:text-amber-950">Copy macOS command</button>
         </div>
       </div>
     </section>
@@ -151,11 +151,15 @@ const jsonLd = [
       <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"><div class="mb-3 flex items-center justify-between"><h2 class="font-semibold">Saved requests</h2><button id="clear-saved-btn" class="text-xs text-gray-500">Clear</button></div><div id="saved-list" class="space-y-2 text-sm text-gray-500 dark:text-slate-400">Nothing saved yet.</div></div>
       <div class="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900"><div class="mb-3 flex items-center justify-between"><h2 class="font-semibold">Local history</h2><button id="clear-history-btn" class="text-xs text-gray-500">Clear</button></div><div id="history-list" class="space-y-2 text-sm text-gray-500 dark:text-slate-400">No requests yet.</div></div>
     </section>
-    <section class="rounded-xl border border-indigo-200 bg-indigo-50 p-5 dark:border-indigo-900 dark:bg-indigo-950/30">
+    <section id="bridge-setup" class="rounded-xl border border-indigo-200 bg-indigo-50 p-5 dark:border-indigo-900 dark:bg-indigo-950/30">
       <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100">Connect to a native gRPC service</h2>
       <p class="mt-2 max-w-4xl text-sm leading-6 text-gray-700 dark:text-slate-300">Run Holy CORS on your computer, enter your service URL above, and send a request. Inspect decoded messages, gRPC status, response headers, and trailers here. If your service supports gRPC-Web, select Direct gRPC-Web and connect without the bridge.</p>
-      <div class="mt-4 grid gap-3 md:grid-cols-3 text-sm"><div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>1. Install once (macOS)</strong><code class="mt-2 block text-xs">brew trust bugdays-com/tap<br />brew install bugdays-com/tap/holy-cors</code></div><div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>2. Run locally</strong><code class="mt-2 block text-xs">holy-cors</code></div><div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>3. Connect and send</strong><p class="mt-2 text-xs text-gray-500 dark:text-slate-400">Choose Connect bridge, then send your request.</p></div></div>
-      <p class="mt-3 text-xs text-gray-600 dark:text-slate-300">On Windows or Linux, <a class="underline" href="https://github.com/bugdays-com/holy-cors/releases/latest" target="_blank" rel="noopener noreferrer">download the Holy CORS binary</a> and run it locally. Your browser may ask permission to connect to this local service when you choose Connect bridge or Send.</p>
+      <div class="mt-4 grid gap-3 md:grid-cols-2 text-sm">
+        <div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>macOS: Homebrew</strong><code class="mt-2 block text-xs">brew trust bugdays-com/tap<br />brew install bugdays-com/tap/holy-cors<br />holy-cors</code></div>
+        <div class="rounded-lg bg-white p-3 dark:bg-slate-900"><strong>Docker: macOS, Windows, or Linux</strong><code class="mt-2 block break-all text-xs">docker run --rm -p 127.0.0.1:2345:2345 ghcr.io/bugdays-com/holy-cors:latest</code><p class="mt-2 text-xs text-gray-500 dark:text-slate-400">Keep the container running while you use the client. The port is exposed only on your computer.</p></div>
+      </div>
+      <p class="mt-3 text-xs text-gray-600 dark:text-slate-300">Prefer a standalone executable? <a class="underline" href="https://github.com/bugdays-com/holy-cors/releases/latest" target="_blank" rel="noopener noreferrer">Download the latest binary</a>. Then choose Connect bridge and send your request. Your browser may ask permission to connect to this local service.</p>
+      <p class="mt-2 text-xs text-gray-600 dark:text-slate-300">Using Docker to reach a service running on your computer? Enter <code>host.docker.internal</code> instead of <code>localhost</code> in the service URL. On Linux, add <code>--add-host=host.docker.internal:host-gateway</code> to the Docker command if that hostname is unavailable.</p>
     </section>
     <section class="space-y-5 py-4 text-gray-600 dark:text-slate-300">
       <div><h2 class="text-xl font-semibold text-gray-900 dark:text-slate-100">Explore and test gRPC methods</h2><p class="mt-2 max-w-5xl leading-7">Import one or more .proto files to browse services and methods. Choose an RPC, edit the JSON request, and send it. Decoded messages, gRPC status, headers, trailers, timing, and raw response bytes are available in the response panel.</p></div>
