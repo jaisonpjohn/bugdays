@@ -50,7 +50,7 @@ message HelloReply {
 
 const SAVED_KEY = 'bugdays-grpc-saved-v1';
 const HISTORY_KEY = 'bugdays-grpc-history-v1';
-const INSTALL_COMMAND = 'brew install bugdays-com/tap/holy-cors && holy-cors';
+const INSTALL_COMMAND = 'brew trust bugdays-com/tap && brew install bugdays-com/tap/holy-cors && holy-cors';
 const SECRET_METADATA = /^(authorization|proxy-authorization|cookie|set-cookie|x-api-key|api-key)$/i;
 const RESERVED_METADATA = /^(content-length|content-type|connection|host|origin|referer|te|trailer|transfer-encoding|grpc-timeout|grpc-encoding|grpc-accept-encoding|x-grpc-web|x-holy-cors-mode|x-user-agent)$/i;
 

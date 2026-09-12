@@ -156,6 +156,7 @@ import Layout from '../layouts/Layout.astro';
           <p>To bypass CORS restrictions, run <a href="https://github.com/bugdays-com/holy-cors" target="_blank" class="text-indigo-600 hover:underline">Holy CORS</a> locally:</p>
           <div class="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-xs overflow-auto">
             <p class="text-gray-400"># macOS (Homebrew)</p>
+            <p>brew trust bugdays-com/tap</p>
             <p>brew install bugdays-com/tap/holy-cors</p>
             <p>holy-cors</p>
           </div>
@@ -383,7 +384,7 @@ import Layout from '../layouts/Layout.astro';
         showError(
           `CORS Error: The target server blocked this cross-origin request.\n\n` +
           `Enable the CORS proxy checkbox above and ensure Holy CORS is running:\n` +
-          `  brew install bugdays-com/tap/holy-cors && holy-cors\n\n` +
+          `  brew trust bugdays-com/tap && brew install bugdays-com/tap/holy-cors && holy-cors\n\n` +
           `Or with Docker:\n` +
           `  docker run -p 2345:2345 ghcr.io/bugdays-com/holy-cors`
         );
@@ -393,7 +394,7 @@ import Layout from '../layouts/Layout.astro';
           `Start Holy CORS:\n` +
           `  holy-cors\n\n` +
           `Or install it first:\n` +
-          `  brew install bugdays-com/tap/holy-cors`
+          `  brew trust bugdays-com/tap && brew install bugdays-com/tap/holy-cors`
         );
       } else {
         showError('Request failed: ' + errorMsg);
