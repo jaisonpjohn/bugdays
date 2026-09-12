@@ -113,6 +113,7 @@ export function initGrpcClient() {
   const endpointInput = byId<HTMLInputElement>('endpoint-url');
   const transportInput = byId<HTMLSelectElement>('transport');
   const bridgeInput = byId<HTMLInputElement>('bridge-url');
+  const bridgeAccessDialog = byId<HTMLDialogElement>('bridge-access-dialog');
   const requestInput = byId<HTMLTextAreaElement>('request-json');
   const servicesList = byId<HTMLDivElement>('services-list');
   const errorBox = byId<HTMLDivElement>('error-box');
@@ -127,6 +128,8 @@ export function initGrpcClient() {
   let parsed: any = null;
   let selected: any = null;
   let activeController: AbortController | null = null;
+  let explainedBridgeUrl: string | null = null;
+  let pendingBridgeAction: 'connect' | 'send' = 'connect';
   let lastResponse = { messages: [] as unknown[], headers: {} as Metadata, trailers: {} as Metadata, raw: new Uint8Array() };
 
   function showError(message: string) {
@@ -328,6 +331,18 @@ export function initGrpcClient() {
     return null;
   }
 
+  async function explainBridgeAccess(action: 'connect' | 'send'): Promise<boolean> {
+    const bridgeUrl = bridgeInput.value.trim().replace(/\/$/, '');
+    if (explainedBridgeUrl === bridgeUrl) return true;
+    const permission = await loopbackPermissionState();
+    if (permission === 'granted' || permission === 'denied') return true;
+    if (bridgeAccessDialog.open) return false;
+    pendingBridgeAction = action;
+    byId('bridge-access-url').textContent = `${bridgeUrl}/api/v1/capabilities`;
+    bridgeAccessDialog.showModal();
+    return false;
+  }
+
   async function checkBridge(showNotice = false) {
     const status = byId<HTMLSpanElement>('bridge-status');
     const notice = byId('bridge-notice');
@@ -370,6 +385,7 @@ export function initGrpcClient() {
     if (!selected) { showError('Load a proto contract and select a method first.'); return; }
     if (selected.requestStream) { showError('Client-streaming and bidirectional methods require a native client.'); return; }
     const rpcMethod = selected;
+    if (transportInput.value === 'native' && !await explainBridgeAccess('send')) return;
     if (transportInput.value === 'native' && !await checkBridge(true)) {
       const status = byId('bridge-status').textContent;
       showError(status === 'Browser access blocked' || status === 'Permission needed'
@@ -568,7 +584,16 @@ export function initGrpcClient() {
     byId('bridge-status').textContent = 'Not checked';
     byId('bridge-notice').classList.add('hidden');
   });
-  byId('check-bridge-btn').addEventListener('click', () => void checkBridge(true));
+  byId('check-bridge-btn').addEventListener('click', async () => {
+    if (await explainBridgeAccess('connect')) void checkBridge(true);
+  });
+  byId('bridge-access-cancel').addEventListener('click', () => bridgeAccessDialog.close());
+  byId('bridge-access-continue').addEventListener('click', () => {
+    explainedBridgeUrl = bridgeInput.value.trim().replace(/\/$/, '');
+    bridgeAccessDialog.close();
+    if (pendingBridgeAction === 'send') void sendRequest();
+    else void checkBridge(true);
+  });
   byId('copy-install-btn').addEventListener('click', () => void navigator.clipboard.writeText(INSTALL_COMMAND));
   sendButton.addEventListener('click', () => void sendRequest());
   cancelButton.addEventListener('click', () => activeController?.abort('user'));

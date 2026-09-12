@@ -62,12 +62,28 @@ const jsonLd = [
         </div>
         <p class="max-w-3xl text-sm text-gray-600 dark:text-slate-300">Import your .proto files, choose a method, and send a request. Call a gRPC-Web service directly or connect to a native gRPC service with the Holy CORS local bridge.</p>
       </div>
-      <div class="flex flex-wrap items-center gap-2 text-xs">
-        <span class="text-gray-500 dark:text-slate-400">Local bridge</span>
-        <span id="bridge-status" class="rounded-full bg-gray-100 px-2.5 py-1 font-semibold text-gray-600 dark:bg-slate-800 dark:text-slate-300">Not checked</span>
-        <button id="check-bridge-btn" class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium hover:bg-gray-50 dark:border-slate-600 dark:hover:bg-slate-800">Connect bridge</button>
+      <div class="flex flex-col gap-1.5 xl:items-end">
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <span class="text-gray-500 dark:text-slate-400">Local bridge</span>
+          <span id="bridge-status" class="rounded-full bg-gray-100 px-2.5 py-1 font-semibold text-gray-600 dark:bg-slate-800 dark:text-slate-300">Not checked</span>
+          <button id="check-bridge-btn" class="rounded-lg border border-gray-300 px-3 py-1.5 font-medium hover:bg-gray-50 dark:border-slate-600 dark:hover:bg-slate-800">Connect Holy CORS</button>
+        </div>
+        <p class="text-xs text-gray-500 dark:text-slate-400">For native gRPC, this page connects to Holy CORS running on your computer.</p>
       </div>
     </header>
+
+    <dialog id="bridge-access-dialog" aria-labelledby="bridge-access-title" class="w-[calc(100%-2rem)] max-w-lg rounded-2xl border border-gray-200 bg-white p-0 text-gray-800 shadow-2xl backdrop:bg-slate-950/60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+      <div class="space-y-4 p-6">
+        <h2 id="bridge-access-title" class="text-xl font-semibold">Connect to Holy CORS on this computer?</h2>
+        <p class="text-sm leading-6">Bug Days will first check the Holy CORS bridge at <code id="bridge-access-url" class="break-all rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-slate-800"></code>. When you send a native gRPC request, that bridge connects to the service URL you enter.</p>
+        <p class="text-sm leading-6">Your browser may ask to “access other apps and services on this device.” Chrome grants that local-access permission to bugdays.com as a site, so its prompt cannot name Holy CORS or limit itself to this port. This check goes only to the address shown above.</p>
+        <p class="text-sm leading-6">Continue only if you started Holy CORS and want to use it. If your service supports gRPC-Web, you can select <strong>Direct gRPC-Web</strong> without the bridge.</p>
+        <div class="flex flex-wrap justify-end gap-2 pt-1">
+          <button id="bridge-access-cancel" type="button" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold dark:border-slate-600">Not now</button>
+          <button id="bridge-access-continue" type="button" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Continue to browser</button>
+        </div>
+      </div>
+    </dialog>
 
     <section id="bridge-notice" class="hidden rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-100">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
