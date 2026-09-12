@@ -318,13 +318,22 @@ export function initGrpcClient() {
     }
   }
 
+  async function loopbackPermissionState(): Promise<PermissionState | null> {
+    if (!navigator.permissions?.query) return null;
+    for (const name of ['loopback-network', 'local-network-access']) {
+      try { return (await navigator.permissions.query({ name: name as PermissionName })).state; }
+      catch { /* This permission name is not available in every browser. */ }
+    }
+    return null;
+  }
+
   async function checkBridge(showNotice = false) {
     const status = byId<HTMLSpanElement>('bridge-status');
     const notice = byId('bridge-notice');
     status.textContent = 'Checking…';
     status.className = 'rounded-full bg-gray-100 px-2.5 py-1 font-semibold text-gray-600 dark:bg-slate-800 dark:text-slate-300';
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 1800);
+    const timeout = window.setTimeout(() => controller.abort(), 30000);
     try {
       const response = await fetch(`${bridgeInput.value.replace(/\/$/, '')}/api/v1/capabilities`, { signal: controller.signal, cache: 'no-store' });
       const capabilities = await response.json();
@@ -334,8 +343,14 @@ export function initGrpcClient() {
       notice.classList.add('hidden');
       return true;
     } catch {
-      status.textContent = 'Not running';
+      const permission = await loopbackPermissionState();
+      const browserBlocked = permission === 'denied';
+      const permissionPending = permission === 'prompt' && controller.signal.aborted;
+      status.textContent = browserBlocked ? 'Browser access blocked' : permissionPending ? 'Permission needed' : 'Not running';
       status.className = 'rounded-full bg-amber-100 px-2.5 py-1 font-semibold text-amber-800 dark:bg-amber-950 dark:text-amber-200';
+      byId('bridge-start-copy').classList.toggle('hidden', browserBlocked || permissionPending);
+      byId('bridge-permission-copy').classList.toggle('hidden', !browserBlocked && !permissionPending);
+      byId('bridge-install-command').classList.toggle('hidden', browserBlocked || permissionPending);
       notice.classList.toggle('hidden', transportInput.value !== 'native' && !showNotice);
       return false;
     } finally {
@@ -345,8 +360,8 @@ export function initGrpcClient() {
 
   function updateTransport() {
     const native = transportInput.value === 'native';
-    byId('bridge-notice').classList.toggle('hidden', !native || byId('bridge-status').textContent?.startsWith('Ready'));
-    if (native) void checkBridge();
+    const status = byId('bridge-status').textContent || '';
+    byId('bridge-notice').classList.toggle('hidden', !native || status === 'Not checked' || status.startsWith('Ready'));
   }
 
   async function sendRequest() {
@@ -355,7 +370,10 @@ export function initGrpcClient() {
     if (selected.requestStream) { showError('Client-streaming and bidirectional methods require a native client.'); return; }
     const rpcMethod = selected;
     if (transportInput.value === 'native' && !await checkBridge(true)) {
-      showError(`Holy CORS is not reachable at ${bridgeInput.value}.\n\nRun: ${INSTALL_COMMAND}\nThen choose Check again and retry.`);
+      const status = byId('bridge-status').textContent;
+      showError(status === 'Browser access blocked' || status === 'Permission needed'
+        ? 'Your browser blocked access to the local bridge. Allow local network access for bugdays.com in its site permissions, then choose Connect bridge and retry.'
+        : `Holy CORS is not reachable at ${bridgeInput.value}.\n\nRun: ${INSTALL_COMMAND}\nThen choose Connect bridge and retry.`);
       return;
     }
 
@@ -545,7 +563,10 @@ export function initGrpcClient() {
     byId('basic-fields').classList.toggle('hidden', value !== 'basic');
   });
   transportInput.addEventListener('change', updateTransport);
-  bridgeInput.addEventListener('change', () => void checkBridge());
+  bridgeInput.addEventListener('change', () => {
+    byId('bridge-status').textContent = 'Not checked';
+    byId('bridge-notice').classList.add('hidden');
+  });
   byId('check-bridge-btn').addEventListener('click', () => void checkBridge(true));
   byId('copy-install-btn').addEventListener('click', () => void navigator.clipboard.writeText(INSTALL_COMMAND));
   sendButton.addEventListener('click', () => void sendRequest());
