@@ -160,10 +160,7 @@ import Layout from '../layouts/Layout.astro';
             <p>brew install bugdays-com/tap/holy-cors</p>
             <p>holy-cors</p>
           </div>
-          <div class="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-xs overflow-auto">
-            <p class="text-gray-400"># Docker</p>
-            <p>docker run -p 2345:2345 ghcr.io/bugdays-com/holy-cors</p>
-          </div>
+          <p>On Windows or Linux, <a href="https://github.com/bugdays-com/holy-cors/releases/latest" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">download the Holy CORS binary</a> and run it locally.</p>
           <p>The proxy will be available at <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">http://localhost:2345/</code></p>
           <p class="text-yellow-600">Note: For APIs that already support CORS, you don't need the proxy.</p>
         </div>
@@ -385,8 +382,7 @@ import Layout from '../layouts/Layout.astro';
           `CORS Error: The target server blocked this cross-origin request.\n\n` +
           `Enable the CORS proxy checkbox above and ensure Holy CORS is running:\n` +
           `  brew trust bugdays-com/tap && brew install bugdays-com/tap/holy-cors && holy-cors\n\n` +
-          `Or with Docker:\n` +
-          `  docker run -p 2345:2345 ghcr.io/bugdays-com/holy-cors`
+          `Windows/Linux binaries: https://github.com/bugdays-com/holy-cors/releases/latest`
         );
       } else if (isCorsLikely && useProxy.checked) {
         showError(

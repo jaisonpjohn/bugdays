@@ -306,13 +306,11 @@ SKU003,WH-A</pre>
           <p>To bypass CORS restrictions, run <a href="https://github.com/bugdays-com/holy-cors" target="_blank" class="text-indigo-600 hover:underline">Holy CORS</a> locally:</p>
           <div class="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-xs overflow-auto">
             <p class="text-gray-400"># macOS (Homebrew)</p>
+            <p>brew trust bugdays-com/tap</p>
             <p>brew install bugdays-com/tap/holy-cors</p>
             <p>holy-cors</p>
           </div>
-          <div class="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-xs overflow-auto">
-            <p class="text-gray-400"># Docker</p>
-            <p>docker run -p 2345:2345 ghcr.io/bugdays-com/holy-cors</p>
-          </div>
+          <p>On Windows or Linux, <a href="https://github.com/bugdays-com/holy-cors/releases/latest" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">download the Holy CORS binary</a> and run it locally.</p>
           <p>The proxy will be available at <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">http://localhost:2345/</code></p>
           <p class="text-yellow-600 dark:text-yellow-400">Note: For APIs that already support CORS, you don't need the proxy.</p>
         </div>
