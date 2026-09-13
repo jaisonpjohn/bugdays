@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import LocalBridgeAccessDialog from '../components/LocalBridgeAccessDialog.astro';
 ---
 
 <Layout
@@ -37,19 +38,20 @@ import Layout from '../layouts/Layout.astro';
       </div>
 
       <!-- Proxy Settings -->
-      <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg mb-4">
+      <div class="flex flex-wrap items-center gap-3 p-3 bg-gray-50 dark:bg-slate-900 rounded-lg mb-4">
         <input type="checkbox" id="use-proxy" class="rounded border-gray-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500" />
-        <label for="use-proxy" class="text-sm text-gray-700 dark:text-slate-200">Use CORS Proxy</label>
+        <label for="use-proxy" class="text-sm text-gray-700 dark:text-slate-200">Use local Holy CORS</label>
         <input
-          type="text"
+          type="url"
           id="proxy-url"
-          class="flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm"
-          placeholder="http://localhost:2345/"
-          value="http://localhost:2345/"
+          class="min-w-48 flex-1 p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm"
+          placeholder="http://127.0.0.1:2345/"
+          value="http://127.0.0.1:2345/"
           disabled
+          aria-label="Local Holy CORS bridge URL"
         />
-        <button id="proxy-info-btn" class="text-indigo-600 hover:text-indigo-800 text-sm">
-          Setup Instructions
+        <button id="proxy-info-btn" type="button" class="text-indigo-600 hover:text-indigo-800 text-sm">
+          Setup instructions
         </button>
       </div>
 
@@ -148,12 +150,14 @@ import Layout from '../layouts/Layout.astro';
     <!-- Error -->
     <div id="error-box" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
 
+    <LocalBridgeAccessDialog directOption="If the API allows browser requests, turn off Holy CORS and send directly." />
+
     <!-- Proxy Setup Modal -->
     <div id="proxy-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-lg w-full mx-4 p-6">
-        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-4">CORS Proxy Setup</h3>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-4">Connect through Holy CORS</h3>
         <div class="space-y-4 text-sm text-gray-600 dark:text-slate-300">
-          <p>To bypass CORS restrictions, run <a href="https://github.com/bugdays-com/holy-cors" target="_blank" class="text-indigo-600 hover:underline">Holy CORS</a> locally:</p>
+          <p>If an API does not allow browser requests, run <a href="https://github.com/bugdays-com/holy-cors" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">Holy CORS</a> on your computer:</p>
           <div class="bg-gray-800 text-green-400 p-3 rounded-lg font-mono text-xs overflow-auto">
             <p class="text-gray-400"># macOS (Homebrew)</p>
             <p>brew trust bugdays-com/tap</p>
@@ -161,8 +165,11 @@ import Layout from '../layouts/Layout.astro';
             <p>holy-cors</p>
           </div>
           <p>On Windows or Linux, <a href="https://github.com/bugdays-com/holy-cors/releases/latest" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline">download the Holy CORS binary</a> and run it locally.</p>
-          <p>The proxy will be available at <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">http://localhost:2345/</code></p>
-          <p class="text-yellow-600">Note: For APIs that already support CORS, you don't need the proxy.</p>
+          <p>Or use Docker:</p>
+          <code class="block break-all rounded-lg bg-gray-800 p-3 text-xs text-green-400">docker run --rm -p 127.0.0.1:2345:2345 ghcr.io/bugdays-com/holy-cors:latest</code>
+          <p>Leave the bridge URL at <code class="bg-gray-100 dark:bg-slate-700 px-1 rounded">http://127.0.0.1:2345/</code>. If your target API runs on your computer and Holy CORS runs in Docker, use <code>host.docker.internal</code> in the target URL instead of <code>localhost</code>. On Linux, add <code>--add-host=host.docker.internal:host-gateway</code> to the Docker command if needed.</p>
+          <p>Holy CORS runs on your computer. Requests are not sent to or stored by Bug Days.</p>
+          <p>When the target API already permits browser requests, you can leave Holy CORS off.</p>
         </div>
         <button id="close-modal-btn" class="mt-4 px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300">Close</button>
       </div>
@@ -172,7 +179,7 @@ import Layout from '../layouts/Layout.astro';
       <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online API Client</h2>
       <p class="text-gray-600 dark:text-slate-300">
         Test REST APIs directly from your browser. Supports GET, POST, PUT, PATCH, DELETE requests with
-        custom headers and body. Use the optional CORS proxy for APIs that don't support cross-origin requests.
+        custom headers and body. If an API blocks browser requests, the optional Holy CORS bridge runs on your computer.
       </p>
     </div>
   </div>
@@ -190,6 +197,8 @@ import Layout from '../layouts/Layout.astro';
 </style>
 
 <script>
+  import { createLocalBridgeAccessGuard } from '../lib/local-bridge-access';
+
   const methodSelect = document.getElementById('method') as HTMLSelectElement;
   const urlInput = document.getElementById('url-input') as HTMLInputElement;
   const useProxy = document.getElementById('use-proxy') as HTMLInputElement;
@@ -203,6 +212,7 @@ import Layout from '../layouts/Layout.astro';
   const responseSize = document.getElementById('response-size');
   const errorBox = document.getElementById('error-box');
   const proxyModal = document.getElementById('proxy-modal');
+  const confirmLocalBridgeAccess = createLocalBridgeAccessGuard();
 
   // Tab switching
   document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -295,9 +305,6 @@ import Layout from '../layouts/Layout.astro';
       return;
     }
 
-    hideError();
-    responseSection?.classList.add('hidden');
-
     // Add query params
     const params = getParams();
     if (params.toString()) {
@@ -307,7 +314,16 @@ import Layout from '../layouts/Layout.astro';
     // Use proxy if enabled
     if (useProxy.checked) {
       const proxy = proxyUrl.value.trim();
-      url = proxy + url;
+      try {
+        const bridge = new URL(proxy);
+        const endpoint = new URL(url);
+        if (!['http:', 'https:'].includes(bridge.protocol) || !['http:', 'https:'].includes(endpoint.protocol)) throw new Error();
+      } catch {
+        showError('Enter complete http:// or https:// URLs for the Holy CORS bridge and target API.');
+        return;
+      }
+      if (!await confirmLocalBridgeAccess(proxy)) return;
+      url = `${proxy.replace(/\/+$/, '')}/${url}`;
     }
 
     const method = methodSelect.value;
@@ -340,6 +356,8 @@ import Layout from '../layouts/Layout.astro';
     }
 
     const startTime = performance.now();
+    hideError();
+    responseSection?.classList.add('hidden');
 
     try {
       const response = await fetch(url, options);
@@ -375,22 +393,16 @@ import Layout from '../layouts/Layout.astro';
       responseHeaders.innerHTML = headersHtml;
     } catch (e) {
       const errorMsg = (e as Error).message;
-      const isCorsLikely = errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || errorMsg.includes('Load failed');
+      const isNetworkFailure = errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError') || errorMsg.includes('Load failed');
 
-      if (isCorsLikely && !useProxy.checked) {
+      if (isNetworkFailure && !useProxy.checked) {
         showError(
-          `CORS Error: The target server blocked this cross-origin request.\n\n` +
-          `Enable the CORS proxy checkbox above and ensure Holy CORS is running:\n` +
-          `  brew trust bugdays-com/tap && brew install bugdays-com/tap/holy-cors && holy-cors\n\n` +
-          `Windows/Linux binaries: https://github.com/bugdays-com/holy-cors/releases/latest`
+          `The browser could not reach this API. The service may be offline, its URL or TLS configuration may be wrong, or its CORS policy may block browser requests.\n\n` +
+          `If it works in a desktop client, enable local Holy CORS above and retry. Open Setup instructions to install the bridge.`
         );
-      } else if (isCorsLikely && useProxy.checked) {
+      } else if (isNetworkFailure && useProxy.checked) {
         showError(
-          `Connection failed: Is the CORS proxy running?\n\n` +
-          `Start Holy CORS:\n` +
-          `  holy-cors\n\n` +
-          `Or install it first:\n` +
-          `  brew trust bugdays-com/tap && brew install bugdays-com/tap/holy-cors`
+          `Could not reach Holy CORS or the target API. Check that Holy CORS is running at ${proxyUrl.value.trim()}, the target URL is correct, and your browser allows local access for bugdays.com. Then retry.`
         );
       } else {
         showError('Request failed: ' + errorMsg);
