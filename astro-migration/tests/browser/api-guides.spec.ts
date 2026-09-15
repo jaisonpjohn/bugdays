@@ -4,6 +4,7 @@ const guides = [
   { slug: 'test-grpc-api-proto-metadata-streaming', title: 'How to Test a gRPC API: Proto Files, Metadata, and Streaming', tool: '/grpc-client' },
   { slug: 'grpc-web-vs-native-grpc-browser-testing', title: 'gRPC-Web vs Native gRPC: How Browser Testing Actually Works', tool: '/grpc-client' },
   { slug: 'soap-api-authentication-basic-ws-security-mtls', title: 'SOAP API Authentication: Basic Auth, WS-Security, and mTLS', tool: '/soap-client' },
+  { slug: 'identify-cloud-hosting-ips-in-access-logs', title: 'How to Identify Cloud, Hosting, and Crawler IPs in Access Logs', tool: '/ip-lookup' },
 ];
 
 test.beforeEach(async ({ page }) => {

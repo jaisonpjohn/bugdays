@@ -28,3 +28,6 @@ pnpm-debug.log*
 test-results/
 playwright-report/
 .wrangler/
+
+# Generated from public provider/BGP feeds and imported into D1; never shipped as a static asset.
+data/ip-ranges.json

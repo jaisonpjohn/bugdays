@@ -15,6 +15,20 @@ export interface Guide {
 
 export const guides: Guide[] = [
   {
+    slug: 'identify-cloud-hosting-ips-in-access-logs',
+    title: 'How to Identify Cloud, Hosting, and Crawler IPs in Access Logs',
+    shortTitle: 'Identify hosting IPs in access logs',
+    description: 'Investigate access-log IPs against cloud provider feeds, hosting ASN prefixes, CDN networks, and published crawler ranges without mistaking infrastructure for intent.',
+    topic: 'Network and bot investigation',
+    published: '2026-09-15',
+    updated: '2026-09-15',
+    readingMinutes: 8,
+    image: '/og-image.png',
+    imageAlt: 'Bug Days network investigation workflow for matching access-log addresses to cloud, hosting, CDN, and crawler ranges',
+    toolHref: '/ip-lookup',
+    toolName: 'Bulk Cloud and Hosting IP Lookup',
+  },
+  {
     slug: 'test-grpc-api-proto-metadata-streaming',
     title: 'How to Test a gRPC API: Proto Files, Metadata, and Streaming',
     shortTitle: 'Test a gRPC API from its proto file',

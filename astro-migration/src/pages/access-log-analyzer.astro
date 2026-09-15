@@ -7,7 +7,7 @@ const description = 'Analyze Nginx, Apache, and JSON access logs in your browser
   <TrafficWorkbench mode="log" />
   <section class="traffic-guide">
     <div><h2>Read the pattern behind the requests</h2><p>Open Nginx or Apache common/combined access logs, or JSON logs with one request per line. See top client IPs, requested paths, response status counts, and a UTC request timeline. JSON logs with request durations also show median and 95th-percentile latency.</p></div>
-    <div><h2>Connect requests to published networks</h2><p>Match logged client IPs to the same cloud and crawler datasets used by our <a href="/ip-lookup/">bulk IP lookup</a>. Review cloud traffic alongside its request volume and error counts. Inspect the configured client-IP field when logs come through a CDN or reverse proxy.</p></div>
-    <div><h2>A report you can hand over</h2><p>Logs are processed locally. Report links include IPs, path counts, and summary findings, with query strings and raw log lines excluded. Shared snapshots preserve the original analysis and dataset date. Export a complete JSON report to reopen later, or use CSV, Excel, and print-to-PDF.</p></div>
+    <div><h2>Connect requests to cloud and hosting networks</h2><p>Match logged client IPs to the same cloud, VPS, CDN, service, and crawler datasets used by our <a href="/ip-lookup/">bulk hosting IP lookup</a>. Review provider traffic alongside request volume and errors, or follow the guide to <a href="/guides/identify-cloud-hosting-ips-in-access-logs/">identifying hosting IPs in access logs</a>.</p></div>
+    <div><h2>A report you can hand over</h2><p>Raw logs are processed locally; only unique IP addresses are sent for provider matching. Report links include IP evidence, path counts, and summary findings, with query strings and raw lines excluded. Export JSON to reopen later, or use CSV, Excel, and print-to-PDF.</p></div>
   </section>
 </Layout>

@@ -1,17 +1,5 @@
-import { fetchIpDataset } from '../../src/lib/ip-datasets';
-
-// This endpoint only returns public range lists. It accepts no IPs or log data.
-export async function onRequestGet(context: { request: Request; waitUntil: (promise: Promise<unknown>) => void }) {
-  const cache = (caches as CacheStorage & { default: Cache }).default;
-  const key = new Request(new URL('/api/ip-ranges', context.request.url));
-  const cached = await cache.match(key);
-  if (cached) return cached;
-  try {
-    const dataset = await fetchIpDataset();
-    const response = Response.json(dataset, { headers: { 'Cache-Control': `public, max-age=${dataset.failures.length ? 300 : 21600}`, 'X-Content-Type-Options': 'nosniff' } });
-    context.waitUntil(cache.put(key, response.clone()));
-    return response;
-  } catch {
-    return Response.json({ error: 'Range feeds unavailable; use the bundled snapshot.' }, { status: 503 });
-  }
+// Retained as a small migration response for older clients; the global multi-megabyte
+// catalog is no longer served to browsers.
+export function onRequestGet() {
+  return Response.json({ error: 'The range catalog endpoint has been replaced by batched IP lookup.', endpoint: '/api/ip-lookup', method: 'POST', body: { ips: ['143.198.1.2'] } }, { status: 410, headers: { 'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' } });
 }

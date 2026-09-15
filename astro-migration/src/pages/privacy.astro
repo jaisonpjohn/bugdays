@@ -11,7 +11,7 @@ import Layout from '../layouts/Layout.astro';
   <div class="max-w-3xl mx-auto">
     <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6 md:p-8">
       <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100 mb-2">Privacy Policy</h1>
-      <p class="text-sm text-gray-500 dark:text-slate-400 mb-8">Last updated: February 2026</p>
+      <p class="text-sm text-gray-500 dark:text-slate-400 mb-8">Last updated: September 15, 2026</p>
 
       <div class="prose prose-slate dark:prose-invert max-w-none space-y-6">
 
@@ -23,18 +23,21 @@ import Layout from '../layouts/Layout.astro';
         </section>
 
         <section>
-          <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">Data Processing - Client-Side Only</h2>
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">Developer Tool Data</h2>
           <p class="text-gray-600 dark:text-slate-300">
-            <strong>All of our developer tools process data entirely in your browser.</strong> When you use tools like JSON Formatter, Base64 Encoder, or any other tool on our site:
+            Most conversion, formatting, and diagnostic tools process their input entirely in your browser. For those tools:
           </p>
           <ul class="list-disc list-inside text-gray-600 dark:text-slate-300 mt-2 space-y-1">
             <li>Your data is processed locally on your device</li>
-            <li>No data is sent to our servers</li>
-            <li>No data is stored on our servers</li>
-            <li>We cannot access, view, or recover any data you process</li>
+            <li>Tool input is not sent to Bug Days</li>
+            <li>Tool input is not stored by Bug Days</li>
+            <li>Bug Days cannot recover input that remains only in your browser</li>
           </ul>
           <p class="text-gray-600 dark:text-slate-300 mt-3">
-            The only exception is when you explicitly choose to use the "Share" feature, which compresses your data into a shareable URL that stays in your browser's address bar.
+            Tools that perform network operations are exceptions. The IP lookup and access-log analyzer send only extracted, unique IP addresses to the Bug Days lookup API; raw logs, paths, headers, query strings, and user agents stay in the browser. API clients send requests to the endpoint you choose, directly or through a local bridge when selected. Each applicable tool explains its data flow on the page.
+          </p>
+          <p class="text-gray-600 dark:text-slate-300 mt-3">
+            Sharing is explicit. URL shares place compressed report data in the address fragment. If you choose short-link storage, the share payload is sent to Bug Days and retrieved by its identifier. Review a report before sharing it because recipients can see the data included in that report.
           </p>
         </section>
 
@@ -83,7 +86,7 @@ import Layout from '../layouts/Layout.astro';
         <section>
           <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">Data Retention</h2>
           <p class="text-gray-600 dark:text-slate-300">
-            Since we don't store your tool data on our servers, there is no data to retain. Analytics data is retained according to Google's data retention policies. Contact form submissions are retained until they are no longer needed to address your inquiry.
+            IP lookup requests are processed to return matches and are not stored as lookup records by the application. URL-fragment shares are not stored by Bug Days. Short-link payloads, contact submissions, and analytics data are retained according to their applicable service and operational policies.
           </p>
         </section>
 

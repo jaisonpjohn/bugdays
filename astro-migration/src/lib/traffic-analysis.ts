@@ -1,9 +1,10 @@
 import { parseIp, parseCidr, extractIps, specialIpLabel } from './ip-address.ts';
 import type { IpAddress } from './ip-address.ts';
-import type { IpDataset, IpSource, SourceKind } from './ip-datasets.ts';
+import { sourceIds } from './ip-datasets.ts';
+import type { IpDataset, IpSource, SourceKind, SourceMethod } from './ip-datasets.ts';
 
 export type TrafficMode = 'ip' | 'log';
-export interface RangeMatch { source: string; cidr: string; service: string; region: string; kind: SourceKind }
+export interface RangeMatch { source: string; cidr: string; service: string; region: string; kind: SourceKind; method: SourceMethod }
 export interface IpRow { address: string; version: 4 | 6; count: number; category: SourceKind | 'special' | 'unmatched'; label: string; matches: RangeMatch[]; errors: number; bytes: number }
 export interface CountRow { label: string; count: number }
 export interface TrafficReport {
@@ -26,7 +27,7 @@ export class RangeIndex {
       let group = this.indexes[parsed.version].get(parsed.prefix);
       if (!group) { group = new Map(); this.indexes[parsed.version].set(parsed.prefix, group); }
       const entries = group.get(parsed.network) || [];
-      entries.push({ cidr, source, service, region, kind: info.kind });
+      entries.push({ cidr, source, service, region, kind: info.kind, method: info.method });
       group.set(parsed.network, entries);
     }
     this.prefixes[4] = [...this.indexes[4].keys()].sort((a, b) => b - a);
@@ -53,7 +54,13 @@ export class RangeIndex {
 function makeIpRow(ip: IpAddress, index: RangeIndex): IpRow {
   const label = specialIpLabel(ip);
   const matches = label ? [] : index.lookup(ip);
-  const category = label ? 'special' : matches.some(m => m.kind === 'crawler') ? 'crawler' : matches.some(m => m.kind === 'cdn') ? 'cdn' : matches.length ? 'cloud' : 'unmatched';
+  const category = label ? 'special'
+    : matches.some(m => m.kind === 'crawler') ? 'crawler'
+      : matches.some(m => m.kind === 'service') ? 'service'
+        : matches.some(m => m.kind === 'cdn') ? 'cdn'
+          : matches.some(m => m.kind === 'cloud') ? 'cloud'
+            : matches.some(m => m.kind === 'hosting') ? 'hosting'
+              : 'unmatched';
   return { address: ip.address, version: ip.version, count: 0, category, label: label || (category === 'unmatched' ? 'No published range match' : ''), matches, errors: 0, bytes: 0 };
 }
 
@@ -121,6 +128,21 @@ export function parseLogLine(line: string): LogEntry | null {
 const MAX_TEXT = 20 * 1024 * 1024;
 export const MAX_LINES = 200_000;
 export const MAX_IPS = 20_000;
+export function collectLookupIps(text: string, mode: TrafficMode): string[] {
+  const lines = text.split(/\r?\n/);
+  if (lines.length > MAX_LINES + 1) throw new Error('Use a selection of up to 200,000 lines.');
+  const addresses = new Set<string>();
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    const found = mode === 'log' ? [parseLogLine(line)?.ip].filter(Boolean) as IpAddress[] : extractIps(line);
+    for (const ip of found) {
+      addresses.add(ip.address);
+      if (addresses.size > MAX_IPS) throw new Error('Use a selection with up to 20,000 unique IP addresses.');
+    }
+  }
+  return [...addresses];
+}
 export async function analyzeTraffic(text: string, mode: TrafficMode, dataset: IpDataset, progress?: (percent: number) => void): Promise<TrafficReport> {
   if (new TextEncoder().encode(text).length > MAX_TEXT) throw new Error('Use a file or selection up to 20 MB.');
   const lines = text.split(/\r?\n/);
@@ -200,30 +222,36 @@ export function validateReport(input: unknown): TrafficReport {
   const nullable = (value: unknown) => value === null ? null : num(value);
   const list = (value: unknown, max: number) => Array.isArray(value) && value.length <= max ? value : fail();
   if (!obj || obj.v !== 1 || obj.kind !== 'bugdays-traffic-report' || !['ip', 'log'].includes(obj.mode)) fail();
-  const sources: IpSource[] = list(obj.dataset?.sources, 20).map((source: any) => {
-    if (!['aws', 'gcp', 'azure', 'cloudflare', 'googlebot'].includes(source.id) || !['cloud', 'cdn', 'crawler'].includes(source.kind)) fail();
-    return { id: source.id, name: str(source.name, 100), kind: source.kind, url: str(source.url, 1000), publishedAt: str(source.publishedAt, 100), count: num(source.count) };
+  const sources: IpSource[] = list(obj.dataset?.sources, 64).map((source: any) => {
+    if (!sourceIds.has(source.id) || !['cloud', 'hosting', 'cdn', 'crawler', 'service'].includes(source.kind)) fail();
+    const method = source.method === undefined ? 'official' : source.method;
+    if (!['official', 'bgp'].includes(method)) fail();
+    const asns = source.asns === undefined ? undefined : list(source.asns, 10).map((asn: unknown) => Number.isInteger(asn) && Number(asn) > 0 && Number(asn) <= 4294967295 ? Number(asn) : fail());
+    return { id: source.id, name: str(source.name, 100), kind: source.kind, method, url: str(source.url, 1000), publishedAt: str(source.publishedAt, 100), count: num(source.count), ...(asns ? { asns } : {}) };
   });
   const summary = {} as TrafficReport['summary'];
   for (const key of ['lines', 'accepted', 'skipped', 'uniqueIps', 'matchedIps', 'matchedEvents', 'errors', 'bytes', 'timedRequests'] as const) summary[key] = num(obj.summary?.[key]);
   for (const key of ['p50', 'p95', 'first', 'last'] as const) summary[key] = nullable(obj.summary?.[key]);
   const ips: IpRow[] = list(obj.ips, MAX_IPS).map((row: any) => {
     const ip = parseIp(str(row.address, 80));
-    if (!ip || !['cloud', 'cdn', 'crawler', 'special', 'unmatched'].includes(row.category)) return fail();
+    if (!ip || !['cloud', 'hosting', 'cdn', 'crawler', 'service', 'special', 'unmatched'].includes(row.category)) return fail();
     const matches: RangeMatch[] = list(row.matches, 100).map((match: any) => {
-      if (!sources.some(s => s.id === match.source) || !['cloud', 'cdn', 'crawler'].includes(match.kind) || !parseCidr(str(match.cidr, 80))) return fail();
-      return { source: match.source, kind: match.kind, cidr: match.cidr, service: str(match.service, 100), region: str(match.region, 100) };
+      const source = sources.find(source => source.id === match.source);
+      if (!source || !['cloud', 'hosting', 'cdn', 'crawler', 'service'].includes(match.kind) || !parseCidr(str(match.cidr, 80))) return fail();
+      const method = match.method === undefined ? source.method : match.method;
+      if (!['official', 'bgp'].includes(method)) return fail();
+      return { source: match.source, kind: match.kind, method, cidr: match.cidr, service: str(match.service, 100), region: str(match.region, 100) };
     });
-    if (['cloud', 'cdn', 'crawler'].includes(row.category) && !matches.some(match => match.kind === row.category)) return fail();
+    if (['cloud', 'hosting', 'cdn', 'crawler', 'service'].includes(row.category) && !matches.some(match => match.kind === row.category)) return fail();
     return { address: ip.address, version: ip.version, count: num(row.count), category: row.category, label: str(row.label, 100), matches, errors: num(row.errors), bytes: num(row.bytes) };
   });
   const counts = (value: unknown, max: number) => list(value, max).map((row: any) => ({ label: str(row.label), count: num(row.count) }));
-  return { v: 1, kind: 'bugdays-traffic-report', mode: obj.mode, createdAt: str(obj.createdAt, 100), ...(obj.title !== undefined ? { title: str(obj.title, 120) } : {}), dataset: { fetchedAt: str(obj.dataset.fetchedAt, 100), sources, failures: list(obj.dataset.failures, 20).map((s: unknown) => str(s, 100)) }, summary, ips, paths: counts(obj.paths, MAX_LINES), statuses: counts(obj.statuses, 500), timeline: counts(obj.timeline, 200), bucketMinutes: num(obj.bucketMinutes), issues: list(obj.issues, 8).map((issue: any) => ({ line: num(issue.line), reason: str(issue.reason) })), ...(obj.shared ? { shared: { includedIps: num(obj.shared.includedIps), totalIps: num(obj.shared.totalIps), scope: str(obj.shared.scope) } } : {}) };
+  return { v: 1, kind: 'bugdays-traffic-report', mode: obj.mode, createdAt: str(obj.createdAt, 100), ...(obj.title !== undefined ? { title: str(obj.title, 120) } : {}), dataset: { fetchedAt: str(obj.dataset.fetchedAt, 100), sources, failures: list(obj.dataset.failures, 64).map((s: unknown) => str(s, 100)) }, summary, ips, paths: counts(obj.paths, MAX_LINES), statuses: counts(obj.statuses, 500), timeline: counts(obj.timeline, 200), bucketMinutes: num(obj.bucketMinutes), issues: list(obj.issues, 8).map((issue: any) => ({ line: num(issue.line), reason: str(issue.reason) })), ...(obj.shared ? { shared: { includedIps: num(obj.shared.includedIps), totalIps: num(obj.shared.totalIps), scope: str(obj.shared.scope) } } : {}) };
 }
 
 export function ipTableRows(report: TrafficReport, rows = report.ips): string[][] {
   const names = new Map(report.dataset.sources.map(source => [source.id, source.name]));
-  return [['IP address', 'IP version', 'Occurrences', 'Classification', 'Provider', 'Published region', 'Service', 'Matched CIDR', '4xx/5xx responses', 'Response bytes'], ...rows.map(row => [row.address, String(row.version), String(row.count), row.label || row.category, [...new Set(row.matches.map(m => names.get(m.source) || m.source))].join('; '), [...new Set(row.matches.map(m => m.region))].join('; '), [...new Set(row.matches.map(m => m.service))].join('; '), [...new Set(row.matches.map(m => m.cidr))].join('; '), String(row.errors), String(row.bytes)])];
+  return [['IP address', 'IP version', 'Occurrences', 'Classification', 'Provider', 'Evidence', 'Published region', 'Service', 'Matched CIDR', '4xx/5xx responses', 'Response bytes'], ...rows.map(row => [row.address, String(row.version), String(row.count), row.label || row.category, [...new Set(row.matches.map(m => names.get(m.source) || m.source))].join('; '), [...new Set(row.matches.map(m => m.method === 'official' ? 'Official provider feed' : 'Current BGP origin'))].join('; '), [...new Set(row.matches.map(m => m.region).filter(Boolean))].join('; '), [...new Set(row.matches.map(m => m.service))].join('; '), [...new Set(row.matches.map(m => m.cidr))].join('; '), String(row.errors), String(row.bytes)])];
 }
 
 export function csvTable(rows: string[][]): string {

@@ -1,6 +1,7 @@
 import { ShareManager } from './share';
 import { feedDefinitions } from './ip-datasets';
 import type { IpDataset } from './ip-datasets';
+import { mergeIpDatasets } from './ip-range-database';
 import { filterIpRows, reportShareSnapshot, validateReport, ipTableRows, csvTable, safeSpreadsheetCell } from './traffic-analysis';
 import type { TrafficReport, IpRow, CountRow, TrafficMode } from './traffic-analysis';
 import { createXlsxBlob } from './spreadsheet-export';
@@ -9,13 +10,13 @@ const escapeHtml = (value: unknown) => String(value).replaceAll('&', '&amp;').re
 const number = (value: number) => value.toLocaleString();
 const date = (value: string | number) => { const parsed = new Date(value); return Number.isNaN(parsed.getTime()) ? 'Unknown date' : parsed.toLocaleString(undefined, { timeZone: 'UTC', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' UTC'; };
 const sourceName = (id: string) => feedDefinitions.find(feed => feed.id === id)?.name || id;
-const categoryLabel = (category: string) => ({ cloud: 'Cloud range', cdn: 'CDN / proxy', crawler: 'Crawler range', special: 'Special-use IP', unmatched: 'No match' }[category] || category);
+const categoryLabel = (category: string) => ({ cloud: 'Cloud range', hosting: 'Hosting / VPS range', cdn: 'CDN / proxy', crawler: 'Crawler range', service: 'Service network', special: 'Special-use IP', unmatched: 'No match' }[category] || category);
 const MAX_BYTES = 20 * 1024 * 1024;
 const PAGE_SIZE = 50;
 
-export const demoIps = '3.5.140.1\n3.5.140.1\n34.80.0.1\n20.0.0.1\n104.16.0.1\n66.249.66.1\n2606:4700::1111\n10.0.0.24\n2001:db8::1\n8.8.8.8';
+export const demoIps = '3.5.140.1\n3.5.140.1\n34.80.0.1\n20.0.0.1\n143.198.1.2\n104.16.0.1\n66.249.66.1\n2606:4700::1111\n10.0.0.24\n2001:db8::1\n8.8.8.8';
 function demoLog() {
-  const clients = ['3.5.140.1', '34.80.0.1', '104.16.0.1', '66.249.66.1', '10.0.0.24', '2001:db8::1'];
+  const clients = ['3.5.140.1', '34.80.0.1', '143.198.1.2', '104.16.0.1', '66.249.66.1', '10.0.0.24', '2001:db8::1'];
   const paths = ['/api/orders', '/products', '/robots.txt', '/wp-login.php', '/.env', '/'];
   return Array.from({ length: 120 }, (_, i) => {
     const noisy = i >= 45 && i < 75;
@@ -35,7 +36,9 @@ export function initTrafficWorkbench() {
   const input = get<HTMLTextAreaElement>('input'), title = get<HTMLInputElement>('title');
   const search = get<HTMLInputElement>('search'), source = get<HTMLSelectElement>('source'), category = get<HTMLSelectElement>('category'), sort = get<HTMLSelectElement>('sort');
   const detail = get<HTMLDialogElement>('detail');
-  let report: TrafficReport | null = null, dataset: IpDataset | null = null, datasetPromise: Promise<IpDataset> | null = null;
+  let report: TrafficReport | null = null;
+  let dataset: IpDataset = { version: 1, fetchedAt: '', sources: [], ranges: [], failures: [] };
+  const knownIps = new Set<string>();
   let worker: Worker | null = null, revision = 0, timer = 0, toastTimer = 0, page = 0, activeIp: IpRow | null = null, shareOverride: TrafficReport | null = null;
 
   function toast(message: string) { const el = get('toast'); el.textContent = message; el.hidden = false; window.clearTimeout(toastTimer); toastTimer = window.setTimeout(() => { el.hidden = true; }, 3500); }
@@ -45,28 +48,25 @@ export function initTrafficWorkbench() {
   function stop() { revision++; worker?.terminate(); worker = null; busy(false); }
   function currentRows() { return report ? filterIpRows(report, search.value, source.value, category.value, sort.value) : []; }
 
-  async function loadDataset() {
-    if (dataset) return dataset;
-    if (datasetPromise) return datasetPromise;
-    const read = async (url: string) => {
-      const response = await fetch(url, { signal: AbortSignal.timeout(25_000) });
-      if (!response.ok) throw new Error('Could not load provider ranges.');
-      const data = await response.json() as IpDataset;
-      if (data.version !== 1 || !Array.isArray(data.ranges) || !data.ranges.length || !Array.isArray(data.sources)) throw new Error('Invalid provider dataset.');
-      return data;
-    };
-    const live = read('/api/ip-ranges');
-    // The bundled snapshot opens quickly. Fresh public data is used on the next analysis.
-    live.then(data => {
-      if (data.failures.length) { get('data-status').textContent = 'Bundled ranges · some live feeds unavailable'; return; }
-      if (!dataset || Date.parse(data.fetchedAt) > Date.parse(dataset.fetchedAt)) dataset = data;
-      get('data-status').textContent = report && report.dataset.fetchedAt !== data.fetchedAt ? 'Fresh ranges ready · reanalyze to update' : 'Official ranges · refreshed today';
-    }).catch(() => { get('data-status').textContent = 'Official ranges · bundled snapshot'; });
-    datasetPromise = read('/data/ip-ranges.json').catch(() => live).then(data => {
-      if (!dataset) dataset = data;
-      return dataset;
-    }).catch(cause => { datasetPromise = null; throw cause; });
-    return datasetPromise;
+  async function loadDataset(addresses: string[]) {
+    const missing = addresses.filter(address => !knownIps.has(address));
+    if (!missing.length) return dataset;
+    const batches: string[][] = [];
+    for (let at = 0; at < missing.length; at += 1000) batches.push(missing.slice(at, at + 1000));
+    const additions: IpDataset[] = [];
+    for (let at = 0; at < batches.length; at += 3) {
+      additions.push(...await Promise.all(batches.slice(at, at + 3).map(async ips => {
+        const response = await fetch('/api/ip-lookup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ips }), signal: AbortSignal.timeout(25_000) });
+        const data = await response.json().catch(() => null) as (IpDataset & { error?: string }) | null;
+        if (!response.ok || !data) throw new Error(data?.error || 'Could not look up provider ranges. Try again shortly.');
+        if (data.version !== 1 || !Array.isArray(data.ranges) || !Array.isArray(data.sources)) throw new Error('The provider lookup returned an invalid response.');
+        ips.forEach(address => knownIps.add(address));
+        return data;
+      })));
+    }
+    dataset = mergeIpDatasets([dataset, ...additions]);
+    get('data-status').textContent = 'Official feeds + current BGP ranges';
+    return dataset;
   }
 
   async function analyze() {
@@ -77,15 +77,20 @@ export function initTrafficWorkbench() {
     const ticket = revision;
     busy(true);
     const progress = get('progress');
-    progress.querySelector('span')!.textContent = 'Loading published ranges…';
+    progress.querySelector('span')!.textContent = 'Reading IP addresses locally…';
     progress.querySelector('progress')!.value = 0;
     try {
-      const ranges = await loadDataset();
-      if (ticket !== revision) return;
       worker = new Worker(new URL('../workers/traffic.worker.ts', import.meta.url), { type: 'module' });
-      worker.onmessage = event => {
+      worker.onmessage = async event => {
         if (ticket !== revision) return;
-        if (event.data.type === 'progress') {
+        if (event.data.type === 'addresses') {
+          try {
+            progress.querySelector('span')!.textContent = `Checking ${number(event.data.addresses.length)} unique IP${event.data.addresses.length === 1 ? '' : 's'}…`;
+            const ranges = event.data.addresses.length ? await loadDataset(event.data.addresses) : dataset;
+            if (ticket !== revision) return;
+            worker?.postMessage({ text, mode, dataset: ranges });
+          } catch (cause) { if (ticket === revision) { stop(); error(cause instanceof Error ? cause.message : 'Provider ranges unavailable. Try again shortly.'); } }
+        } else if (event.data.type === 'progress') {
           progress.querySelector('progress')!.value = event.data.percent;
           progress.querySelector('span')!.textContent = `Analyzing locally… ${event.data.percent}%`;
         } else if (event.data.type === 'result') {
@@ -96,7 +101,7 @@ export function initTrafficWorkbench() {
         } else { stop(); error(event.data.message || 'Could not analyze this input.'); }
       };
       worker.onerror = () => { if (ticket === revision) { stop(); error('The analysis could not finish. Try a smaller selection or reload the page.'); } };
-      worker.postMessage({ text, mode, dataset: ranges });
+      worker.postMessage({ text, mode, phase: 'extract' });
     } catch (cause) { if (ticket === revision) { stop(); error(cause instanceof Error ? cause.message : 'Provider ranges unavailable. Try again shortly.'); } }
   }
 
@@ -117,7 +122,7 @@ export function initTrafficWorkbench() {
     // Charts use non-overlapping primary categories, so percentages always add up.
     const mix = new Map<string, number>();
     for (const row of report.ips) {
-      const label = row.category === 'special' ? 'Special-use IP' : row.category === 'unmatched' ? 'No range match' : row.category === 'crawler' ? 'Google crawler range' : row.category === 'cdn' ? 'CDN / proxy' : sourceName(row.matches.find(m => m.kind === 'cloud')!.source);
+      const label = row.category === 'special' ? 'Special-use IP' : row.category === 'unmatched' ? 'No range match' : row.category === 'crawler' ? 'Crawler range' : row.category === 'cdn' ? 'CDN / proxy' : sourceName(row.matches.find(m => m.kind === row.category)?.source || row.matches[0]?.source || row.category);
       mix.set(label, (mix.get(label) || 0) + row.count);
     }
     const includedCount = report.ips.reduce((sum, row) => sum + row.count, 0);
@@ -145,7 +150,7 @@ export function initTrafficWorkbench() {
     const previousSource = source.value;
     source.innerHTML = '<option value="">All providers</option>' + report.dataset.sources.map(s => `<option value="${escapeHtml(s.id)}">${escapeHtml(sourceName(s.id))}</option>`).join('');
     source.value = previousSource;
-    get('sources').innerHTML = report.dataset.sources.map(s => `<div><a href="${escapeHtml(feedDefinitions.find(feed => feed.id === s.id)?.url || '#')}" target="_blank" rel="noopener noreferrer">${escapeHtml(sourceName(s.id))} ↗</a><span>${number(s.count)} ranges${s.publishedAt ? ` · published ${escapeHtml(s.publishedAt)}` : ''}</span></div>`).join('') + `<p>Snapshot fetched ${escapeHtml(date(report.dataset.fetchedAt))}. Live public feeds are cached for up to six hours. No per-IP lookup service is called.</p>`;
+    get('sources').innerHTML = report.dataset.sources.map(s => `<div><a href="${escapeHtml(feedDefinitions.find(feed => feed.id === s.id)?.url || '#')}" target="_blank" rel="noopener noreferrer">${escapeHtml(sourceName(s.id))} ↗</a><span>${s.method === 'bgp' ? `BGP origin${s.asns?.length ? ` · ${s.asns.map(asn => `AS${asn}`).join(', ')}` : ''}` : 'Official feed'} · ${number(s.count)} published ranges${s.publishedAt ? ` · ${escapeHtml(s.publishedAt)}` : ''}</span></div>`).join('') + `<p>Dataset updated ${escapeHtml(date(report.dataset.fetchedAt))}. Bug Days receives only the unique IP addresses needed for matching; access-log lines, paths, headers, and user agents stay in this browser.</p>`;
     get('issues').innerHTML = `<p>${number(s.accepted)} ${mode === 'log' ? 'requests parsed' : 'IP occurrences extracted'}; ${number(s.skipped)} lines skipped.${report.dataset.failures.length ? ` Unavailable feeds: ${escapeHtml(report.dataset.failures.join(', '))}.` : ''}</p>` + report.issues.map(issue => `<p>Line ${issue.line}: ${escapeHtml(issue.reason)}</p>`).join('');
     renderRows();
   }
@@ -153,7 +158,8 @@ export function initTrafficWorkbench() {
   function rowHtml(row: IpRow) {
     const providers = [...new Set(row.matches.map(m => sourceName(m.source)))];
     const regions = [...new Set(row.matches.map(m => m.region).filter(Boolean))];
-    return `<tr><td><button class="traffic-ip-button" type="button" data-ip="${escapeHtml(row.address)}">${escapeHtml(row.address)}</button><span class="traffic-cell-note">IPv${row.version}</span></td><td><span class="traffic-badge traffic-badge-${row.category}">${escapeHtml(row.label || categoryLabel(row.category))}</span><span class="traffic-cell-note">${escapeHtml(providers.join(' · '))}</span></td><td><span title="${escapeHtml(regions.join(', '))}">${escapeHtml(regions.slice(0, 2).join(', ') || '—')}${regions.length > 2 ? ` +${regions.length - 2}` : ''}</span></td><td class="traffic-number">${number(row.count)}</td>${mode === 'log' ? `<td class="traffic-number">${number(row.errors)}</td>` : ''}<td><button type="button" data-ip="${escapeHtml(row.address)}" class="traffic-text-button" aria-label="Inspect ${escapeHtml(row.address)}">↗</button></td></tr>`;
+    const evidence = [...new Set(row.matches.map(m => m.method === 'bgp' ? 'BGP origin' : 'Official feed'))];
+    return `<tr><td><button class="traffic-ip-button" type="button" data-ip="${escapeHtml(row.address)}">${escapeHtml(row.address)}</button><span class="traffic-cell-note">IPv${row.version}</span></td><td><span class="traffic-badge traffic-badge-${row.category}">${escapeHtml(row.label || categoryLabel(row.category))}</span><span class="traffic-cell-note">${escapeHtml(providers.join(' · '))}</span></td><td><span title="${escapeHtml(regions.join(', '))}">${escapeHtml(regions.slice(0, 2).join(', ') || evidence.join(' · ') || '—')}${regions.length > 2 ? ` +${regions.length - 2}` : ''}</span></td><td class="traffic-number">${number(row.count)}</td>${mode === 'log' ? `<td class="traffic-number">${number(row.errors)}</td>` : ''}<td><button type="button" data-ip="${escapeHtml(row.address)}" class="traffic-text-button" aria-label="Inspect ${escapeHtml(row.address)}">↗</button></td></tr>`;
   }
 
   function renderRows() {
@@ -174,7 +180,7 @@ export function initTrafficWorkbench() {
     activeIp = report?.ips.find(row => row.address === address) || null;
     if (!activeIp) return;
     get('detail-title').textContent = activeIp.address;
-    get('detail-body').innerHTML = `<p>${number(activeIp.count)} ${mode === 'log' ? 'requests' : 'occurrences'} · ${escapeHtml(activeIp.label || categoryLabel(activeIp.category))}</p>` + (activeIp.matches.length ? activeIp.matches.map(match => `<article><h3>${escapeHtml(sourceName(match.source))}</h3><dl><dt>Matched range</dt><dd><code>${escapeHtml(match.cidr)}</code></dd><dt>Service</dt><dd>${escapeHtml(match.service || 'Not specified')}</dd><dt>Region</dt><dd>${escapeHtml(match.region || 'Not specified')}</dd></dl></article>`).join('') : `<p class="traffic-small">${activeIp.category === 'special' ? 'This address is in a recognized special-use range.' : 'No match in the loaded datasets. This does not establish whether the address is residential, hosted, or a bot.'}</p>`) + (activeIp.category === 'crawler' ? '<p class="traffic-small">Matches a published Google common-crawler range. The user-agent alone does not establish which crawler made a request.</p>' : '');
+    get('detail-body').innerHTML = `<p>${number(activeIp.count)} ${mode === 'log' ? 'requests' : 'occurrences'} · ${escapeHtml(activeIp.label || categoryLabel(activeIp.category))}</p>` + (activeIp.matches.length ? activeIp.matches.map(match => { const source = report?.dataset.sources.find(source => source.id === match.source); return `<article><h3>${escapeHtml(sourceName(match.source))}</h3><dl><dt>Matched range</dt><dd><code>${escapeHtml(match.cidr)}</code></dd><dt>Evidence</dt><dd>${match.method === 'bgp' ? `Current BGP origin${source?.asns?.length ? ` (${source.asns.map(asn => `AS${asn}`).join(', ')})` : ''}` : 'Official published feed'}</dd><dt>Service</dt><dd>${escapeHtml(match.service || 'Not specified')}</dd><dt>Region</dt><dd>${escapeHtml(match.region || (match.method === 'bgp' ? 'Not published by BGP' : 'Not specified'))}</dd></dl></article>`; }).join('') : `<p class="traffic-small">${activeIp.category === 'special' ? 'This address is in a recognized special-use range.' : 'No match in the checked datasets. This does not establish whether the address is residential, hosted, or a bot.'}</p>`) + (activeIp.category === 'crawler' ? '<p class="traffic-small">This address matches a crawler range published by the named operator. Confirm request behavior and identity signals before making a blocking decision.</p>' : '');
     detail.showModal();
   }
 

@@ -1,0 +1,58 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+
+const guide = guideBySlug('identify-cloud-hosting-ips-in-access-logs');
+---
+
+<GuideLayout guide={guide} keywords="hosting IP lookup, datacenter IP checker, cloud provider IP lookup, identify bot IP access logs, DigitalOcean IP lookup, Hetzner IP checker, OVH IP lookup, VPS IP checker, crawler IP ranges, bulk IP lookup">
+  <p>An unfamiliar IP in an access log is not an answer by itself. The useful question is whether the address falls inside a network published by a cloud, hosting, CDN, service, or crawler operator—and what the requests from that address actually did.</p>
+
+  <blockquote><strong>Infrastructure is evidence, not intent.</strong> A DigitalOcean, AWS, Hetzner, or OVHcloud match can explain where traffic originated, but it does not prove the visitor was a bot or that the request was malicious.</blockquote>
+
+  <h2>Start with the right source IP</h2>
+  <p>Before running a cloud or hosting IP lookup, confirm which log field represents the client. If a site sits behind Cloudflare, Fastly, a load balancer, or another reverse proxy, the socket address may identify that intermediary. Use the client-IP field produced by a trusted proxy configuration. Do not blindly trust an <code>X-Forwarded-For</code> value supplied by any Internet client.</p>
+  <p>The <a href="/access-log-analyzer/">Bug Days access-log analyzer</a> accepts Nginx and Apache common or combined logs plus JSON Lines. It counts requests, paths, errors, time buckets, and normalized client IPs. Query strings are removed from shared path summaries.</p>
+
+  <h2>Official ranges and BGP origin ranges answer different questions</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Evidence</th><th>What it supports</th><th>What it does not prove</th></tr></thead>
+    <tbody>
+      <tr><td>Official provider feed</td><td>The operator published the CIDR for a named cloud service, CDN, GitHub function, or crawler.</td><td>The identity or intent of a specific customer using that address.</td></tr>
+      <tr><td>Current BGP origin</td><td>The prefix is currently originated by an autonomous system associated with a hosting provider.</td><td>A product, tenant, physical visitor location, or malicious behavior.</td></tr>
+      <tr><td>Special-use range</td><td>The address is private, loopback, documentation, link-local, multicast, or otherwise non-public.</td><td>A routable Internet source.</td></tr>
+      <tr><td>No match</td><td>The address did not match the checked datasets.</td><td>That the address is residential, human, or safe.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Bug Days labels those evidence types separately. Cloud and crawler feeds come from the named operators. Hosting coverage uses current originated prefixes from the <a href="https://data.stat.ripe.net/docs/data-api/api-endpoints/ris-prefixes" target="_blank" rel="noopener">RIPEstat RIS Prefixes API</a>, which is based on routing data rather than a hand-maintained static list.</p>
+
+  <h2>Run a bulk cloud and hosting IP lookup</h2>
+  <ol>
+    <li>Paste one IP, a column of addresses, or text containing IPv4 and IPv6 values into the <a href="/ip-lookup/">bulk IP lookup</a>.</li>
+    <li>Review the primary classification: cloud, hosting/VPS, CDN/proxy, service network, crawler, special-use, or unmatched.</li>
+    <li>Open an address to see every matching CIDR, provider, service, published region, and evidence method.</li>
+    <li>Filter by provider or classification. Repeated addresses remain counted, so a noisy source is easy to spot.</li>
+    <li>Share the filtered investigation or export it as CSV, Excel, JSON, or a printable PDF.</li>
+  </ol>
+  <p>The lookup covers official data from AWS, Microsoft Azure, Google Cloud, Oracle Cloud, Cloudflare, Fastly, GitHub, Google crawlers, Bingbot, GPTBot, OAI-SearchBot, ChatGPT-User, and OAI-AdsBot. Hosting/VPS coverage includes current BGP origin prefixes for DigitalOcean, Hetzner, OVHcloud, Vultr, Linode/Akamai Connected Cloud, Hostinger, Contabo, Scaleway, UpCloud, IONOS, Leaseweb, and Rackspace.</p>
+
+  <h2>Use behavior to decide what matters</h2>
+  <p>After identifying the network, return to the requests. A provider match becomes useful when combined with volume, timing, status codes, and paths:</p>
+  <ul>
+    <li>Many requests for <code>/.env</code>, login pages, or unrelated CMS paths often indicate broad automated scanning.</li>
+    <li>A burst of 404 and 403 responses from one hosted address may deserve a rate limit, but check legitimate integrations first.</li>
+    <li>A crawler-range match should be compared with the operator’s verification guidance and the observed user agent. An easily forged user-agent string is not sufficient verification.</li>
+    <li>A Cloudflare or Fastly match usually means the logged field captured an intermediary instead of the original client.</li>
+    <li>A published cloud region describes a provider range, not the physical location of a person.</li>
+  </ul>
+
+  <h2>What leaves the browser</h2>
+  <p>The analyzer extracts unique normalized IP addresses locally and sends only those addresses to the Bug Days lookup API. Raw log lines, request paths, query strings, headers, and user-agent strings are not part of the lookup request. Matching results return as a small set of CIDRs; counting, timing, filtering, and report construction remain in the browser.</p>
+  <p>This design also avoids downloading a multi-megabyte global prefix catalog for a lookup that may contain only one address. The report records the dataset timestamp and evidence used, so a shared result can be interpreted later.</p>
+
+  <h2>Share a finding without sharing the whole incident</h2>
+  <p>Use the address-detail share button when a teammate needs one finding. Use the main share button after filtering when they need a provider group or suspicious subset. Shared reports contain the visible IP evidence and summary totals, not the original pasted log. If IP addresses themselves are restricted in your environment, export the report to your approved internal channel instead.</p>
+
+  <a slot="related" href="/access-log-analyzer/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Analyze Nginx and Apache logs</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Connect network evidence to paths, errors, bursts, and request volume.</span></a>
+  <a slot="related" href="/ip-lookup/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Run a bulk hosting IP lookup</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Check cloud, VPS, CDN, service, and crawler ranges.</span></a>
+</GuideLayout>

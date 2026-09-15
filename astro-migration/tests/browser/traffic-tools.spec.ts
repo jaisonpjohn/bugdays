@@ -7,8 +7,7 @@ import { analyzeTraffic } from '../../src/lib/traffic-analysis';
 
 test.beforeEach(async ({ page }) => {
   await page.route('https://**/*', route => route.abort());
-  await page.route('**/data/ip-ranges.json', route => route.fulfill({ json: fixtureDataset }));
-  await page.route('**/api/ip-ranges', route => route.fulfill({ json: fixtureDataset }));
+  await page.route('**/api/ip-lookup', route => route.fulfill({ json: fixtureDataset }));
   await page.addInitScript(() => {
     localStorage.setItem('cookie-notice-dismissed', 'true');
     localStorage.removeItem('bd-share-method');
@@ -53,9 +52,10 @@ test('auto-analysis, filters, IPv6 details and keyboard dialog dismissal', async
   await expect(page.locator('#traffic-share')).toBeDisabled();
 });
 
-test('IP report shares its title and filtered snapshot without making per-IP requests', async ({ page }) => {
+test('IP report sends only IPs for matching and shares its filtered snapshot', async ({ page }) => {
   const outbound: string[] = [];
-  page.on('request', request => { if (request.url().includes('/api/') || request.method() === 'POST') outbound.push(request.url()); });
+  const lookupBodies: unknown[] = [];
+  page.on('request', request => { if (request.url().includes('/api/') || request.method() === 'POST') outbound.push(request.url()); if (request.url().endsWith('/api/ip-lookup')) lookupBodies.push(request.postDataJSON()); });
   await page.goto('/ip-lookup/');
   await page.locator('#traffic-demo').click();
   await expect(page.locator('#traffic-report')).toBeVisible();
@@ -67,7 +67,9 @@ test('IP report shares its title and filtered snapshot without making per-IP req
   expect(state.d.report.ips).toHaveLength(1);
   expect(state.d.report.dataset.fetchedAt).toBe(fixtureDataset.fetchedAt);
   expect(state.d).not.toHaveProperty('input');
-  expect(outbound.every(url => url.endsWith('/api/ip-ranges'))).toBeTruthy();
+  expect(outbound.every(url => url.endsWith('/api/ip-lookup'))).toBeTruthy();
+  expect(lookupBodies.length).toBeGreaterThan(0);
+  expect(lookupBodies.every((body: any) => Object.keys(body).join(',') === 'ips' && body.ips.every((ip: string) => !ip.includes(' ')))).toBeTruthy();
   await page.goto(url);
   await expect(page.locator('#traffic-title')).toHaveValue('Unexpected cloud traffic');
   await expect(page.locator('#traffic-source')).toHaveValue('aws');
@@ -77,6 +79,8 @@ test('IP report shares its title and filtered snapshot without making per-IP req
 });
 
 test('access-log report has correct counts, excludes secrets from sharing, and reopens', async ({ page }) => {
+  const lookupPayloads: string[] = [];
+  page.on('request', request => { if (request.url().endsWith('/api/ip-lookup')) lookupPayloads.push(request.postData() || ''); });
   await page.goto('/access-log-analyzer/');
   await page.locator('#traffic-input').fill(fixtureLog);
   await expect(page.locator('#traffic-report')).toBeVisible();
@@ -88,6 +92,8 @@ test('access-log report has correct counts, excludes secrets from sharing, and r
   const url = await shareUrl(page);
   const json = LZString.decompressFromEncodedURIComponent(url.split('#lz:')[1])!;
   for (const secret of ['DO_NOT_SHARE', 'PRIVATE_USER_AGENT', 'private.example', 'NEVER_SHARE']) expect(json).not.toContain(secret);
+  expect(lookupPayloads.length).toBeGreaterThan(0);
+  for (const payload of lookupPayloads) for (const secret of ['DO_NOT_SHARE', 'PRIVATE_USER_AGENT', 'private.example', '/api/orders']) expect(payload).not.toContain(secret);
   await page.goto(url);
   await expect(page.locator('#traffic-report')).toBeVisible();
   await expect(page.locator('#traffic-ip-rows tr')).toHaveCount(5);
@@ -177,17 +183,16 @@ test('pagination, full filtered exports and explicit shared coverage for large l
   await expect(page.locator('#traffic-ip-rows tr')).toHaveCount(50);
 });
 
-test('gzip input, malformed input and failed live feeds have clear outcomes', async ({ page }) => {
-  await page.route('**/api/ip-ranges', route => route.fulfill({ status: 503, body: 'unavailable' }));
+test('gzip input, malformed input and failed lookup service have clear outcomes', async ({ page }) => {
   await page.goto('/access-log-analyzer/');
   await page.locator('#traffic-file').setInputFiles({ name: 'access.log.gz', mimeType: 'application/gzip', buffer: gzipSync(fixtureLog) });
   await expect(page.locator('#traffic-report')).toBeVisible();
-  await expect(page.locator('#traffic-data-status')).toContainText('bundled snapshot');
   await page.locator('#traffic-input').fill('malformed log');
   await expect(page.locator('#traffic-error')).toContainText('No supported log entries');
   await expect(page.locator('#traffic-report')).not.toBeVisible();
-  await page.locator('#traffic-demo').click();
-  await expect(page.locator('#traffic-report')).toBeVisible();
+  await page.route('**/api/ip-lookup', route => route.fulfill({ status: 503, json: { error: 'IP intelligence is temporarily unavailable.' } }));
+  await page.locator('#traffic-input').fill('143.198.99.99 - - [14/Sep/2026:10:00:00 +0000] "GET / HTTP/1.1" 200 12');
+  await expect(page.locator('#traffic-error')).toContainText('temporarily unavailable');
 });
 
 test('shared strings render as text and malformed reports show an error', async ({ page }) => {
@@ -210,10 +215,10 @@ test('light/dark layouts fit the viewport and both pages have discoverable metad
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `https://bugdays.com${path}`);
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /IP|logs/);
     if (path === '/ip-lookup/') {
-      await expect(page.locator('.traffic-hero h1')).toHaveText('Bulk Cloud Provider IP Lookup');
-      await expect(page.locator('.ip-lookup-faq details')).toHaveCount(4);
+      await expect(page.locator('.traffic-hero h1')).toHaveText('Bulk Cloud & Hosting IP Lookup');
+      await expect(page.locator('.ip-lookup-faq details')).toHaveCount(5);
       const structuredData = await page.locator('script[type="application/ld+json"]').allTextContents();
-      expect(structuredData.some(value => value.includes('FAQPage') && value.includes('AWS, Azure, or Google Cloud'))).toBeTruthy();
+      expect(structuredData.some(value => value.includes('FAQPage') && value.includes('cloud or hosting provider'))).toBeTruthy();
     }
     await page.locator('#traffic-demo').click();
     await expect(page.locator('#traffic-report')).toBeVisible();

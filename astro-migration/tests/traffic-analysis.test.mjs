@@ -1,10 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
 import { parseIp, parseCidr, extractIps, specialIpLabel } from '../src/lib/ip-address.ts';
 import { RangeIndex, analyzeTraffic, parseLogLine, parseLogTime, filterIpRows, reportShareSnapshot, validateReport, ipTableRows, csvTable, safeSpreadsheetCell } from '../src/lib/traffic-analysis.ts';
-import { fetchIpDataset } from '../src/lib/ip-datasets.ts';
+import { feedDefinitions, fetchIpDataset } from '../src/lib/ip-datasets.ts';
+import { addressLookupKeys, datasetFromRows, mergeIpDatasets, rangeLookupKey } from '../src/lib/ip-range-database.ts';
 import { fixtureDataset, fixtureLog } from './traffic-fixtures.mjs';
+import { onRequestPost as lookupPost } from '../functions/api/ip-lookup.ts';
 
 test('IPv4 is strict; equivalent IPv6 and mapped addresses normalize consistently', () => {
   assert.equal(parseIp('255.255.255.255').value, 4294967295n);
@@ -45,6 +46,32 @@ test('matching retains distinct overlapping services and chooses the most specif
   assert.equal(index.lookup(parseIp('4.0.0.0')).length, 0);
   assert.equal(index.lookup(parseIp('2001:4860:ffff:ffff:ffff:ffff:ffff:ffff'))[0].source, 'gcp');
   assert.equal(index.lookup(parseIp('2001:4861::')).length, 0);
+});
+
+test('database lookup keys cover exact IPv4 and IPv6 prefixes and sparse datasets merge', () => {
+  assert.ok(addressLookupKeys('143.198.1.2').includes(rangeLookupKey('143.198.0.0/16')));
+  assert.ok(addressLookupKeys('2606:4700::1111').includes(rangeLookupKey('2606:4700::/32')));
+  assert.equal(addressLookupKeys('invalid').length, 0);
+  const sparse = datasetFromRows('2026-09-15T00:00:00Z', [{ id: 'digitalocean', name: 'DigitalOcean', kind: 'hosting', method: 'bgp', url: 'https://stat.ripe.net/AS14061', published_at: '', range_count: 1, asns_json: '[14061]' }], [{ cidr: '143.198.0.0/16', source_id: 'digitalocean', service: 'BGP origin AS14061', region: '' }]);
+  assert.deepEqual(sparse.sources[0].asns, [14061]);
+  assert.equal(mergeIpDatasets([sparse, sparse]).ranges.length, 1);
+});
+
+test('lookup API validates input and returns only indexed matches from D1', async () => {
+  const statements = [];
+  const db = {
+    prepare(query) { const statement = { query, values: [], bind(...values) { this.values = values; return this; } }; statements.push(statement); return statement; },
+    async batch(batch) { return batch.map(statement => statement.query.startsWith('SELECT id') ? { results: [{ id: 'digitalocean', name: 'DigitalOcean', kind: 'hosting', method: 'bgp', url: 'https://stat.ripe.net/AS14061', published_at: '', range_count: 1, asns_json: '[14061]' }] } : statement.query.startsWith('SELECT value') ? { results: [{ value: '2026-09-15T00:00:00Z' }] } : { results: [{ cidr: '143.198.0.0/20', source_id: 'digitalocean', service: 'BGP origin AS14061', region: '' }] }); },
+  };
+  const response = await lookupPost({ request: new Request('https://bugdays.com/api/ip-lookup', { method: 'POST', body: JSON.stringify({ ips: ['143.198.1.2'] }) }), env: { IP_DB: db } });
+  assert.equal(response.status, 200);
+  const body = await response.json();
+  assert.equal(body.ranges[0][1], 'digitalocean');
+  assert.deepEqual(body.sources[0].asns, [14061]);
+  const keys = statements.filter(statement => statement.values.length).flatMap(statement => JSON.parse(statement.values[0]));
+  assert.ok(keys.includes(rangeLookupKey('143.198.0.0/20')));
+  const invalid = await lookupPost({ request: new Request('https://bugdays.com/api/ip-lookup', { method: 'POST', body: JSON.stringify({ ips: ['not-an-ip'] }) }), env: { IP_DB: db } });
+  assert.equal(invalid.status, 400);
 });
 
 test('bulk analysis counts repeats, normalizes mapped IPv6, and reports skipped lines', async () => {
@@ -143,16 +170,12 @@ test('large inputs are bounded and 200,000 repeated addresses remain responsive'
   await assert.rejects(() => analyzeTraffic('x'.repeat(21 * 1024 * 1024), 'ip', fixtureDataset), /20 MB/);
 });
 
-test('official bundled dataset contains valid ranges from every advertised source', async () => {
-  const real = JSON.parse(await readFile(new URL('../public/data/ip-ranges.json', import.meta.url), 'utf8'));
-  assert.equal(real.sources.length, 5);
-  assert.deepEqual(real.failures, []);
-  assert.ok(real.ranges.length > 1000);
-  for (const range of real.ranges) assert.ok(parseCidr(range[0]), range[0]);
-  for (const source of real.sources) assert.equal(real.ranges.filter(range => range[1] === source.id).length, source.count);
-  const index = new RangeIndex(real);
-  assert.ok(index.lookup(parseIp('3.5.140.1')).some(match => match.source === 'aws'));
-  assert.ok(index.lookup(parseIp('104.16.0.1')).some(match => match.source === 'cloudflare'));
+test('all advertised source IDs and evidence methods are valid and unique', () => {
+  assert.equal(feedDefinitions.length, 28);
+  assert.equal(new Set(feedDefinitions.map(source => source.id)).size, 28);
+  assert.equal(feedDefinitions.filter(source => source.method === 'official').length, 16);
+  assert.equal(feedDefinitions.filter(source => source.method === 'bgp').length, 12);
+  assert.ok(feedDefinitions.some(source => source.id === 'digitalocean' && source.method === 'bgp'));
 });
 
 test('feed refresh discovers Azure URL and reports individual source failures', async () => {
@@ -168,6 +191,7 @@ test('feed refresh discovers Azure URL and reports individual source failures', 
   };
   const dataset = await fetchIpDataset(fakeFetch);
   assert.equal(dataset.sources.length, 4);
-  assert.deepEqual(dataset.failures, ['Google common crawlers']);
+  assert.ok(dataset.failures.includes('Google common crawlers'));
+  assert.ok(dataset.failures.includes('DigitalOcean'));
   assert.ok(urls.some(url => url.includes('ServiceTags_Public_20260914.json')));
 });

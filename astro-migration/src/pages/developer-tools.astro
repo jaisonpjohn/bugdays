@@ -12,7 +12,7 @@ const tools = [
   { name: 'Text Extractor', href: '/text-extractor', description: 'Extract text patterns from data' },
   { name: 'DBeaver Password Decrypt', href: '/dbeaver-password-decrypter', description: 'Decrypt DBeaver saved passwords' },
   { name: 'DateTime Converter', href: '/datetime-converter', description: 'Convert between Unix epoch, ISO 8601, and human readable' },
-  { name: 'IP & Cloud Lookup', href: '/ip-lookup', description: 'Look up cloud providers and crawler ranges for IP addresses in bulk' },
+  { name: 'Cloud & Hosting IP Lookup', href: '/ip-lookup', description: 'Check cloud, VPS, CDN, service, and crawler ranges for IP addresses in bulk' },
   { name: 'Access Log Analyzer', href: '/access-log-analyzer', description: 'Inspect Nginx, Apache, and JSON traffic logs; share a report' },
   { name: 'CIDR Calculator', href: '/cidr-calculator', description: 'Calculate IP ranges, subnet masks, and host counts' },
   { name: 'XML Formatter', href: '/xml-formatter', description: 'Pretty print and validate XML documents' },
@@ -47,7 +47,7 @@ const tools = [
 
 <Layout
   title="All Developer Tools"
-  description="Collection of 30+ free online developer tools. JSON formatter, Base64 encoder, URL encoder, UUID generator, hash generator, regex tester, and more. All tools run in your browser."
+  description="Collection of 30+ free developer tools for formatting, encoding, diagnostics, API testing, cloud IP lookup, access-log analysis, and more."
   keywords="developer tools, online tools, free dev tools, JSON tools, encoding tools, text tools, web developer tools, programming utilities, code tools"
   breadcrumb={[{ name: "All Developer Tools" }]}
 >
@@ -70,8 +70,9 @@ const tools = [
     <div class="mt-8">
       <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online Developer Tools</h2>
       <p class="text-gray-600 dark:text-slate-300">
-        A collection of free online tools for developers. Format JSON, encode/decode URLs and Base64,
-        deduplicate text lines, and more. All tools run entirely in your browser - no data is sent to any server.
+        A collection of free online tools for developers. Format JSON, encode and decode data, analyze diagnostics,
+        investigate network traffic, and more. Most processing stays in your browser; tools that make network requests
+        explain exactly what they send.
       </p>
     </div>
   </div>

@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 
 const tools = [
-  { name: 'IP & Cloud Lookup', href: '/ip-lookup', description: 'Match IPv4 and IPv6 addresses to published cloud and crawler ranges; share and export reports' },
+  { name: 'Cloud & Hosting IP Lookup', href: '/ip-lookup', description: 'Check cloud, VPS, datacenter, CDN, service, and crawler ranges in bulk; share and export reports' },
   { name: 'Access Log Analyzer', href: '/access-log-analyzer', description: 'Analyze Nginx, Apache, and JSON logs for request patterns, errors, and client networks' },
   { name: 'CIDR Calculator', href: '/cidr-calculator', description: 'Calculate IP ranges, subnet masks, and available host counts' },
   { name: 'API Client', href: '/api-client', description: 'Test REST APIs with custom headers, body, and authentication' },
@@ -17,8 +17,8 @@ const tools = [
 
 <Layout
   title="API Clients, WSDL Tester & Network Tools"
-  description="Test REST, SOAP/WSDL, gRPC, WebSocket, and SSE endpoints; run templated API requests from CSV; and calculate CIDR ranges with browser-based network tools."
-  keywords="CIDR calculator, subnet calculator, API client, REST client, SOAP client, WSDL tester, gRPC client, WebSocket client, SSE client, server-sent events, cron parser, network tools"
+  description="Look up cloud and hosting IPs, analyze access logs, test REST, SOAP, gRPC, WebSocket and SSE endpoints, and calculate CIDR ranges."
+  keywords="hosting IP lookup, cloud IP lookup, datacenter IP checker, access log analyzer, CIDR calculator, API client, REST client, SOAP client, WSDL tester, gRPC client, WebSocket client, network tools"
   breadcrumb={[{ name: "Network Tools" }]}
 >
   <div class="max-w-6xl mx-auto">
@@ -40,10 +40,9 @@ const tools = [
     <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
       <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About Network Tools</h2>
       <p class="text-gray-600 dark:text-slate-300 text-sm">
-        Network configuration and API testing are essential developer tasks. Our CIDR calculator helps you plan IP
-        subnets and understand network ranges. Test REST APIs, SOAP web services (with WSDL parsing), and gRPC
-        endpoints (with protobuf support) directly in your browser. The cron parser decodes scheduling expressions
-        into plain English.
+        Investigate cloud, hosting, CDN, and crawler traffic with bulk IP lookup and access-log analysis. Plan subnets
+        with the CIDR calculator, or test REST APIs, SOAP web services, gRPC endpoints, WebSockets, and event streams.
+        Share focused reports when another developer needs the same evidence.
       </p>
     </div>
   </div>

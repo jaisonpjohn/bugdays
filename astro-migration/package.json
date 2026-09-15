@@ -9,6 +9,7 @@
     "test:api-guides": "node scripts/check-api-guides.mjs",
     "test:gzip-seo": "node scripts/check-gzip-seo.mjs",
     "refresh:ip-ranges": "node scripts/refresh-ip-ranges.mjs",
+    "generate:ip-database": "node scripts/generate-ip-range-sql.mjs",
     "test:traffic": "node --test tests/traffic-analysis.test.mjs",
     "test:traffic:browser": "playwright test",
     "preview": "astro preview",

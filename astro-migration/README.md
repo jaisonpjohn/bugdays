@@ -1,46 +1,39 @@
-# Astro Starter Kit: Basics
+# Bug Days
+
+Open-source browser tools for debugging, API testing, data conversion, JVM diagnostics, certificates, and network investigations. The production site is [bugdays.com](https://bugdays.com/).
+
+## Local development
 
 ```sh
-npm create astro@latest -- --template basics
+npm install
+npm run dev
+npm run build
+npm run test:traffic
+npx playwright test
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+The Astro site is static. Cloudflare Pages Functions under `functions/` provide the small number of server-side endpoints, and `wrangler.toml` declares their bindings.
 
-## 🚀 Project Structure
+## IP intelligence data
 
-Inside of your Astro project, you'll see the following folders and files:
+The cloud and hosting IP lookup uses a D1 prefix index. Browsers send batches of normalized IP addresses to `/api/ip-lookup`; the API returns only matching ranges. The multi-megabyte global catalog is not included in the deployed static site.
 
-```text
-/
-├── public/
-│   └── favicon.svg
-├── src
-│   ├── assets
-│   │   └── astro.svg
-│   ├── components
-│   │   └── Welcome.astro
-│   ├── layouts
-│   │   └── Layout.astro
-│   └── pages
-│       └── index.astro
-└── package.json
+To refresh the database snapshot:
+
+```sh
+npm run refresh:ip-ranges
+npm run generate:ip-database
+npx wrangler d1 migrations apply bugdays-ip-intelligence --remote
+npx wrangler d1 execute bugdays-ip-intelligence --remote --file=/tmp/bugdays-ip-intelligence.sql
 ```
 
-To learn more about the folder structure of an Astro project, refer to [our guide on project structure](https://docs.astro.build/en/basics/project-structure/).
+The generated `data/ip-ranges.json` is intentionally ignored. Data comes from official operator feeds and RIPEstat BGP-origin prefixes defined in `src/lib/ip-datasets.ts`.
 
-## 🧞 Commands
+## Deployment
 
-All commands are run from the root of the project, from a terminal:
+```sh
+npm run build
+npx wrangler pages deploy dist --project-name=bugdays --branch=main
+```
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Never commit API tokens, account credentials, local Wrangler state, production payloads, or user-submitted data. See `AGENTS.md` for implementation and release expectations.

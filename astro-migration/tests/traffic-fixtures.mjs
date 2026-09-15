@@ -3,11 +3,12 @@ export const fixtureDataset = {
   fetchedAt: '2026-09-14T10:00:00.000Z',
   failures: [],
   sources: [
-    { id: 'aws', name: 'AWS', kind: 'cloud', url: 'https://ip-ranges.amazonaws.com/ip-ranges.json', publishedAt: '2026-09-14', count: 3 },
-    { id: 'gcp', name: 'Google Cloud', kind: 'cloud', url: 'https://www.gstatic.com/ipranges/cloud.json', publishedAt: '2026-09-14', count: 2 },
-    { id: 'azure', name: 'Azure', kind: 'cloud', url: 'https://www.microsoft.com/en-us/download/details.aspx?id=56519', publishedAt: '20260914', count: 1 },
-    { id: 'cloudflare', name: 'Cloudflare', kind: 'cdn', url: 'https://api.cloudflare.com/client/v4/ips', publishedAt: '', count: 2 },
-    { id: 'googlebot', name: 'Google common crawlers', kind: 'crawler', url: 'https://developers.google.com/crawling/ipranges/common-crawlers.json', publishedAt: '', count: 1 },
+    { id: 'aws', name: 'AWS', kind: 'cloud', method: 'official', url: 'https://ip-ranges.amazonaws.com/ip-ranges.json', publishedAt: '2026-09-14', count: 3 },
+    { id: 'gcp', name: 'Google Cloud', kind: 'cloud', method: 'official', url: 'https://www.gstatic.com/ipranges/cloud.json', publishedAt: '2026-09-14', count: 2 },
+    { id: 'azure', name: 'Azure', kind: 'cloud', method: 'official', url: 'https://www.microsoft.com/en-us/download/details.aspx?id=56519', publishedAt: '20260914', count: 1 },
+    { id: 'cloudflare', name: 'Cloudflare', kind: 'cdn', method: 'official', url: 'https://api.cloudflare.com/client/v4/ips', publishedAt: '', count: 2 },
+    { id: 'googlebot', name: 'Google common crawlers', kind: 'crawler', method: 'official', url: 'https://developers.google.com/crawling/ipranges/common-crawlers.json', publishedAt: '', count: 1 },
+    { id: 'digitalocean', name: 'DigitalOcean', kind: 'hosting', method: 'bgp', url: 'https://stat.ripe.net/AS14061', publishedAt: '2026-09-14T08:00:00', count: 1, asns: [14061] },
   ],
   // Synthetic ranges for deterministic tests; never used as the published dataset.
   ranges: [
@@ -20,6 +21,7 @@ export const fixtureDataset = {
     ['104.16.0.0/13', 'cloudflare', 'Proxy / CDN', 'global'],
     ['2606:4700::/32', 'cloudflare', 'Proxy / CDN', 'global'],
     ['66.249.64.0/19', 'googlebot', 'Common crawler range', 'global'],
+    ['143.198.0.0/16', 'digitalocean', 'BGP origin AS14061', ''],
   ],
 };
 
