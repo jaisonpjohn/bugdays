@@ -9,3 +9,8 @@ database_name = "bugdays-ip-intelligence"
 database_id = "9812ccdf-16b6-4c9d-8a3b-5b1dbdafc014"
 
 [env.production]
+
+[[env.production.d1_databases]]
+binding = "IP_DB"
+database_name = "bugdays-ip-intelligence"
+database_id = "9812ccdf-16b6-4c9d-8a3b-5b1dbdafc014"
