@@ -1,0 +1,117 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+
+const guide = guideBySlug('test-grpc-api-proto-metadata-streaming');
+const protoExample = `syntax = "proto3";
+package catalog.v1;
+
+service Catalog {
+  rpc GetProduct(GetProductRequest) returns (Product);
+  rpc WatchProducts(WatchProductsRequest) returns (stream Product);
+}
+
+message GetProductRequest {
+  string id = 1;
+}
+
+message WatchProductsRequest {
+  repeated string ids = 1;
+}
+
+message Product {
+  string id = 1;
+  string name = 2;
+  int64 inventory = 3;
+}`;
+const grpcurlExample = `grpcurl -plaintext \\
+  -import-path . \\
+  -proto catalog.proto \\
+  -H 'authorization: Bearer REDACTED' \\
+  -d '{"id":"SKU-42"}' \\
+  localhost:50051 \\
+  catalog.v1.Catalog/GetProduct`;
+---
+
+<GuideLayout guide={guide} keywords="test gRPC API, online gRPC client, gRPC tester, proto file, protobuf request JSON, gRPC metadata, gRPC trailers, server streaming, grpcurl example, gRPC status codes">
+  <p>Testing a gRPC method is not the same as posting JSON to a URL. The method name comes from a service contract, the body is encoded with Protocol Buffers, authentication usually travels as metadata, and the final outcome is carried by a gRPC status—often in response trailers.</p>
+
+  <blockquote><strong>A dependable gRPC test preserves five pieces of evidence:</strong> the exact proto contract, fully qualified method, request message, metadata and deadline, plus every response message and final status.</blockquote>
+
+  <h2>What you need before calling a gRPC service</h2>
+  <ul>
+    <li><strong>Target:</strong> the hostname and port, such as <code>api.example.com:443</code> or <code>localhost:50051</code>.</li>
+    <li><strong>Transport:</strong> native gRPC or a gRPC-Web endpoint.</li>
+    <li><strong>Contract:</strong> the service’s <code>.proto</code> files, including imported message definitions—or server reflection when the service exposes it.</li>
+    <li><strong>Method:</strong> the package, service, and RPC name.</li>
+    <li><strong>Call settings:</strong> TLS, metadata, authentication, and a realistic deadline.</li>
+  </ul>
+  <p>Reflection helps tools discover a live contract, but it is not automatically enabled and some public services intentionally disable it. In that case, use the same version of the proto definitions as the deployed server. The <a href="https://grpc.io/docs/guides/reflection/" target="_blank" rel="noopener">official gRPC reflection guide</a> explains why debugging tools depend on it.</p>
+
+  <h2>Read the proto before writing the request</h2>
+  <p>Consider this small contract:</p>
+  <pre><code>{protoExample}</code></pre>
+  <p>The fully qualified unary method is <code>catalog.v1.Catalog/GetProduct</code>. Its input is a <code>GetProductRequest</code>, not an arbitrary JSON object. A JSON editor in a gRPC client is a human-friendly view; the client still validates the fields and serializes a binary protobuf message before sending it.</p>
+
+  <h2>Test one unary RPC end to end</h2>
+  <ol>
+    <li>Import every required proto file and confirm that imports resolve.</li>
+    <li>Select <code>catalog.v1.Catalog/GetProduct</code>.</li>
+    <li>Enter a request such as <code>{`{"id":"SKU-42"}`}</code>.</li>
+    <li>Add the required metadata and authentication.</li>
+    <li>Set a deadline appropriate for the environment.</li>
+    <li>Send the call and retain the decoded response, headers, trailers, status, and elapsed time.</li>
+  </ol>
+  <p>With <code>grpcurl</code> and a local plaintext service, the equivalent call is:</p>
+  <pre><code>{grpcurlExample}</code></pre>
+  <p>Do not use <code>-plaintext</code> against a TLS endpoint. For private certificate authorities, configure the appropriate CA certificate rather than disabling verification. Keep real tokens out of shell history and shared examples.</p>
+
+  <h2>Metadata is part of the request</h2>
+  <p>gRPC metadata is a set of key-value pairs transported with the RPC. It commonly carries an <code>authorization</code> value, tenant identifiers, correlation IDs, feature flags, and trace context. Initial response metadata arrives before messages; trailing metadata arrives when the server closes the RPC.</p>
+  <p>Metadata keys are case-insensitive, the <code>grpc-</code> prefix is reserved, and binary metadata keys end in <code>-bin</code>. Servers may enforce conservative header-size limits, so a large copied token or certificate chain can fail before application code handles the request. See the <a href="https://grpc.io/docs/guides/metadata/" target="_blank" rel="noopener">gRPC metadata guide</a>.</p>
+
+  <h2>Set a deadline deliberately</h2>
+  <p>A deadline says how long the client is willing to wait. Without one, a client may wait indefinitely. A deadline that is too short can produce <code>DEADLINE_EXCEEDED</code> even when the server eventually finishes; that matters especially for state-changing calls because cancellation does not roll back completed work.</p>
+  <p>Start with an environment-specific value, record the elapsed time, and investigate slow dependencies before simply increasing it. The <a href="https://grpc.io/docs/guides/deadlines/" target="_blank" rel="noopener">official deadline guide</a> recommends setting realistic deadlines explicitly.</p>
+
+  <h2>Test server streaming as a sequence, not one response</h2>
+  <p><code>WatchProducts</code> accepts one request and returns zero or more <code>Product</code> messages. A good test checks:</p>
+  <ul>
+    <li>the order and content of every decoded message;</li>
+    <li>whether the stream ends normally or is cancelled;</li>
+    <li>the final gRPC status and message;</li>
+    <li>initial and trailing metadata;</li>
+    <li>the interval between messages, not only total duration.</li>
+  </ul>
+  <p>A stream that delivered useful messages can still finish with a non-OK status. Do not treat “I saw data” as proof that the RPC completed successfully. gRPC’s <a href="https://grpc.io/docs/what-is-grpc/core-concepts/" target="_blank" rel="noopener">core lifecycle documentation</a> distinguishes unary, server-streaming, client-streaming, and bidirectional calls.</p>
+
+  <h2>Interpret gRPC status before blaming the payload</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Status</th><th>First thing to verify</th></tr></thead>
+    <tbody>
+      <tr><td><code>UNAUTHENTICATED</code></td><td>The credential is missing, expired, malformed, or sent under the wrong metadata key.</td></tr>
+      <tr><td><code>PERMISSION_DENIED</code></td><td>The caller was identified but lacks permission for this operation or resource.</td></tr>
+      <tr><td><code>INVALID_ARGUMENT</code></td><td>The protobuf request is structurally valid, but a field value violates application rules.</td></tr>
+      <tr><td><code>UNIMPLEMENTED</code></td><td>The target does not expose that method, or a gateway is routing the method path incorrectly.</td></tr>
+      <tr><td><code>UNAVAILABLE</code></td><td>The service, upstream, DNS, TLS connection, or proxy is temporarily unavailable. Retry only when the operation is safe to retry.</td></tr>
+      <tr><td><code>DEADLINE_EXCEEDED</code></td><td>The deadline, network latency, server work, and downstream calls.</td></tr>
+    </tbody>
+  </table></div>
+  <p>The complete meanings are defined in the <a href="https://grpc.io/docs/guides/status-codes/" target="_blank" rel="noopener">official gRPC status-code reference</a>. Keep the numeric code, status name, status message, and trailers together when reporting a failure.</p>
+
+  <h2>A repeatable gRPC testing checklist</h2>
+  <ul>
+    <li>Confirm the target and whether it speaks native gRPC or gRPC-Web.</li>
+    <li>Use deployed proto definitions or working reflection.</li>
+    <li>Select the fully qualified package, service, and method.</li>
+    <li>Validate request fields before sending.</li>
+    <li>Record non-secret metadata and a deliberate deadline.</li>
+    <li>Inspect all messages, headers, trailers, and final status.</li>
+    <li>Reproduce important failures with a saved request or redacted <code>grpcurl</code> command.</li>
+  </ul>
+
+  <div class="guide-note"><p><strong>Bug Days boundary:</strong> the browser client supports unary and server-streaming calls. Proto parsing, protobuf encoding, saved requests, and history stay in the browser. Authentication secrets are excluded from saved requests, history, shares, and exports.</p></div>
+
+  <a slot="related" href="/guides/grpc-web-vs-native-grpc-browser-testing" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">gRPC-Web or native gRPC?</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Choose the transport your browser test actually needs.</span></a>
+  <a slot="related" href="/guides/test-soap-api-from-wsdl-soap-11-vs-12" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Testing a SOAP contract</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Move from WSDL binding to a correct SOAP request.</span></a>
+</GuideLayout>

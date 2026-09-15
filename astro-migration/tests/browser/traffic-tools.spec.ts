@@ -209,6 +209,12 @@ test('light/dark layouts fit the viewport and both pages have discoverable metad
     await page.goto(path);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `https://bugdays.com${path}`);
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /IP|logs/);
+    if (path === '/ip-lookup/') {
+      await expect(page.locator('.traffic-hero h1')).toHaveText('Bulk Cloud Provider IP Lookup');
+      await expect(page.locator('.ip-lookup-faq details')).toHaveCount(4);
+      const structuredData = await page.locator('script[type="application/ld+json"]').allTextContents();
+      expect(structuredData.some(value => value.includes('FAQPage') && value.includes('AWS, Azure, or Google Cloud'))).toBeTruthy();
+    }
     await page.locator('#traffic-demo').click();
     await expect(page.locator('#traffic-report')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBeTruthy();

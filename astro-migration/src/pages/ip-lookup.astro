@@ -1,13 +1,38 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import TrafficWorkbench from '../components/TrafficWorkbench.astro';
-const description = 'Look up IP addresses in bulk to identify AWS, Google Cloud, Azure, Cloudflare, and Google crawler ranges. Analyze locally, share reports, and export CSV or Excel.';
+const description = 'Free bulk cloud IP lookup for IPv4 and IPv6. Check current AWS, Azure, Google Cloud, Cloudflare, and Google crawler ranges; view CIDRs and regions.';
+const faqs = [
+  { question: 'How do I check whether an IP address belongs to AWS, Azure, or Google Cloud?', answer: 'Paste one IPv4 or IPv6 address—or a complete list—into the lookup. Bug Days compares every address with the providers’ published IP ranges and shows the matching provider, CIDR, service, and advertised region.' },
+  { question: 'Which cloud and crawler IP ranges are checked?', answer: 'The checker currently covers published ranges from AWS, Microsoft Azure, Google Cloud, Cloudflare, and Google common crawlers. One address can have more than one applicable service match.' },
+  { question: 'Are the cloud provider IP ranges current?', answer: 'Bug Days refreshes the official provider feeds through a cache that lasts up to six hours. A bundled snapshot keeps the lookup available when a provider feed is temporarily unreachable, and the report shows the date of the dataset it used.' },
+  { question: 'Does the bulk IP lookup upload my list?', answer: 'No. Matching, counting, and filtering happen in your browser. A report is shared only when you choose a sharing option; shared reports exclude raw input and clearly state which filtered addresses are included.' },
+];
 ---
-<Layout title="Bulk IP Lookup & Cloud Provider Checker" description={description} keywords="IP lookup, bulk IP lookup, AWS IP checker, GCP IP lookup, Azure IP lookup, cloud provider IP, IPv6 lookup, Googlebot IP check" toolId="ip-lookup" breadcrumb={[{ name: 'Network Tools', href: '/network-tools' }, { name: 'IP & Cloud Lookup' }]} jsonLd={[{ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Bug Days IP & Cloud Lookup', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any modern browser', description, url: 'https://bugdays.com/ip-lookup/', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } }]}>
+<Layout title="Bulk Cloud IP Lookup & Provider Checker" description={description} keywords="cloud IP lookup, bulk IP lookup, cloud provider IP checker, AWS IP checker, GCP IP lookup, Azure IP lookup, IP range checker, IPv6 lookup, Googlebot IP check" toolId="ip-lookup" breadcrumb={[{ name: 'Network Tools', href: '/network-tools' }, { name: 'IP & Cloud Lookup' }]} jsonLd={[{ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Bug Days Bulk Cloud Provider IP Lookup', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any modern browser', description, url: 'https://bugdays.com/ip-lookup/', featureList: ['Bulk IPv4 and IPv6 lookup', 'AWS, Azure, Google Cloud, Cloudflare, and Google crawler range matching', 'CIDR, service, and published-region details', 'Shareable reports', 'CSV and Excel export'], offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } }, { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map(item => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: item.answer } })) }]}>
   <TrafficWorkbench mode="ip" />
   <section class="traffic-guide">
-    <div><h2>Who operates this IP range?</h2><p>Paste IPv4 or IPv6 addresses to compare them with published AWS, Google Cloud, Azure, Cloudflare, and Google common-crawler ranges. Inspect the matching CIDR, service, and published region. Multiple service matches can describe the same address.</p></div>
-    <div><h2>Investigate traffic in bulk</h2><p>Deduplicate IPs, count occurrences, and filter by provider or region. Share a report with its original dataset date, copy a spreadsheet-ready table, or download CSV and Excel. For requests, errors, and timing, open the <a href="/access-log-analyzer/">access-log analyzer</a>.</p></div>
-    <div><h2>Clear sources, useful context</h2><p>Provider lists are refreshed through a cached public-data endpoint, with a bundled snapshot available as a fallback. Your pasted IPs are matched in your browser. Cloud ownership is a clue for an investigation, not a bot verdict; unmatched addresses are not necessarily residential.</p></div>
+    <div><h2>Check whether an IP belongs to AWS, Azure, or Google Cloud</h2><p>Paste IPv4 or IPv6 addresses to compare them with published AWS, Google Cloud, Azure, Cloudflare, and Google common-crawler ranges. Inspect the matching CIDR, service, and published region. Multiple service matches can describe the same address.</p></div>
+    <div><h2>Run a bulk IPv4 and IPv6 lookup</h2><p>Deduplicate IPs, count occurrences, and filter by provider or region. Share a report with its original dataset date, copy a spreadsheet-ready table, or download CSV and Excel. For requests, errors, and timing, open the <a href="/access-log-analyzer/">access-log analyzer</a>.</p></div>
+    <div><h2>Use current provider IP ranges—privately</h2><p>Official provider lists are refreshed through a cached public-data endpoint, with a bundled snapshot available as a fallback. Your pasted IPs are matched in your browser. A cloud match is an investigation clue, not a bot verdict; unmatched addresses are not necessarily residential.</p></div>
+  </section>
+  <section class="ip-lookup-faq" aria-labelledby="ip-lookup-faq-title">
+    <span>COMMON QUESTIONS</span>
+    <h2 id="ip-lookup-faq-title">Cloud IP lookup questions, answered</h2>
+    <div>{faqs.map(item => <details><summary>{item.question}</summary><p>{item.answer}</p></details>)}</div>
   </section>
 </Layout>
+
+<style>
+  .ip-lookup-faq { max-width:1450px; margin:10px auto 30px; padding:26px; border:1px solid #e2e8f0; border-radius:16px; background:#fff; }
+  .ip-lookup-faq>span { color:#64748b; font-size:9px; font-weight:700; letter-spacing:.12em; }
+  .ip-lookup-faq>h2 { margin:6px 0 16px; font-size:20px; font-weight:750; letter-spacing:-.025em; }
+  .ip-lookup-faq>div { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px 20px; }
+  .ip-lookup-faq details { border-top:1px solid #e2e8f0; padding:13px 2px; }
+  .ip-lookup-faq summary { cursor:pointer; font-size:13px; font-weight:650; }
+  .ip-lookup-faq p { margin-top:9px; color:#64748b; font-size:12px; line-height:1.8; }
+  :global(.dark) .ip-lookup-faq { border-color:#2a3950; background:#152033; }
+  :global(.dark) .ip-lookup-faq details { border-color:#2a3950; }
+  :global(.dark) .ip-lookup-faq p,:global(.dark) .ip-lookup-faq>span { color:#a0aec2; }
+  @media(max-width:700px) { .ip-lookup-faq { padding:20px; }.ip-lookup-faq>div { grid-template-columns:1fr; } }
+</style>

@@ -1,0 +1,99 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+
+const guide = guideBySlug('soap-api-authentication-basic-ws-security-mtls');
+---
+
+<GuideLayout guide={guide} keywords="SOAP API authentication, SOAP Basic Auth, WS-Security UsernameToken, SOAP bearer token, SOAP API key, SOAP mTLS, client certificate, WSDL security policy, SOAP 401 403 fault">
+  <p>“The SOAP authentication failed” can describe failures at three different layers: the TLS connection, HTTP authentication, or security information inside the SOAP envelope. Changing XML will never repair a rejected client certificate, and changing an HTTP header will not satisfy a signed WS-Security policy.</p>
+
+  <blockquote><strong>Identify the layer before changing credentials:</strong> mTLS happens during the TLS handshake, Basic or Bearer authentication travels in HTTP headers, and WS-Security tokens and signatures live inside the SOAP header.</blockquote>
+
+  <h2>SOAP authentication methods compared</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Method</th><th>Where it appears</th><th>What a test client needs</th></tr></thead>
+    <tbody>
+      <tr><td>HTTP Basic</td><td><code>Authorization</code> HTTP header</td><td>Username, password, and TLS</td></tr>
+      <tr><td>Bearer token</td><td><code>Authorization</code> HTTP header</td><td>Token issuer flow, audience/scope, and unexpired token</td></tr>
+      <tr><td>API key</td><td>Vendor-defined HTTP header or, less safely, query parameter</td><td>Exact header name and gateway policy</td></tr>
+      <tr><td>WS-Security UsernameToken</td><td><code>wsse:Security</code> inside the SOAP header</td><td>Username plus the required password, nonce, and timestamp representation</td></tr>
+      <tr><td>WS-Security signature/encryption</td><td>Signed or encrypted XML elements in the SOAP header/body</td><td>Keys, certificates, canonicalization, reference IDs, algorithms, and policy-compatible tooling</td></tr>
+      <tr><td>Mutual TLS (mTLS)</td><td>TLS handshake before any HTTP or SOAP message</td><td>Client certificate, private key, chain, trust store, and hostname validation</td></tr>
+      <tr><td>NTLM/Kerberos</td><td>Connection and HTTP negotiation</td><td>Platform/domain integration and a compatible native client</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Test HTTP Basic authentication safely</h2>
+  <p>Basic authentication encodes <code>username:password</code> in Base64; Base64 is not encryption. The endpoint must use correctly verified HTTPS. In a SOAP client, choose Basic authentication, enter temporary test credentials, and verify whether the server responds with an HTTP challenge, an authorization failure, or a SOAP fault.</p>
+  <p>Do not paste the generated <code>Authorization</code> value into tickets or shared requests. Rotate test credentials if they are exposed. A WSDL URL and the SOAP endpoint may also be protected differently, so successfully loading the contract does not prove that the same identity can call an operation.</p>
+
+  <h2>Bearer tokens and API keys are HTTP concerns</h2>
+  <p>Some modern gateways protect older SOAP services with OAuth bearer tokens or API keys. These are usually ordinary HTTP headers placed alongside <code>Content-Type</code> and <code>SOAPAction</code>. Confirm the exact token audience, scope, expiry, and header name with the gateway owner.</p>
+  <pre><code>POST /CustomerService HTTP/1.1
+Content-Type: text/xml; charset=utf-8
+SOAPAction: "urn:GetCustomer"
+Authorization: Bearer REDACTED
+X-API-Key: REDACTED</code></pre>
+  <p>If the gateway returns HTTP 401 or 403 without a SOAP envelope, debug the HTTP policy first. If it returns a structured SOAP fault, the request likely reached a SOAP-aware component and the fault code and detail become the stronger evidence.</p>
+
+  <h2>Recognize a WS-Security UsernameToken</h2>
+  <p>WS-Security is message-level security. A UsernameToken is placed inside the SOAP header and can use a plaintext password or a digest with nonce and creation time, depending on the service policy. The exact namespaces, password type, timestamp format, and replay controls matter.</p>
+  <pre><code>&lt;soap:Header&gt;
+  &lt;wsse:Security
+    xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/
+      oasis-200401-wss-wssecurity-secext-1.0.xsd"
+    xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/
+      oasis-200401-wss-wssecurity-utility-1.0.xsd"&gt;
+    &lt;wsse:UsernameToken wsu:Id="UsernameToken-1"&gt;
+      &lt;wsse:Username&gt;test-user&lt;/wsse:Username&gt;
+      &lt;wsse:Password Type="...#PasswordText"&gt;REDACTED&lt;/wsse:Password&gt;
+    &lt;/wsse:UsernameToken&gt;
+  &lt;/wsse:Security&gt;
+&lt;/soap:Header&gt;</code></pre>
+  <p>This is only a structural example. Do not assume that <code>PasswordText</code> is accepted or copy a namespace from an unrelated service. The service’s policy and the <a href="https://docs.oasis-open.org/wss-m/wss/v1.1.1/os/wss-UsernameTokenProfile-v1.1.1-os.html" target="_blank" rel="noopener">OASIS UsernameToken Profile</a> define the required form.</p>
+
+  <h2>Signatures are not “just another header”</h2>
+  <p>XML signatures depend on canonicalized bytes, namespace context, ID references, transforms, certificate selection, and algorithm policy. Reformatting signed XML after calculating a signature can invalidate it. Encryption adds key-transport and element-selection requirements.</p>
+  <p>For signed or encrypted WS-Security messages, begin with the service’s policy and a supported implementation. Compare a generated request with a known-good message, but never reuse production signatures, nonces, or timestamps as static fixtures.</p>
+
+  <h2>mTLS fails before the SOAP operation</h2>
+  <p>With mutual TLS, the server requests a client certificate while establishing TLS. If certificate selection, the private key, the issuing chain, certificate usage, or trust policy fails, there may be no HTTP status and no SOAP fault to inspect.</p>
+  <ul>
+    <li>Confirm the client certificate has its matching private key.</li>
+    <li>Send the required intermediate certificate chain.</li>
+    <li>Verify the certificate is valid for client authentication and has not expired.</li>
+    <li>Keep server hostname verification enabled.</li>
+    <li>Distinguish a client certificate from the server certificate you are inspecting.</li>
+  </ul>
+  <p>Browser certificate selection and enterprise trust policy are controlled outside an ordinary web page. Use an approved native or internal client when the workflow requires mTLS, smart cards, NTLM, Kerberos, or managed private keys.</p>
+
+  <h2>Use the response to locate the failure</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Evidence</th><th>Start investigating</th></tr></thead>
+    <tbody>
+      <tr><td>TLS alert, connection reset, or certificate-selection prompt</td><td>mTLS certificate, key, chain, hostname, and trust policy</td></tr>
+      <tr><td>HTTP 401</td><td>Missing or invalid HTTP identity, challenge scheme, token expiry, or gateway</td></tr>
+      <tr><td>HTTP 403</td><td>Authenticated identity lacks permission, scope, role, or network access</td></tr>
+      <tr><td>HTTP 415</td><td>SOAP 1.1/1.2 content type mismatch—not usually authentication</td></tr>
+      <tr><td>SOAP <code>MustUnderstand</code> fault</td><td>Security header namespace, actor/role, or unsupported security module</td></tr>
+      <tr><td>Security or timestamp SOAP fault</td><td>Clock skew, expired token, nonce replay, signature references, or policy mismatch</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>A safe SOAP authentication workflow</h2>
+  <ol>
+    <li>Use a non-production account and synthetic payload.</li>
+    <li>Verify TLS and the concrete SOAP endpoint.</li>
+    <li>Identify whether the requirement is HTTP auth, WS-Security, mTLS, or more than one.</li>
+    <li>Match SOAP version, content type, action, and namespaces independently of authentication.</li>
+    <li>Capture the HTTP status, response headers, SOAP fault, and timing.</li>
+    <li>Redact credentials, tokens, cookies, security headers, and sensitive XML before sharing.</li>
+  </ol>
+  <p>The <a href="https://www.w3.org/TR/soap/" target="_blank" rel="noopener">W3C SOAP specification index</a> links to the SOAP 1.1 and 1.2 protocol documents. Those specifications define the envelope and binding; WS-Security is a separate family of OASIS standards.</p>
+
+  <div class="guide-note"><p><strong>Bug Days boundary:</strong> the SOAP client directly supports HTTP Basic authentication and custom HTTP headers. It lets you edit SOAP headers manually but does not generate WS-Security signatures or automate mTLS, NTLM, or Kerberos. Basic-auth fields and custom HTTP headers are excluded from shares; credentials embedded in XML must be removed by you before sharing.</p></div>
+
+  <a slot="related" href="/guides/test-soap-api-from-wsdl-soap-11-vs-12" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Test a SOAP API from WSDL</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Choose the binding, version, action, and envelope.</span></a>
+  <a slot="related" href="/guides/pem-vs-der-vs-cer-vs-p7b-certificate-formats" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Understand certificate files</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Identify PEM, DER, CER, and certificate bundles safely.</span></a>
+</GuideLayout>

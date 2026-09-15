@@ -1,0 +1,81 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+
+const guide = guideBySlug('grpc-web-vs-native-grpc-browser-testing');
+---
+
+<GuideLayout guide={guide} keywords="gRPC-Web vs gRPC, native gRPC browser, browser gRPC client, test gRPC in browser, gRPC HTTP/2, gRPC-Web proxy, Envoy alternative, local gRPC bridge">
+  <p>A failed browser call does not necessarily mean a gRPC server is down. “gRPC” and “gRPC-Web” are related transports, but they are not interchangeable endpoints. Choosing the wrong one can produce an HTTP error, a CORS message, undecodable bytes, or no useful response at all.</p>
+
+  <blockquote><strong>Start with one question:</strong> does the address accept gRPC-Web requests, or is it a native gRPC endpoint intended for SDKs and command-line clients?</blockquote>
+
+  <h2>Native gRPC and gRPC-Web compared</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Capability</th><th>Native gRPC</th><th>gRPC-Web</th></tr></thead>
+    <tbody>
+      <tr><td>Typical client</td><td>Generated SDK, <code>grpcurl</code>, desktop client, service-to-service code</td><td>Browser application using a gRPC-Web client</td></tr>
+      <tr><td>Browser web APIs</td><td>Cannot initiate the complete native protocol directly</td><td>Designed for browser-compatible HTTP requests</td></tr>
+      <tr><td>Backend exposure</td><td>Server’s native HTTP/2 gRPC listener</td><td>A gRPC-Web-capable server or gateway</td></tr>
+      <tr><td>CORS</td><td>Not relevant to a native SDK; relevant to any browser-facing bridge</td><td>The browser-facing endpoint must allow the web origin, methods, and headers</td></tr>
+      <tr><td>Streaming</td><td>Unary, server, client, and bidirectional streaming depend on the method</td><td>Browser/client/gateway support varies; verify the exact mode</td></tr>
+    </tbody>
+  </table></div>
+  <p>The <a href="https://grpc.io/docs/platforms/web/basics/" target="_blank" rel="noopener">official gRPC-Web tutorial</a> demonstrates a browser client calling a browser-facing endpoint that forwards to a native gRPC backend, including the need for CORS configuration.</p>
+
+  <h2>Why a normal fetch request is not a native gRPC client</h2>
+  <p>Native gRPC is more than “protobuf over HTTP.” A call has a fully qualified method path, framed protobuf messages, gRPC-specific headers, HTTP/2 behavior, and a final status with optional trailing metadata. Browser <code>fetch</code> does not expose the controls needed to behave like a general native gRPC client.</p>
+  <p>That is why a direct browser option should target gRPC-Web. A native endpoint needs a component outside the browser tab—a service gateway, application backend, desktop client, CLI, or a local bridge—to own the native gRPC connection.</p>
+
+  <h2>Choose direct gRPC-Web when the service already supports it</h2>
+  <p>Use direct mode when the public address is intentionally configured for gRPC-Web. Verify:</p>
+  <ul>
+    <li>the gRPC-Web URL, which may differ from the native host and port;</li>
+    <li>allowed origins and preflight behavior;</li>
+    <li>allowed request metadata such as <code>authorization</code>;</li>
+    <li>which response and trailer headers the browser may expose;</li>
+    <li>whether your gateway supports the RPC’s streaming shape.</li>
+  </ul>
+  <p>A CORS error happens in the browser security layer. It does not tell you whether the backend method exists or whether the protobuf message was accepted. Test the public gRPC-Web address and the native backend as two separate hops when debugging a gateway.</p>
+
+  <h2>Choose a local bridge for an existing native gRPC endpoint</h2>
+  <p>A local bridge is useful when you control or are authorized to test a native gRPC service but do not want to install and configure a heavyweight API workspace. The browser can still provide the contract browser, JSON editor, history, sharing, and decoded results; the bridge performs the native HTTP/2 call on your machine.</p>
+  <p>With Bug Days, the flow is:</p>
+  <ol>
+    <li>Import or paste the service’s proto files in the browser.</li>
+    <li>Select <strong>Native gRPC (bridge)</strong>.</li>
+    <li>Run Holy CORS locally using Homebrew, Docker, or the standalone binary.</li>
+    <li>Enter the native target such as <code>localhost:50051</code>.</li>
+    <li>Send the request and inspect decoded messages, response headers, trailers, and gRPC status.</li>
+  </ol>
+  <pre><code>docker run --rm \
+  -p 127.0.0.1:2345:2345 \
+  ghcr.io/bugdays-com/holy-cors:latest</code></pre>
+  <p>Binding to <code>127.0.0.1</code> keeps that bridge port on the local computer. If the target service also runs on the host while the bridge runs in Docker, use <code>host.docker.internal</code> as the service hostname; Linux Docker may need an explicit host-gateway mapping.</p>
+
+  <h2>Diagnose the layer that actually failed</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Symptom</th><th>Likely layer</th><th>Useful check</th></tr></thead>
+    <tbody>
+      <tr><td>Browser preflight or CORS error</td><td>Browser-facing gRPC-Web endpoint or local-access permission</td><td>Origin, OPTIONS response, allowed metadata headers, and browser site permission</td></tr>
+      <tr><td>Bridge cannot connect</td><td>Local process, Docker networking, DNS, TCP, or TLS</td><td>Bridge status, target hostname/port, container-to-host address, and certificate trust</td></tr>
+      <tr><td><code>UNIMPLEMENTED</code></td><td>gRPC routing or method selection</td><td>Package/service/method path and whether the gateway routes reflection separately</td></tr>
+      <tr><td><code>UNAUTHENTICATED</code></td><td>Request metadata</td><td>Authorization key, token format, audience, and expiry</td></tr>
+      <tr><td>Messages followed by an error</td><td>Streaming RPC completion</td><td>Final status and trailing metadata, not only received messages</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>What should stay local or be redacted</h2>
+  <p>Proto files can reveal internal package names and capabilities. Metadata can contain bearer tokens, trace identifiers, tenant IDs, and routing keys. Request bodies may contain customer or production data. Use synthetic values where possible and inspect any request before creating a share link.</p>
+  <p>Bug Days omits authentication secrets from shares, exports, saved requests, and history. The page parses proto definitions and protobuf messages in the browser. When native mode is selected, the request goes through Holy CORS on your machine to the target you supplied; it is not sent through a hosted Bug Days relay.</p>
+
+  <h2>The practical decision</h2>
+  <ul>
+    <li><strong>The service exposes gRPC-Web:</strong> connect directly and fix CORS on that browser-facing endpoint.</li>
+    <li><strong>The service exposes native gRPC:</strong> use a native SDK, <code>grpcurl</code>, desktop client, internal gateway, or a local bridge.</li>
+    <li><strong>You are unsure:</strong> ask the service owner which transport and address are supported; a proto file describes methods, not deployment topology.</li>
+  </ul>
+
+  <a slot="related" href="/guides/test-grpc-api-proto-metadata-streaming" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Run a complete gRPC test</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Build the request and interpret metadata, streaming, and status.</span></a>
+  <a slot="related" href="/guides/soap-api-authentication-basic-ws-security-mtls" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">SOAP authentication layers</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Separate HTTP credentials, message security, and mTLS.</span></a>
+</GuideLayout>
