@@ -23,3 +23,8 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 *.iml
+
+# Local test artifacts
+test-results/
+playwright-report/
+.wrangler/

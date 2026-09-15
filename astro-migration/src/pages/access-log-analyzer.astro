@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro';
+import TrafficWorkbench from '../components/TrafficWorkbench.astro';
+const description = 'Analyze Nginx, Apache, and JSON access logs in your browser. Find top IPs, cloud providers, request bursts, HTTP errors, and popular paths. Share and export reports.';
+---
+<Layout title="Nginx & Apache Access Log Analyzer" description={description} keywords="access log analyzer, nginx log analyzer, apache log analyzer, web server logs, analyze bot traffic, IP log analysis, JSON access logs" toolId="access-log-analyzer" breadcrumb={[{ name: 'Network Tools', href: '/network-tools' }, { name: 'Access Log Analyzer' }]} jsonLd={[{ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Bug Days Access Log Analyzer', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any modern browser', description, url: 'https://bugdays.com/access-log-analyzer/', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } }]}>
+  <TrafficWorkbench mode="log" />
+  <section class="traffic-guide">
+    <div><h2>Read the pattern behind the requests</h2><p>Open Nginx or Apache common/combined access logs, or JSON logs with one request per line. See top client IPs, requested paths, response status counts, and a UTC request timeline. JSON logs with request durations also show median and 95th-percentile latency.</p></div>
+    <div><h2>Connect requests to published networks</h2><p>Match logged client IPs to the same cloud and crawler datasets used by our <a href="/ip-lookup/">bulk IP lookup</a>. Review cloud traffic alongside its request volume and error counts. Inspect the configured client-IP field when logs come through a CDN or reverse proxy.</p></div>
+    <div><h2>A report you can hand over</h2><p>Logs are processed locally. Report links include IPs, path counts, and summary findings, with query strings and raw log lines excluded. Shared snapshots preserve the original analysis and dataset date. Export a complete JSON report to reopen later, or use CSV, Excel, and print-to-PDF.</p></div>
+  </section>
+</Layout>

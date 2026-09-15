@@ -273,6 +273,9 @@ export async function loadFromUrl(): Promise<boolean> {
     }
   }
 
+  // A slower short-link response must not overwrite a newer navigation.
+  if (location.hash.slice(1) !== hash) return false;
+
   if (expired) {
     showExpiredNotice();
     // Clean up URL

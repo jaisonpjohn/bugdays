@@ -1,0 +1,143 @@
+---
+interface Props { mode: 'ip' | 'log' }
+const { mode } = Astro.props;
+const logs = mode === 'log';
+---
+
+<div class="traffic-workbench" data-mode={mode}>
+  <section class="traffic-hero">
+    <div class="traffic-eyebrow"><span class="traffic-live-dot"></span> NETWORK INTELLIGENCE <span class="traffic-hero-divider">/</span> BUG DAYS</div>
+    <div class="traffic-hero-heading">
+      <div><h1>{logs ? 'Make sense of your traffic.' : 'Put an IP in context.'}</h1>
+        <p>{logs ? 'Turn access logs into a clear picture of requests, errors, and the networks behind them.' : 'Find cloud providers, published regions, and crawler ranges. One address or an entire list.'}</p></div>
+      <div class="traffic-orbit" aria-hidden="true"><span>IP</span><i></i><b></b><em></em></div>
+    </div>
+    <div class="traffic-hero-footer"><span>◈ &nbsp; Analysis in your browser</span><span>↗ &nbsp; Reports made to share</span><span>↓ &nbsp; CSV, Excel & JSON</span></div>
+  </section>
+
+  <nav class="traffic-switcher" aria-label="Traffic tools">
+    <a href="/ip-lookup/" class:list={{ active: !logs }} aria-current={!logs ? 'page' : undefined}>IP & cloud lookup</a>
+    <a href="/access-log-analyzer/" class:list={{ active: logs }} aria-current={logs ? 'page' : undefined}>Access-log analyzer</a>
+    <span id="traffic-data-status" role="status">Official provider datasets</span>
+  </nav>
+
+  <div class="traffic-grid">
+    <section class="traffic-card traffic-input-card">
+      <div class="traffic-section-heading"><div><span class="traffic-step">01 / INPUT</span><h2>{logs ? 'Your access logs' : 'Your IP addresses'}</h2></div><button type="button" id="traffic-clear" class="traffic-text-button">Clear</button></div>
+      <label for="traffic-input" class="traffic-input-label">{logs ? 'Paste Nginx, Apache, or JSON access logs' : 'Paste IPv4, IPv6, or text containing IPs'}</label>
+      <textarea id="traffic-input" spellcheck="false" autocomplete="off" placeholder={logs ? '3.5.140.1 - - [14/Sep/2026:10:00:00 +0000] "GET /api/orders HTTP/1.1" 200 1240' : '3.5.140.1\n34.80.0.1\n104.16.0.1\n66.249.66.1\n2001:db8::1'}></textarea>
+      <div class="traffic-input-meta"><span id="traffic-input-size">No input yet</span><label><input id="traffic-auto" type="checkbox" checked /> Auto-analyze</label></div>
+      <div id="traffic-drop-zone" class="traffic-drop-zone"><input id="traffic-file" type="file" accept=".txt,.log,.csv,.json,.jsonl,.ndjson,.gz" class="sr-only" /><button type="button" id="traffic-upload">Choose a file</button><span>or drop it here · up to 20 MB expanded</span></div>
+      <div class="traffic-action-row"><button id="traffic-analyze" type="button" class="traffic-button traffic-primary">{logs ? 'Analyze traffic' : 'Look up addresses'} <span aria-hidden="true">↗</span></button><button id="traffic-cancel" type="button" class="traffic-button" hidden>Cancel</button></div>
+      <div id="traffic-progress" hidden><progress max="100" value="0" aria-label="Analysis progress"></progress><span>Preparing your report…</span></div>
+      <div class="traffic-example"><span>JUST EXPLORING?</span><button id="traffic-demo" type="button">{logs ? 'Try an example traffic log' : 'Try a mix of cloud IPs'} <span aria-hidden="true">→</span></button></div>
+      <details class="traffic-format-help"><summary>{logs ? 'Supported log formats' : 'What can I paste?'}</summary>
+        {logs ? <p>Apache / Nginx common and combined formats, or one JSON object per line. JSON accepts <code>remote_addr</code>, <code>remoteAddress</code>, <code>client_ip</code>, <code>ClientIP</code>, or <code>ip</code>; a status and request path are required. Timing charts use dated entries. JSON <code>request_time</code> is seconds; <code>duration_ms</code> is milliseconds. Forwarded headers are not selected automatically.</p> : <p>One address per line, comma-separated lists, or text with addresses. IPv4-mapped IPv6 addresses are grouped with their IPv4 equivalent. IPs are extracted as written; hostnames and CIDR ranges are not expanded.</p>}
+        <p>Supports up to 200,000 lines and 20,000 unique IPs. You can also reopen an exported Bug Days report JSON file here.</p>
+      </details>
+    </section>
+
+    <div class="traffic-results-column">
+      <div id="traffic-error" class="traffic-message traffic-error" role="alert" hidden></div>
+      <div id="traffic-notice" class="traffic-message" role="status" hidden></div>
+      <section id="traffic-empty" class="traffic-card traffic-empty">
+        <div class="traffic-empty-graphic" aria-hidden="true"><span>INPUT</span><i>······</i><b>◈</b><i>······</i><span>INSIGHT</span></div>
+        <h2>{logs ? 'A clearer view of every request.' : 'Every address has a little more to tell.'}</h2>
+        <p>{logs ? 'See who is calling, which paths get attention, and where errors gather. Paste a log or start with the example.' : 'Match addresses to published networks, spot crawler ranges, and share an organized report. Start with your own list or try the example.'}</p>
+        <div class="traffic-provider-pills"><span>AWS</span><span>Google Cloud</span><span>Azure</span><span>Cloudflare</span><span>Google crawlers</span></div>
+        <p class="traffic-empty-note">No account or lookup API key needed.</p>
+      </section>
+
+      <div id="traffic-report" hidden>
+        <section class="traffic-card traffic-report-heading">
+          <div><span class="traffic-step">02 / YOUR REPORT</span><label for="traffic-title" class="sr-only">Report title</label><input id="traffic-title" maxlength="120" value={logs ? 'Traffic investigation' : 'IP investigation'} /><p id="traffic-report-meta"></p></div>
+          <button id="traffic-share" type="button" class="traffic-button traffic-primary">Share report ↗</button>
+        </section>
+        <div id="traffic-summary" class="traffic-stats"></div>
+        <div class="traffic-chart-grid">
+          <section class="traffic-card traffic-chart-card"><div class="traffic-section-heading"><h2>Network mix</h2><span id="traffic-mix-unit"></span></div><div id="traffic-provider-chart"></div></section>
+          <section class="traffic-card traffic-chart-card"><div class="traffic-section-heading"><h2>{logs ? 'Response status' : 'Address breakdown'}</h2><span>{logs ? 'HTTP' : 'IPv4 + IPv6'}</span></div><div id="traffic-secondary-chart"></div></section>
+        </div>
+        {logs && <section class="traffic-card traffic-timeline-card"><div class="traffic-section-heading"><h2>Request timeline</h2><span id="traffic-timeline-label">UTC</span></div><div id="traffic-timeline"></div><div id="traffic-time-range" class="traffic-time-range"></div><p id="traffic-latency" class="traffic-small"></p></section>}
+        <section class="traffic-card traffic-table-card">
+          <div class="traffic-section-heading"><div><h2>Address explorer</h2><span id="traffic-row-count"></span></div><button type="button" id="traffic-reset-filters" class="traffic-text-button">Reset filters</button></div>
+          <div class="traffic-filters"><label><span class="sr-only">Search addresses, ranges, or regions</span><input id="traffic-search" type="search" placeholder="Search IP, region, or range…" /></label><label><span class="sr-only">Provider</span><select id="traffic-source"><option value="">All providers</option></select></label><label><span class="sr-only">Classification</span><select id="traffic-category"><option value="">All types</option><option value="cloud">Cloud</option><option value="cdn">CDN / proxy</option><option value="crawler">Crawler range</option><option value="special">Special-use IP</option><option value="unmatched">No match</option></select></label><label><span class="sr-only">Sort addresses</span><select id="traffic-sort"><option value="count">Most occurrences</option><option value="address">IP address</option>{logs && <option value="errors">Most errors</option>}</select></label></div>
+          <div class="traffic-table-scroll"><table><thead><tr><th scope="col">IP address</th><th scope="col">Network / classification</th><th scope="col">Published region</th><th scope="col" class="traffic-number">{logs ? 'Requests' : 'Count'}</th>{logs && <th scope="col" class="traffic-number">4xx / 5xx</th>}<th scope="col"><span class="sr-only">Details</span></th></tr></thead><tbody id="traffic-ip-rows"></tbody></table></div>
+          <div class="traffic-pagination"><span id="traffic-page-label"></span><div><button type="button" id="traffic-prev" class="traffic-button">← Previous</button><button type="button" id="traffic-next" class="traffic-button">Next →</button></div></div>
+        </section>
+        {logs && <section class="traffic-card traffic-paths-card"><div class="traffic-section-heading"><h2>Most requested paths</h2><span>Query strings excluded</span></div><div id="traffic-paths"></div></section>}
+        <section class="traffic-card traffic-export-card"><div><h2>Take the findings with you.</h2><p id="traffic-share-description">Share a snapshot or export your results.</p></div><div class="traffic-export-actions"><button type="button" id="traffic-csv" class="traffic-button">CSV</button><button type="button" id="traffic-xlsx" class="traffic-button">Excel</button><button type="button" id="traffic-json" class="traffic-button">Report JSON</button><button type="button" id="traffic-copy" class="traffic-button">Copy table</button><button type="button" id="traffic-print" class="traffic-button">Print / PDF</button></div></section>
+        <details class="traffic-card traffic-source-card"><summary>Sources, coverage & parsing details</summary><div id="traffic-sources"></div><p>Matches describe published IP ranges, not the identity or intent of a visitor. An unmatched IP can still belong to a cloud provider. Published regions describe the network range, not a visitor’s physical location. Cloudflare ranges can identify an intermediary; use your correctly configured client-IP logs to investigate the original visitor.</p><div id="traffic-issues"></div></details>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="traffic-detail" class="traffic-detail-dialog" aria-labelledby="traffic-detail-title"><div class="traffic-detail-heading"><div><span class="traffic-step">ADDRESS DETAILS</span><h2 id="traffic-detail-title"></h2></div><button type="button" id="traffic-detail-close" class="traffic-button" aria-label="Close address details">✕</button></div><div id="traffic-detail-body"></div><button type="button" id="traffic-share-ip" class="traffic-button traffic-primary">Share this IP ↗</button></dialog>
+  <div id="traffic-toast" class="traffic-toast" role="status" hidden></div>
+</div>
+
+<script>
+  import { initTrafficWorkbench } from '../lib/traffic-app';
+  initTrafficWorkbench();
+</script>
+
+<style is:global>
+  .traffic-workbench { --tw-surface:#fff; --tw-muted:#64748b; --tw-border:#e2e8f0; --tw-soft:#f8fafc; --tw-ink:#17253c; --tw-accent:#4f46e5; max-width:1450px; margin:0 auto; color:var(--tw-ink); }
+  .dark .traffic-workbench { --tw-surface:#152033; --tw-muted:#a0aec2; --tw-border:#2a3950; --tw-soft:#101a2b; --tw-ink:#e5edf9; --tw-accent:#a5b4fc; }
+  .traffic-workbench [hidden] { display:none !important; }
+  .traffic-workbench button, .traffic-workbench a, .traffic-workbench summary { -webkit-tap-highlight-color:transparent; }
+  .traffic-workbench button { cursor:pointer; }
+  .traffic-workbench button:disabled { opacity:.45; cursor:default; }
+  .traffic-workbench :is(button,a,input,textarea,select,summary):focus-visible { outline:3px solid #818cf8; outline-offset:3px; }
+  .traffic-hero { position:relative; overflow:hidden; border:1px solid #dfe5f9; border-radius:20px; padding:28px 32px 20px; background:radial-gradient(ellipse at 100% 0%,#d5f7ec 0,transparent 48%),linear-gradient(120deg,#eef2ff,#f9fbff 65%); }
+  .dark .traffic-hero { border-color:#2b3c56; background:radial-gradient(ellipse at 100% 0%,#123e3c 0,transparent 50%),linear-gradient(120deg,#1e2850,#172239 65%); }
+  .traffic-eyebrow { display:flex; align-items:center; gap:9px; font-size:10px; font-weight:750; letter-spacing:.14em; color:var(--tw-accent); }
+  .traffic-live-dot { width:6px; height:6px; border-radius:100%; background:#0d9488; box-shadow:0 0 0 4px #14b8a614; }
+  .traffic-hero-divider { opacity:.4; margin:0 4px; }
+  .traffic-hero-heading { display:flex; align-items:center; justify-content:space-between; gap:20px; }
+  .traffic-hero h1 { font-size:clamp(26px,3.2vw,42px); line-height:1.15; letter-spacing:-.045em; font-weight:750; margin:16px 0 12px; }
+  .traffic-hero p { font-size:14px; line-height:1.7; color:var(--tw-muted); max-width:610px; }
+  .traffic-hero-footer { display:flex; flex-wrap:wrap; gap:10px 24px; font-size:11px; color:var(--tw-muted); margin-top:23px; }
+  .traffic-orbit { position:relative; width:112px; height:112px; border:1px solid #14b8a64a; border-radius:50%; flex-shrink:0; margin-right:10px; display:grid; place-items:center; }
+  .traffic-orbit:before { content:''; position:absolute; inset:15px; border:1px dashed #6366f150; border-radius:50%; }
+  .traffic-orbit span { border:1px solid #818cf860; background:var(--tw-surface); box-shadow:0 5px 20px #4f46e51a; border-radius:17px; padding:12px 15px; font:700 18px ui-monospace,monospace; color:var(--tw-accent); }
+  .traffic-orbit :is(i,b,em) { position:absolute; width:10px; height:10px; border:3px solid var(--tw-surface); border-radius:50%; background:#14b8a6; top:10px; right:14px; box-shadow:0 0 0 1px #14b8a666; }
+  .traffic-orbit b { top:auto; bottom:6px; left:22px; background:#818cf8; }.traffic-orbit em { top:28px; left:-2px; background:#38bdf8; }
+  .traffic-switcher { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:20px 0; font-size:12px; }
+  .traffic-switcher a { padding:9px 13px; border-radius:8px; color:var(--tw-muted); font-weight:650; }.traffic-switcher a.active { color:var(--tw-accent); background:var(--tw-surface); box-shadow:0 1px 4px #0f172a0c; border:1px solid var(--tw-border); }
+  .traffic-switcher>span { margin-left:auto; color:var(--tw-muted); font-size:11px; }
+  .traffic-grid { display:grid; grid-template-columns:300px minmax(0,1fr); align-items:start; gap:20px; }
+  .traffic-card { border:1px solid var(--tw-border); border-radius:14px; background:var(--tw-surface); box-shadow:0 2px 6px #0f172a03; min-width:0; }
+  .traffic-results-column { min-width:0; }
+  .traffic-input-card { padding:20px; }.traffic-section-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; }
+  .traffic-workbench h2 { font-size:14px; font-weight:700; letter-spacing:-.015em; }.traffic-step { display:block; color:var(--tw-muted); font-size:9px; letter-spacing:.12em; font-weight:700; margin-bottom:5px; }
+  .traffic-text-button { font-size:11px; color:var(--tw-accent); font-weight:600; }.traffic-input-label { display:block; font-size:11px; color:var(--tw-muted); margin-bottom:9px; }
+  #traffic-input { display:block; width:100%; min-height:265px; resize:vertical; font:12px/1.85 ui-monospace,SFMono-Regular,monospace; border:1px solid var(--tw-border); border-radius:9px; background:var(--tw-soft); color:var(--tw-ink); padding:12px; }
+  #traffic-input::placeholder { color:var(--tw-muted); opacity:.6; }.traffic-input-meta { display:flex; flex-wrap:wrap; justify-content:space-between; gap:8px; color:var(--tw-muted); font-size:10px; margin:10px 0 14px; }.traffic-input-meta label { display:flex; gap:5px; align-items:center; }
+  .traffic-drop-zone { border:1px dashed var(--tw-border); border-radius:9px; padding:13px 6px; text-align:center; margin-bottom:14px; }.traffic-drop-zone.dragging { border-color:#6366f1; background:#6366f110; }.traffic-drop-zone button { font-size:12px; font-weight:650; color:var(--tw-accent); }.traffic-drop-zone span { display:block; font-size:10px; color:var(--tw-muted); margin-top:4px; }
+  .traffic-button { display:inline-flex; align-items:center; justify-content:center; gap:12px; border:1px solid var(--tw-border); border-radius:8px; padding:8px 11px; font-size:11px; font-weight:650; background:var(--tw-surface); white-space:nowrap; transition:background .15s,box-shadow .15s; }.traffic-button:hover { background:var(--tw-soft); }.traffic-primary { color:#fff; background:#4f46e5; border-color:#4f46e5; box-shadow:0 3px 8px #4f46e518; }.traffic-primary:hover { background:#4338ca; }.traffic-action-row { display:flex; gap:8px; }.traffic-action-row .traffic-primary { flex:1; padding:11px; }
+  .traffic-example { margin-top:22px; padding-top:18px; border-top:1px solid var(--tw-border); }.traffic-example>span { font-size:9px; font-weight:700; color:var(--tw-muted); letter-spacing:.1em; }.traffic-example button { display:flex; justify-content:space-between; width:100%; font-size:12px; font-weight:600; color:var(--tw-accent); margin-top:6px; }
+  .traffic-format-help { font-size:11px; color:var(--tw-muted); line-height:1.8; margin-top:18px; }.traffic-format-help summary { cursor:pointer; }.traffic-format-help p { margin-top:10px; }.traffic-workbench code { font-family:ui-monospace,monospace; overflow-wrap:anywhere; }
+  .traffic-empty { min-height:475px; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:36px; text-align:center; background:radial-gradient(ellipse at 50% 15%,#6366f109,transparent 65%),var(--tw-surface); }.traffic-empty h2 { font-size:22px; letter-spacing:-.03em; max-width:350px; margin:28px 0 12px; }.traffic-empty p { color:var(--tw-muted); font-size:13px; line-height:1.8; max-width:375px; }.traffic-empty .traffic-empty-note { font-size:11px; margin-top:25px; }
+  .traffic-empty-graphic { display:flex; align-items:center; gap:9px; }.traffic-empty-graphic span { font:9px ui-monospace,monospace; padding:7px; border:1px solid var(--tw-border); border-radius:5px; letter-spacing:.1em; color:var(--tw-muted); }.traffic-empty-graphic i { color:#a5b4fc; }.traffic-empty-graphic b { font-size:28px; color:#6366f1; border:1px solid #6366f140; padding:5px 15px; border-radius:14px; box-shadow:0 8px 25px #6366f110; }
+  .traffic-provider-pills { display:flex; justify-content:center; flex-wrap:wrap; gap:7px; margin-top:25px; }.traffic-provider-pills span { border:1px solid var(--tw-border); background:var(--tw-soft); padding:5px 8px; border-radius:6px; font-size:10px; color:var(--tw-muted); }
+  .traffic-report-heading { padding:18px 20px; display:flex; gap:12px; align-items:center; justify-content:space-between; margin-bottom:14px; }.traffic-report-heading>div { min-width:0; flex:1; }#traffic-title { display:block; width:100%; background:transparent; border:0; font-size:19px; font-weight:700; letter-spacing:-.03em; padding:0; }#traffic-report-meta { color:var(--tw-muted); font-size:10px; margin-top:5px; }
+  .traffic-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }.traffic-stat { padding:15px 12px; border:1px solid var(--tw-border); border-radius:11px; background:var(--tw-surface); }.traffic-stat>span { display:block; font-size:10px; color:var(--tw-muted); }.traffic-stat strong { display:block; font-size:25px; font-weight:700; letter-spacing:-.04em; margin:3px 0; }.traffic-stat small { display:block; color:var(--tw-muted); font-size:9px; }.traffic-stat.highlight { border-color:#6366f140; background:linear-gradient(135deg,#6366f10a,transparent),var(--tw-surface); }.traffic-stat.highlight strong { color:var(--tw-accent); }
+  .traffic-chart-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }.traffic-chart-card { padding:18px; }.traffic-section-heading>span,.traffic-section-heading>div>span:not(.traffic-step) { font-size:10px; color:var(--tw-muted); }.traffic-bar-row { margin:11px 0; }.traffic-bar-label { display:flex; justify-content:space-between; align-items:center; gap:10px; font-size:11px; margin-bottom:5px; }.traffic-bar-label span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.traffic-bar-label b { font-size:10px; font-variant-numeric:tabular-nums; }.traffic-bar-track { height:5px; border-radius:9px; background:var(--tw-soft); overflow:hidden; }.traffic-bar-fill { height:100%; border-radius:9px; background:#818cf8; }
+  .traffic-timeline-card { padding:18px; margin-bottom:14px; }#traffic-timeline { display:flex; align-items:end; gap:2px; height:85px; border-bottom:1px solid var(--tw-border); }#traffic-timeline .traffic-time-bar { flex:1; min-width:1px; max-width:35px; background:linear-gradient(#818cf8,#4f46e5); border-radius:3px 3px 0 0; }#traffic-timeline .traffic-time-bar:hover { background:#14b8a6; }.traffic-time-range { display:flex; justify-content:space-between; gap:8px; color:var(--tw-muted); font-size:9px; margin-top:7px; }.traffic-small { font-size:11px; color:var(--tw-muted); line-height:1.7; margin-top:10px; }
+  .traffic-table-card { overflow:hidden; margin-bottom:14px; }.traffic-table-card>.traffic-section-heading { padding:18px 18px 0; }.traffic-filters { display:flex; flex-wrap:wrap; gap:7px; padding:0 18px 16px; }.traffic-filters label:first-child { flex:1 1 160px; }.traffic-filters input,.traffic-filters select { max-width:100%; width:100%; font-size:11px; border:1px solid var(--tw-border); border-radius:7px; padding:8px; background:var(--tw-soft); color:var(--tw-ink); }
+  .traffic-table-scroll { overflow:auto; }.traffic-table-scroll table { width:100%; border-collapse:collapse; font-size:11px; text-align:left; }.traffic-table-scroll th { font-weight:600; font-size:9px; color:var(--tw-muted); background:var(--tw-soft); white-space:nowrap; padding:11px 13px; border-block:1px solid var(--tw-border); }.traffic-table-scroll td { padding:12px 13px; border-bottom:1px solid var(--tw-border); vertical-align:middle; }.traffic-table-scroll tr:last-child td { border-bottom:0; }.traffic-table-scroll tbody tr:hover { background:var(--tw-soft); }.traffic-number { text-align:right; font-variant-numeric:tabular-nums; }.traffic-ip-button { color:var(--tw-accent); font-family:ui-monospace,monospace; font-weight:600; text-align:left; overflow-wrap:anywhere; }.traffic-cell-note { display:block; color:var(--tw-muted); font-size:9px; margin-top:4px; max-width:200px; }.traffic-badge { display:inline-block; font-size:9px; font-weight:650; padding:3px 6px; border-radius:4px; color:var(--tw-muted); background:var(--tw-soft); }.traffic-badge-cloud { color:#4f46e5; background:#6366f114; }.traffic-badge-crawler { color:#0f766e; background:#14b8a618; }.traffic-badge-cdn { color:#b45309; background:#f59e0b15; }.dark .traffic-badge-cloud { color:#a5b4fc; }.dark .traffic-badge-crawler { color:#5eead4; }.dark .traffic-badge-cdn { color:#fcd34d; }
+  .traffic-pagination { display:flex; align-items:center; justify-content:space-between; gap:10px; border-top:1px solid var(--tw-border); padding:12px 18px; font-size:10px; color:var(--tw-muted); }.traffic-pagination>div { display:flex; gap:5px; }.traffic-pagination .traffic-button { padding:5px 8px; font-size:10px; }
+  .traffic-paths-card { padding:18px; margin-bottom:14px; }.traffic-path-row { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--tw-border); font-size:11px; }.traffic-path-row code { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }.traffic-path-row strong { font-size:10px; }
+  .traffic-export-card { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:15px; padding:18px; margin-bottom:14px; }.traffic-export-card p { max-width:520px; font-size:10px; line-height:1.7; color:var(--tw-muted); margin-top:5px; }.traffic-export-actions { display:flex; flex-wrap:wrap; gap:6px; }
+  .traffic-source-card { padding:16px 18px; font-size:11px; color:var(--tw-muted); line-height:1.8; }.traffic-source-card summary { font-weight:650; cursor:pointer; color:var(--tw-ink); }.traffic-source-card p { margin-top:12px; }.traffic-source-card a { color:var(--tw-accent); text-decoration:underline; }#traffic-sources { display:grid; gap:7px; margin-top:14px; }#traffic-sources>div { display:flex; flex-wrap:wrap; justify-content:space-between; gap:4px 12px; border-bottom:1px solid var(--tw-border); padding-bottom:7px; }
+  .traffic-message { border:1px solid #6366f130; border-radius:10px; padding:12px 16px; margin-bottom:14px; background:#6366f108; font-size:12px; line-height:1.7; white-space:pre-line; }.traffic-error { border-color:#f8717150; background:#ef444408; color:#b91c1c; }.dark .traffic-error { color:#fca5a5; }
+  #traffic-progress { padding-top:12px; font-size:10px; color:var(--tw-muted); }#traffic-progress progress { width:100%; height:4px; display:block; margin-bottom:5px; accent-color:#6366f1; }
+  .traffic-detail-dialog { max-width:620px; width:calc(100% - 32px); max-height:85vh; overflow:auto; background:var(--tw-surface); color:var(--tw-ink); border:1px solid var(--tw-border); border-radius:17px; padding:24px; margin:auto; box-shadow:0 20px 100px #0004; }.traffic-detail-dialog::backdrop { background:#0f172a88; backdrop-filter:blur(3px); }.traffic-detail-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:15px; }.traffic-detail-heading h2 { font:600 20px ui-monospace,monospace; overflow-wrap:anywhere; }#traffic-detail-body { font-size:12px; line-height:1.8; }#traffic-detail-body article { border:1px solid var(--tw-border); border-radius:8px; padding:12px; margin:10px 0; }#traffic-detail-body article h3 { font-weight:650; }#traffic-detail-body dl { display:grid; grid-template-columns:90px 1fr; gap:5px; font-size:11px; }#traffic-detail-body dt { color:var(--tw-muted); }#traffic-detail-body dd { overflow-wrap:anywhere; }#traffic-share-ip { margin-top:12px; }
+  .traffic-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); z-index:80; background:#17253c; color:#fff; padding:10px 18px; border-radius:9px; box-shadow:0 4px 20px #0002; font-size:12px; }
+  .traffic-guide { max-width:1450px; margin:28px auto 0; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:22px; padding:22px 4px; }.traffic-guide h2 { font-size:14px; font-weight:700; margin-bottom:9px; }.traffic-guide p { font-size:12px; line-height:1.85; color:#64748b; }.dark .traffic-guide p { color:#a0aec2; }.traffic-guide a { color:#6366f1; text-decoration:underline; }
+  @media(max-width:1150px) { .traffic-grid { grid-template-columns:255px minmax(0,1fr); gap:14px; }.traffic-input-card { padding:16px; }.traffic-stats { grid-template-columns:repeat(2,minmax(0,1fr)); }.traffic-orbit { display:none; }.traffic-chart-grid { grid-template-columns:1fr; } }
+  @media(max-width:850px) { .traffic-grid { grid-template-columns:minmax(0,1fr); }.traffic-hero { padding:22px; }#traffic-input { min-height:160px; }.traffic-empty { min-height:330px; }.traffic-switcher>span { width:100%; margin:7px 0 0 12px; }.traffic-chart-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }.traffic-guide { grid-template-columns:1fr; }.traffic-report-heading { padding:16px; } }
+  @media(max-width:480px) { .traffic-hero h1 { font-size:28px; }.traffic-hero-footer { gap:8px 15px; font-size:10px; }.traffic-hero { padding:20px; }.traffic-chart-grid { grid-template-columns:1fr; }.traffic-empty { padding:24px 16px; }.traffic-report-heading { flex-wrap:wrap; }#traffic-title { font-size:18px; }.traffic-pagination { padding:12px; }.traffic-table-scroll td { padding:10px; } }
+  @media print { #sidebar,body header,body footer,.share-trigger,#share-btn-floating,#feedback-btn,.traffic-input-card,.traffic-switcher,.traffic-guide,.traffic-export-actions,.traffic-filters,.traffic-pagination,#traffic-share,.traffic-text-button,#traffic-toast { display:none !important; }body>div { margin-left:0 !important; }main { padding:0 !important; }.traffic-workbench { --tw-surface:white; --tw-ink:#17253c; --tw-soft:#f8fafc; --tw-muted:#64748b; --tw-border:#ddd; }.traffic-grid { display:block; }.traffic-hero { background:white !important; padding:15px; margin-bottom:16px; }.traffic-card { box-shadow:none; break-inside:avoid; }.traffic-table-card { break-inside:auto; }.traffic-table-scroll { overflow:visible; }.traffic-hero-footer { display:none; }.traffic-chart-grid { grid-template-columns:1fr 1fr; }.traffic-stats { grid-template-columns:repeat(4,1fr); } }
+</style>

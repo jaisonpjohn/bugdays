@@ -152,6 +152,8 @@ export const toolGroups: ToolGroup[] = [
     href: "/network-tools",
     icon: "globe",
     items: [
+      { name: "IP & Cloud Lookup", href: "/ip-lookup", description: "Identify cloud ranges from IPs in bulk", keywords: ["ip address", "aws", "gcp", "azure", "cloudflare", "googlebot", "ipv6", "provider", "bot"] },
+      { name: "Access Log Analyzer", href: "/access-log-analyzer", description: "Inspect traffic, errors & client networks", keywords: ["nginx", "apache", "logs", "requests", "bot traffic", "json logs", "404"] },
       { name: "CIDR Calculator", href: "/cidr-calculator", description: "Subnet & IP range calculator", keywords: ["subnet", "netmask", "ip range"] },
       { name: "API Client", href: "/api-client", description: "Send HTTP requests from the browser", keywords: ["http", "rest", "postman", "curl", "request"] },
       { name: "Bulk API Invoker", href: "/bulk-api-invoker", description: "Run templated API requests from CSV", keywords: ["batch", "http", "csv", "runner"] },

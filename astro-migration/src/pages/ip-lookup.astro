@@ -1,0 +1,13 @@
+---
+import Layout from '../layouts/Layout.astro';
+import TrafficWorkbench from '../components/TrafficWorkbench.astro';
+const description = 'Look up IP addresses in bulk to identify AWS, Google Cloud, Azure, Cloudflare, and Google crawler ranges. Analyze locally, share reports, and export CSV or Excel.';
+---
+<Layout title="Bulk IP Lookup & Cloud Provider Checker" description={description} keywords="IP lookup, bulk IP lookup, AWS IP checker, GCP IP lookup, Azure IP lookup, cloud provider IP, IPv6 lookup, Googlebot IP check" toolId="ip-lookup" breadcrumb={[{ name: 'Network Tools', href: '/network-tools' }, { name: 'IP & Cloud Lookup' }]} jsonLd={[{ '@context': 'https://schema.org', '@type': 'SoftwareApplication', name: 'Bug Days IP & Cloud Lookup', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any modern browser', description, url: 'https://bugdays.com/ip-lookup/', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } }]}>
+  <TrafficWorkbench mode="ip" />
+  <section class="traffic-guide">
+    <div><h2>Who operates this IP range?</h2><p>Paste IPv4 or IPv6 addresses to compare them with published AWS, Google Cloud, Azure, Cloudflare, and Google common-crawler ranges. Inspect the matching CIDR, service, and published region. Multiple service matches can describe the same address.</p></div>
+    <div><h2>Investigate traffic in bulk</h2><p>Deduplicate IPs, count occurrences, and filter by provider or region. Share a report with its original dataset date, copy a spreadsheet-ready table, or download CSV and Excel. For requests, errors, and timing, open the <a href="/access-log-analyzer/">access-log analyzer</a>.</p></div>
+    <div><h2>Clear sources, useful context</h2><p>Provider lists are refreshed through a cached public-data endpoint, with a bundled snapshot available as a fallback. Your pasted IPs are matched in your browser. Cloud ownership is a clue for an investigation, not a bot verdict; unmatched addresses are not necessarily residential.</p></div>
+  </section>
+</Layout>

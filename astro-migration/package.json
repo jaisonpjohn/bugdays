@@ -7,6 +7,9 @@
     "build": "astro build",
     "test:grpc-client": "node scripts/check-grpc-client.mjs",
     "test:gzip-seo": "node scripts/check-gzip-seo.mjs",
+    "refresh:ip-ranges": "node scripts/refresh-ip-ranges.mjs",
+    "test:traffic": "node --test tests/traffic-analysis.test.mjs",
+    "test:traffic:browser": "playwright test",
     "preview": "astro preview",
     "astro": "astro"
   },
@@ -29,6 +32,7 @@
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@types/pako": "2.0.4"
   }
 }

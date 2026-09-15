@@ -5,6 +5,8 @@
 // Everything runs in the browser — nothing is uploaded.
 
 import { parseTerminalTable } from './ascii-table';
+import { parseIp } from './ip-address';
+import { parseLogLine } from './traffic-analysis';
 
 export interface ToolAction {
   label: string;
@@ -488,11 +490,25 @@ const detectColor: Detector = (input) => {
 const detectIpCidr: Detector = (input) => {
   const t = input.trim();
   const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(\/\d{1,2})?$/.exec(t);
-  if (!m) return null;
+  if (!m || !m[5] || Number(m[5].slice(1)) > 32) return null;
   if ([m[1], m[2], m[3], m[4]].some(o => Number(o) > 255)) return null;
   return {
     id: 'cidr', title: m[5] ? 'CIDR range' : 'IPv4 address', confidence: 94,
     primary: { label: 'Open in CIDR Calculator', toolId: 'cidr-calculator', href: '/cidr-calculator', data: { cidr: m[5] ? t : t + '/32' } },
+  };
+};
+
+const detectTraffic: Detector = (input) => {
+  const sample = input.trim().split('\n').filter(line => line.trim()).slice(0, 20);
+  if (sample.length && sample.filter(line => parseLogLine(line.trim())).length >= Math.max(1, sample.length / 2)) {
+    return { id: 'access-log', title: 'Web access log', confidence: 97, primary: { label: 'Analyze traffic and client IPs', toolId: 'access-log-analyzer', href: '/access-log-analyzer', data: { input } } };
+  }
+  const tokens = input.trim().split(/[\s,;]+/);
+  if (!tokens.length || !tokens.slice(0, 100).every(token => parseIp(token))) return null;
+  const first = parseIp(tokens[0])!;
+  return { id: 'ip-addresses', title: tokens.length === 1 ? `IPv${first.version} address` : 'IP address list', confidence: 95,
+    primary: { label: 'Look up cloud providers and crawler ranges', toolId: 'ip-lookup', href: '/ip-lookup', data: { input } },
+    ...(tokens.length === 1 && first.version === 4 ? { secondary: { label: 'Open in CIDR Calculator', toolId: 'cidr-calculator', href: '/cidr-calculator', data: { cidr: first.address + '/32' } } } : {}),
   };
 };
 
@@ -535,7 +551,7 @@ const detectHex: Detector = (input) => {
 
 const DETECTORS: Detector[] = [
   detectJwt, detectDataUriImage, detectThreadDump, detectJson, detectDdl, detectCertificate, detectXml,
-  detectEpoch, detectIsoDate, detectUuid, detectColor, detectIpCidr,
+  detectEpoch, detectIsoDate, detectUuid, detectColor, detectIpCidr, detectTraffic,
   detectCron, detectUnixPerms, detectUrl, detectUrlEncoded, detectQueryString,
   detectBase64, detectHex, detectToml, detectAsciiTable, detectYaml, detectCsv,
 ];
