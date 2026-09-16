@@ -4,7 +4,7 @@ import type { IpDataset } from './ip-datasets';
 import { mergeIpDatasets } from './ip-range-database';
 import { filterIpRows, reportShareSnapshot, validateReport, ipTableRows, csvTable, safeSpreadsheetCell } from './traffic-analysis';
 import type { TrafficReport, IpRow, CountRow, TrafficMode } from './traffic-analysis';
-import { validateIpEnrichment } from './ip-enrichment';
+import { normalizeIpWhois, normalizePtrResponse, reverseDnsName, validateIpEnrichment } from './ip-enrichment';
 import type { IpEnrichment } from './ip-enrichment';
 import { createXlsxBlob } from './spreadsheet-export';
 
@@ -41,7 +41,7 @@ export function initTrafficWorkbench() {
   let report: TrafficReport | null = null;
   let dataset: IpDataset = { version: 1, fetchedAt: '', sources: [], ranges: [], failures: [] };
   const knownIps = new Set<string>();
-  const enrichmentRequests = new Map<string, Promise<IpEnrichment>>(), enrichmentErrors = new Map<string, string>();
+  const enrichmentRequests = new Map<string, Promise<IpEnrichment>>(), enrichmentResults = new Map<string, IpEnrichment>(), enrichmentErrors = new Map<string, string>();
   let worker: Worker | null = null, revision = 0, timer = 0, toastTimer = 0, page = 0, activeIp: IpRow | null = null, shareOverride: TrafficReport | null = null;
 
   function toast(message: string) { const el = get('toast'); el.textContent = message; el.hidden = false; window.clearTimeout(toastTimer); toastTimer = window.setTimeout(() => { el.hidden = true; }, 3500); }
@@ -72,18 +72,57 @@ export function initTrafficWorkbench() {
     return dataset;
   }
 
+  async function externalJson(url: string, accept = 'application/json') {
+    const response = await fetch(url, { headers: { Accept: accept }, signal: AbortSignal.timeout(12_000) });
+    if (!response.ok) throw Object.assign(new Error(`Lookup service returned ${response.status}.`), { status: response.status });
+    return response.json();
+  }
+
+  async function requestLiveEnrichment(ip: string): Promise<IpEnrichment> {
+    const warnings: string[] = [], sources: IpEnrichment['sources'] = [];
+    const [geoResult, ptrResult] = await Promise.allSettled([
+      externalJson(`https://ipwho.is/${encodeURIComponent(ip)}`),
+      externalJson(`https://cloudflare-dns.com/dns-query?name=${encodeURIComponent(reverseDnsName(ip))}&type=PTR`, 'application/dns-json'),
+    ]);
+    let providerData: Pick<IpEnrichment, 'network' | 'location' | 'security'> = {};
+    if (geoResult.status === 'fulfilled') {
+      try { providerData = normalizeIpWhois(geoResult.value, ip); sources.push('ipwhois'); }
+      catch { warnings.push('Live ISP and location data could not be verified.'); }
+    } else warnings.push((geoResult.reason as { status?: number })?.status === 429 ? 'Live ISP and location lookups reached their current service limit. Try again later.' : 'Live ISP and location data is temporarily unavailable.');
+    let reverseDns: string[] = [];
+    if (ptrResult.status === 'fulfilled') { reverseDns = normalizePtrResponse(ptrResult.value); sources.push('cloudflare-dns'); }
+    else warnings.push('Reverse DNS is temporarily unavailable.');
+    let result: IpEnrichment = { version: 1, ip, lookedUpAt: new Date().toISOString(), ...providerData, reverseDns, sources, warnings };
+
+    // Same-origin fallback supports restrictive networks and an optional paid server key.
+    if (!sources.includes('ipwhois')) {
+      try {
+        const response = await fetch('/api/ip-enrich', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ip }), signal: AbortSignal.timeout(12_000) });
+        if (response.ok) {
+          const fallback = validateIpEnrichment(await response.json(), ip);
+          const mergedSources = [...new Set([...sources, ...fallback.sources])] as IpEnrichment['sources'];
+          const mergedWarnings = [...new Set([...warnings, ...fallback.warnings])]
+            .filter(message => !mergedSources.includes('ipwhois') || !message.startsWith('Live ISP'))
+            .filter(message => !mergedSources.includes('cloudflare-dns') || !message.startsWith('Reverse DNS'));
+          result = { ...result, ...(fallback.network ? { network: fallback.network } : {}), ...(fallback.location ? { location: fallback.location } : {}), ...(fallback.security ? { security: fallback.security } : {}), reverseDns: reverseDns.length ? reverseDns : fallback.reverseDns, sources: mergedSources, warnings: mergedWarnings };
+        }
+      } catch { /* The direct result and its clear warning remain useful. */ }
+    }
+    return validateIpEnrichment(result, ip);
+  }
+
   async function loadEnrichment(row: IpRow, retry = false) {
+    if (retry) { row.enrichment = undefined; enrichmentResults.delete(row.address); enrichmentErrors.delete(row.address); }
     if (row.enrichment || row.category === 'special') return row.enrichment;
-    if (retry) enrichmentErrors.delete(row.address);
+    const cached = enrichmentResults.get(row.address);
+    if (cached && !retry) { row.enrichment = cached; return cached; }
     if (enrichmentErrors.has(row.address) && !retry) return;
     const existing = enrichmentRequests.get(row.address);
     if (existing) return existing;
     const request = (async () => {
-      const response = await fetch('/api/ip-enrich', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ip: row.address }), signal: AbortSignal.timeout(12_000) });
-      const data = await response.json().catch(() => null) as (IpEnrichment & { error?: string }) | null;
-      if (!response.ok || !data) throw new Error(data?.error || 'Live IP details are temporarily unavailable.');
-      const enrichment = validateIpEnrichment(data, row.address);
+      const enrichment = await requestLiveEnrichment(row.address);
       row.enrichment = enrichment;
+      enrichmentResults.set(row.address, enrichment);
       enrichmentErrors.delete(row.address);
       return enrichment;
     })();
@@ -234,7 +273,7 @@ export function initTrafficWorkbench() {
       enrichment.sources.includes('ipwhois') ? '<a href="https://ipwhois.io/" target="_blank" rel="noopener noreferrer">IPWhois.io</a>' : '',
       enrichment.sources.includes('cloudflare-dns') ? '<a href="https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/" target="_blank" rel="noopener noreferrer">Cloudflare DNS</a>' : '',
     ].filter(Boolean).join(' · ');
-    return `<article class="traffic-enrichment-card"><div class="traffic-enrichment-heading"><h3>Live ISP, ASN & location</h3><span>${escapeHtml(date(enrichment.lookedUpAt))}</span></div><dl>${rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`).join('')}</dl><p class="traffic-small">${sources ? `Sources: ${sources}. ` : ''}IP geolocation is approximate network context, not a street address or proof of a person’s location.${enrichment.warnings.length ? ` ${escapeHtml(enrichment.warnings.join(' '))}` : ''}</p></article>`;
+    return `<article class="traffic-enrichment-card"><div class="traffic-enrichment-heading"><h3>Live ISP, ASN & location</h3><span>${escapeHtml(date(enrichment.lookedUpAt))}</span></div><dl>${rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`).join('')}</dl><p class="traffic-small">${sources ? `Sources: ${sources}. ` : ''}IP geolocation is approximate network context, not a street address or proof of a person’s location.${enrichment.warnings.length ? ` ${escapeHtml(enrichment.warnings.join(' '))}` : ''}</p>${network ? '' : '<button type="button" class="traffic-button" data-enrichment-retry>Retry live lookup</button>'}</article>`;
   }
 
   function renderDetail() {

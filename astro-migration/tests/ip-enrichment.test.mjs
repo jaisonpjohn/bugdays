@@ -4,12 +4,7 @@ import { onRequestPost } from '../functions/api/ip-enrich.ts';
 import { reverseDnsName, validateIpEnrichment } from '../src/lib/ip-enrichment.ts';
 
 const originalFetch = globalThis.fetch;
-const originalCaches = globalThis.caches;
-afterEach(() => {
-  globalThis.fetch = originalFetch;
-  if (originalCaches === undefined) delete globalThis.caches;
-  else globalThis.caches = originalCaches;
-});
+afterEach(() => { globalThis.fetch = originalFetch; });
 
 const invoke = async (body, env = {}) => onRequestPost({
   request: new Request('https://bugdays.com/api/ip-enrich', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
@@ -88,26 +83,4 @@ test('a configured paid key uses the pro endpoint without returning the key', as
   const text = await response.text();
   assert.ok(urls.some(url => url.startsWith('https://ipwhois.pro/8.8.8.8?key=private-test-key')));
   assert.ok(!text.includes('private-test-key'));
-});
-
-test('edge caching reuses normalized public results without another upstream lookup', async () => {
-  const stored = new Map();
-  globalThis.caches = { default: {
-    async match(request) { return stored.get(request.url)?.clone(); },
-    async put(request, response) { stored.set(request.url, response.clone()); },
-  } };
-  let calls = 0;
-  globalThis.fetch = async input => {
-    calls++;
-    return String(input).includes('cloudflare-dns')
-      ? Response.json({ Status: 0, Answer: [{ type: 12, data: 'one.one.one.one.' }] })
-      : Response.json({ ip: '1.1.1.1', success: true, country: 'Australia', connection: { asn: 13335, org: 'Cloudflare, Inc.' } });
-  };
-
-  const first = await invoke({ ip: '1.1.1.1' });
-  const second = await invoke({ ip: '1.1.1.1' });
-  assert.equal(first.headers.get('X-BugDays-Cache'), 'MISS');
-  assert.equal(second.headers.get('X-BugDays-Cache'), 'HIT');
-  assert.equal(calls, 2);
-  assert.equal((await second.json()).network.asn, 13335);
 });

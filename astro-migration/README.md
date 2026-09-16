@@ -18,7 +18,7 @@ The Astro site is static. Cloudflare Pages Functions under `functions/` provide 
 
 The cloud and hosting IP lookup uses a D1 prefix index. Browsers send batches of normalized IP addresses to `/api/ip-lookup`; the API returns only matching ranges. The multi-megabyte global catalog is not included in the deployed static site.
 
-For a single IP address—or an address a user deliberately opens from a bulk report—`/api/ip-enrich` adds live ISP, ASN, organization, approximate location, timezone, and reverse DNS data. It uses the no-key IPWhois.io endpoint and Cloudflare DNS over HTTPS, caches successful public results at the edge for 24 hours, and does not write them to D1. Private and other special-use addresses stay local to the function. A paid IPWhois.io account can be enabled with the Cloudflare secret `IPWHOIS_API_KEY`; never put that key in source control or a public environment variable.
+For a single IP address—or an address a user deliberately opens from a bulk report—the browser adds live ISP, ASN, organization, approximate location, timezone, and reverse DNS data from the no-key IPWhois.io endpoint and Cloudflare DNS over HTTPS. `/api/ip-enrich` is a same-origin fallback for restrictive networks and does not write results to D1. Private and other special-use addresses never reach either external service. A paid IPWhois.io account can be enabled for the fallback with the Cloudflare secret `IPWHOIS_API_KEY`; never put that key in source control or a public environment variable.
 
 To refresh the database snapshot:
 

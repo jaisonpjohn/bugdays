@@ -1,13 +1,12 @@
 import { parseIp, specialIpLabel } from '../../src/lib/ip-address.ts';
-import { normalizeIpWhois, normalizePtrResponse, reverseDnsName, validateIpEnrichment } from '../../src/lib/ip-enrichment.ts';
+import { normalizeIpWhois, normalizePtrResponse, reverseDnsName } from '../../src/lib/ip-enrichment.ts';
 import type { IpEnrichment } from '../../src/lib/ip-enrichment.ts';
 
 interface Env { IPWHOIS_API_KEY?: string }
-interface CacheLike { match(request: Request): Promise<Response | undefined>; put(request: Request, response: Response): Promise<void> }
-interface Context { request: Request; env: Env; waitUntil?(promise: Promise<unknown>): void }
+interface Context { request: Request; env: Env }
 
 const responseHeaders = { 'Cache-Control': 'private, no-store', 'Content-Type': 'application/json; charset=utf-8', 'X-Content-Type-Options': 'nosniff' };
-const reply = (body: unknown, status = 200, cache = 'BYPASS') => new Response(JSON.stringify(body), { status, headers: { ...responseHeaders, 'X-BugDays-Cache': cache } });
+const reply = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: responseHeaders });
 
 class UpstreamError extends Error {
   status: number;
@@ -22,10 +21,6 @@ async function readJson(url: string, headers: Record<string, string> = {}) {
   const body = await response.text();
   if (body.length > 100_000) throw new Error('Upstream response is too large.');
   return JSON.parse(body);
-}
-
-function cacheApi(): CacheLike | undefined {
-  return (globalThis as any).caches?.default as CacheLike | undefined;
 }
 
 async function enrich(ip: string, env: Env): Promise<IpEnrichment> {
@@ -68,22 +63,7 @@ export async function onRequestPost(context: Context) {
   const specialUse = specialIpLabel(parsed);
   if (specialUse) return reply({ version: 1, ip: parsed.address, lookedUpAt: new Date().toISOString(), specialUse, reverseDns: [], sources: [], warnings: [] } satisfies IpEnrichment);
 
-  const cache = cacheApi();
-  const cacheKey = new Request(new URL(`/api/ip-enrich/cache/${encodeURIComponent(parsed.address)}`, context.request.url), { method: 'GET' });
-  if (cache) {
-    try {
-      const cached = await cache.match(cacheKey);
-      if (cached) return reply(validateIpEnrichment(await cached.json(), parsed.address), 200, 'HIT');
-    } catch { /* A corrupt or unavailable edge cache must not break the lookup. */ }
-  }
-
-  const result = await enrich(parsed.address, context.env || {});
-  if (cache) {
-    const ttl = result.sources.length ? 86_400 : 300;
-    const write = cache.put(cacheKey, new Response(JSON.stringify(result), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': `public, max-age=${ttl}` } })).catch(() => undefined);
-    if (context.waitUntil) context.waitUntil(write); else await write;
-  }
-  return reply(result, 200, 'MISS');
+  return reply(await enrich(parsed.address, context.env || {}));
 }
 
 export function onRequestGet() {

@@ -54,10 +54,23 @@ test('auto-analysis, filters, IPv6 details and keyboard dialog dismissal', async
 });
 
 test('single IP lookup loads live ISP, ASN, location and reverse DNS into a shareable report', async ({ page }, testInfo) => {
-  const enrichmentBodies: unknown[] = [];
+  const fallbackBodies: unknown[] = [], directUrls: string[] = [];
   await page.route('**/api/ip-enrich', route => {
-    enrichmentBodies.push(route.request().postDataJSON());
+    fallbackBodies.push(route.request().postDataJSON());
     return route.fulfill({ json: fixtureEnrichment });
+  });
+  await page.route('https://ipwho.is/8.8.8.8', route => {
+    directUrls.push(route.request().url());
+    return route.fulfill({ json: {
+      ip: '8.8.8.8', success: true, continent: 'North America', continent_code: 'NA', country: 'United States', country_code: 'US',
+      region: 'California', region_code: 'CA', city: 'San Jose', postal: '95025', latitude: 37.33, longitude: -121.89,
+      flag: { emoji: '🇺🇸' }, connection: { asn: 15169, org: 'Google LLC', isp: 'Google Public DNS', domain: 'google.com' },
+      timezone: { id: 'America/Los_Angeles', utc: '-07:00' },
+    } });
+  });
+  await page.route('https://cloudflare-dns.com/dns-query?*', route => {
+    directUrls.push(route.request().url());
+    return route.fulfill({ json: { Status: 0, Answer: [{ type: 12, data: 'dns.google.' }] } });
   });
   await page.goto('/ip-lookup/');
   await page.locator('#traffic-input').fill('8.8.8.8');
@@ -74,7 +87,8 @@ test('single IP lookup loads live ISP, ASN, location and reverse DNS into a shar
   const state = JSON.parse(LZString.decompressFromEncodedURIComponent(url.split('#lz:')[1])!);
   expect(state.d.report.ips[0].enrichment.network.asn).toBe(15169);
   expect(state.d.report.ips[0].enrichment.reverseDns).toEqual(['dns.google']);
-  expect(enrichmentBodies).toEqual([{ ip: '8.8.8.8' }]);
+  expect(fallbackBodies).toEqual([]);
+  expect(directUrls).toHaveLength(2);
 });
 
 test('IP report sends only IPs for matching and shares its filtered snapshot', async ({ page }) => {
