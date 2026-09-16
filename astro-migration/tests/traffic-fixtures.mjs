@@ -25,6 +25,17 @@ export const fixtureDataset = {
   ],
 };
 
+export const fixtureEnrichment = {
+  version: 1,
+  ip: '8.8.8.8',
+  lookedUpAt: '2026-09-15T20:00:00.000Z',
+  network: { asn: 15169, organization: 'Google LLC', isp: 'Google Public DNS', domain: 'google.com' },
+  location: { continent: 'North America', continentCode: 'NA', country: 'United States', countryCode: 'US', region: 'California', regionCode: 'CA', city: 'San Jose', postal: '95025', latitude: 37.33, longitude: -121.89, timezone: 'America/Los_Angeles', utcOffset: '-07:00', flagEmoji: '🇺🇸' },
+  reverseDns: ['dns.google'],
+  sources: ['ipwhois', 'cloudflare-dns'],
+  warnings: [],
+};
+
 export const fixtureLog = [
   '3.5.140.1 - - [14/Sep/2026:10:00:00 +0000] "GET /api/orders?token=DO_NOT_SHARE HTTP/1.1" 200 1024 "https://private.example/?secret=HIDDEN" "PRIVATE_USER_AGENT"',
   '3.5.140.1 - - [14/Sep/2026:10:00:30 +0000] "GET /missing HTTP/1.1" 404 128',

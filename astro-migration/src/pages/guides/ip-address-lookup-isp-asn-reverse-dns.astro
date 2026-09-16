@@ -1,0 +1,66 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+
+const guide = guideBySlug('ip-address-lookup-isp-asn-reverse-dns');
+---
+
+<GuideLayout guide={guide} keywords="IP address lookup, ISP lookup, ASN lookup, find IP owner, IP location lookup, reverse DNS lookup, PTR lookup, cloud provider IP lookup, IP organization lookup, IPv4 lookup, IPv6 lookup">
+  <p>An IP address lookup is most useful when it combines several independent clues. The ASN describes the network announcing the route. An ISP or organization name describes the operator associated with that network. Reverse DNS may provide a hostname chosen by the address administrator. Geolocation estimates where the network endpoint is located. A cloud-provider range can identify infrastructure such as AWS, Azure, Google Cloud, or DigitalOcean.</p>
+
+  <blockquote><strong>An IP address does not identify a person.</strong> Public network data can identify an ISP, hosting company, corporate network, or allocation. Only the provider can connect a dynamically assigned customer address to an account at a specific time, subject to its records and applicable legal process.</blockquote>
+
+  <h2>What an IP address lookup can show</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Field</th><th>What it means</th><th>Important limitation</th></tr></thead>
+    <tbody>
+      <tr><td>ASN</td><td>The Autonomous System Number associated with the network routing the address.</td><td>The routing organization is not always the registered owner or end user.</td></tr>
+      <tr><td>ISP / organization</td><td>The internet provider, hosting operator, or organization associated with the address block.</td><td>A shared ISP name cannot identify an individual subscriber.</td></tr>
+      <tr><td>Approximate location</td><td>A country, region, city, coordinates, and time zone estimated for the network.</td><td>It may describe a gateway, datacenter, or provider office rather than the device.</td></tr>
+      <tr><td>Reverse DNS</td><td>A PTR record mapping the address back to a hostname, when the administrator published one.</td><td>Many addresses have no PTR record, and a hostname is not proof of ownership or intent.</td></tr>
+      <tr><td>Cloud / hosting range</td><td>A match against an official operator feed or a prefix originated by a hosting ASN.</td><td>It identifies infrastructure, not the customer renting it or the behavior of a request.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Start by distinguishing public and special-use addresses</h2>
+  <p>Before asking who operates an address, determine whether it is globally routable. Private IPv4 ranges such as <code>10.0.0.0/8</code>, loopback addresses such as <code>127.0.0.1</code>, IPv6 unique-local addresses, link-local addresses, multicast ranges, and documentation prefixes do not identify a public Internet connection. A public lookup service should recognize those categories without sending them to an external geolocation provider.</p>
+  <p>The <a href="/ip-lookup/">Bug Days IP address lookup</a> accepts normalized IPv4 and IPv6 addresses. IPv4-mapped IPv6 values are grouped with their IPv4 equivalent, while special-use addresses receive a local classification.</p>
+
+  <h2>Read the ASN and organization together</h2>
+  <p>An autonomous system is a network or group of networks that presents a routing policy to the Internet. The ASN answers a routing question: which autonomous system announces this path? The organization and ISP fields answer a related commercial or operational question: which named network is associated with the address?</p>
+  <p>Those names frequently agree, but not always. A business may use address space registered to one organization and routed by another. A CDN may announce the same service from many locations. A cloud customer normally appears under the cloud provider’s ASN, not under the customer’s company name. Treat the ASN, organization, ISP, and matching prefix as related evidence rather than interchangeable definitions of “owner.”</p>
+
+  <h2>Use reverse DNS as a clue</h2>
+  <p>A reverse-DNS lookup converts an address into its <code>in-addr.arpa</code> name for IPv4 or <code>ip6.arpa</code> name for IPv6, then requests a PTR record. For example, the reverse name for <code>8.8.8.8</code> is <code>8.8.8.8.in-addr.arpa</code>. A returned hostname can reveal a mail-server name, broadband pool, datacenter convention, or service brand.</p>
+  <p>Bug Days sends the PTR query through the unauthenticated <a href="https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/make-api-requests/dns-json/" target="_blank" rel="noopener">Cloudflare DNS-over-HTTPS JSON API</a>. A missing PTR response is ordinary; reverse DNS is optional. A plausible hostname also needs context. Anyone controlling the reverse zone can choose the record, so do not treat its text as authenticated identity.</p>
+
+  <h2>Treat IP geolocation as approximate</h2>
+  <p>City and coordinate results are estimates derived from allocation data, routing observations, provider corrections, and other signals. They can be useful for spotting a surprising country, selecting a time zone, or understanding where a network edge may sit. They cannot locate a person, house, or device.</p>
+  <p>Mobile carriers, corporate tunnels, VPNs, anycast services, satellite providers, and centralized ISP gateways can place the apparent network location far from the user. Cloudflare’s own <a href="https://developers.cloudflare.com/network/ip-geolocation/" target="_blank" rel="noopener">IP geolocation guidance</a> says the data should not be the sole signal for precise or compliance-critical decisions. Bug Days labels city, region, and coordinates as approximate for that reason.</p>
+  <p>Live ASN, ISP, organization, and geolocation fields come from the documented <a href="https://ipwhois.io/documentation" target="_blank" rel="noopener">IPWhois.io API</a>. The displayed lookup time matters because address assignments, routes, and provider databases can change.</p>
+
+  <h2>Check official cloud and crawler ranges separately</h2>
+  <p>A generic geolocation provider may name a cloud company, but official provider feeds can add more specific evidence: an AWS service code, Azure service tag, Google Cloud region, Cloudflare proxy range, GitHub function, or a crawler range published by its operator. Hosting providers without a detailed public service feed can still be checked against current BGP-origin prefixes.</p>
+  <p>Bug Days keeps those range matches distinct from live geolocation. An official feed is labeled “Official published feed.” Hosting coverage based on routing is labeled “Current BGP origin.” This prevents an approximate city from being confused with a provider-published cloud region and prevents a routing match from being presented as proof of a particular product or customer.</p>
+
+  <h2>Run one lookup or investigate a complete list</h2>
+  <ol>
+    <li>Paste an IPv4 address, IPv6 address, column of IPs, or text containing addresses into the lookup.</li>
+    <li>For a single public IP, review the automatically loaded ISP, ASN, organization, approximate location, time zone, reverse DNS, and provider-range evidence.</li>
+    <li>For a bulk list, filter the report by cloud, hosting, CDN, service, crawler, special-use, or unmatched classification.</li>
+    <li>Open any interesting row to request live context for that selected address. Bug Days does not send the complete bulk list to the live enrichment services.</li>
+    <li>Share one address or the filtered investigation. Saved enrichment travels with the shared snapshot, so the recipient sees the same evidence and lookup time.</li>
+    <li>Export CSV or Excel when you need sortable columns for ASN, organization, ISP, approximate location, reverse DNS, matched CIDR, service, and evidence.</li>
+  </ol>
+
+  <h2>Apply the result to access-log investigation</h2>
+  <p>Network context becomes actionable only when combined with behavior. A hosted address requesting <code>/.env</code> across many sites is a different signal from the same provider address calling your documented API with valid credentials. A crawler-range match should be combined with request patterns and the operator’s verification procedure. A Cloudflare address in an origin log may indicate that the wrong field was analyzed and the true client address is in a trusted proxy-generated field.</p>
+  <p>Use the <a href="/access-log-analyzer/">access-log analyzer</a> to connect addresses to request counts, paths, status codes, time buckets, and errors. The companion guide on <a href="/guides/identify-cloud-hosting-ips-in-access-logs/">identifying cloud, hosting, and crawler IPs in access logs</a> explains how to avoid turning infrastructure evidence into a premature bot verdict.</p>
+
+  <h2>What is shared and what stays local</h2>
+  <p>Raw access-log lines, headers, query strings, and user-agent strings remain in the browser. Bulk matching sends only normalized unique IP addresses to the Bug Days range API. Opening one public address sends only that address for live ISP/geolocation enrichment and its derived reverse-DNS query. Results are cached briefly at the edge to reduce repeated third-party requests and are not written into the provider-range database.</p>
+  <p>Sharing is explicit. A shared report contains the selected IP evidence and summary fields visible in the report, not the original pasted input. If IP addresses are restricted data in your organization, use the approved internal export or sharing channel instead of a public link.</p>
+
+  <a slot="related" href="/guides/identify-cloud-hosting-ips-in-access-logs/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Identify hosting IPs in access logs</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Combine network evidence with request paths, errors, timing, and volume.</span></a>
+  <a slot="related" href="/access-log-analyzer/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Analyze a web access log</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Extract IPs locally and build a shareable traffic investigation.</span></a>
+</GuideLayout>

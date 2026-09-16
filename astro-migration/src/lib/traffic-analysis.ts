@@ -2,10 +2,12 @@ import { parseIp, parseCidr, extractIps, specialIpLabel } from './ip-address.ts'
 import type { IpAddress } from './ip-address.ts';
 import { sourceIds } from './ip-datasets.ts';
 import type { IpDataset, IpSource, SourceKind, SourceMethod } from './ip-datasets.ts';
+import { validateIpEnrichment } from './ip-enrichment.ts';
+import type { IpEnrichment } from './ip-enrichment.ts';
 
 export type TrafficMode = 'ip' | 'log';
 export interface RangeMatch { source: string; cidr: string; service: string; region: string; kind: SourceKind; method: SourceMethod }
-export interface IpRow { address: string; version: 4 | 6; count: number; category: SourceKind | 'special' | 'unmatched'; label: string; matches: RangeMatch[]; errors: number; bytes: number }
+export interface IpRow { address: string; version: 4 | 6; count: number; category: SourceKind | 'special' | 'unmatched'; label: string; matches: RangeMatch[]; errors: number; bytes: number; enrichment?: IpEnrichment }
 export interface CountRow { label: string; count: number }
 export interface TrafficReport {
   v: 1; kind: 'bugdays-traffic-report'; mode: TrafficMode; createdAt: string;
@@ -202,7 +204,12 @@ export async function analyzeTraffic(text: string, mode: TrafficMode, dataset: I
 
 export function filterIpRows(report: TrafficReport, query = '', source = '', category = '', sort = 'count'): IpRow[] {
   const needle = query.trim().toLowerCase();
-  const rows = report.ips.filter(row => (!source || row.matches.some(match => match.source === source)) && (!category || row.category === category || row.matches.some(match => match.kind === category)) && (!needle || [row.address, row.label, ...row.matches.flatMap(match => [match.source, match.service, match.region, match.cidr])].some(value => value.toLowerCase().includes(needle))));
+  const rows = report.ips.filter(row => (!source || row.matches.some(match => match.source === source)) && (!category || row.category === category || row.matches.some(match => match.kind === category)) && (!needle || [
+    row.address, row.label,
+    row.enrichment?.network?.asn ? `AS${row.enrichment.network.asn}` : '', row.enrichment?.network?.organization || '', row.enrichment?.network?.isp || '', row.enrichment?.network?.domain || '',
+    row.enrichment?.location?.country || '', row.enrichment?.location?.countryCode || '', row.enrichment?.location?.region || '', row.enrichment?.location?.city || '', row.enrichment?.location?.timezone || '',
+    ...(row.enrichment?.reverseDns || []), ...row.matches.flatMap(match => [match.source, match.service, match.region, match.cidr]),
+  ].some(value => value.toLowerCase().includes(needle))));
   return rows.sort((a, b) => sort === 'errors' ? b.errors - a.errors || b.count - a.count : sort === 'address' ? a.version - b.version || (parseIp(a.address)!.value < parseIp(b.address)!.value ? -1 : parseIp(a.address)!.value > parseIp(b.address)!.value ? 1 : 0) : b.count - a.count || a.address.localeCompare(b.address));
 }
 
@@ -243,7 +250,8 @@ export function validateReport(input: unknown): TrafficReport {
       return { source: match.source, kind: match.kind, method, cidr: match.cidr, service: str(match.service, 100), region: str(match.region, 100) };
     });
     if (['cloud', 'hosting', 'cdn', 'crawler', 'service'].includes(row.category) && !matches.some(match => match.kind === row.category)) return fail();
-    return { address: ip.address, version: ip.version, count: num(row.count), category: row.category, label: str(row.label, 100), matches, errors: num(row.errors), bytes: num(row.bytes) };
+    const enrichment = row.enrichment === undefined ? undefined : validateIpEnrichment(row.enrichment, ip.address);
+    return { address: ip.address, version: ip.version, count: num(row.count), category: row.category, label: str(row.label, 100), matches, errors: num(row.errors), bytes: num(row.bytes), ...(enrichment ? { enrichment } : {}) };
   });
   const counts = (value: unknown, max: number) => list(value, max).map((row: any) => ({ label: str(row.label), count: num(row.count) }));
   return { v: 1, kind: 'bugdays-traffic-report', mode: obj.mode, createdAt: str(obj.createdAt, 100), ...(obj.title !== undefined ? { title: str(obj.title, 120) } : {}), dataset: { fetchedAt: str(obj.dataset.fetchedAt, 100), sources, failures: list(obj.dataset.failures, 64).map((s: unknown) => str(s, 100)) }, summary, ips, paths: counts(obj.paths, MAX_LINES), statuses: counts(obj.statuses, 500), timeline: counts(obj.timeline, 200), bucketMinutes: num(obj.bucketMinutes), issues: list(obj.issues, 8).map((issue: any) => ({ line: num(issue.line), reason: str(issue.reason) })), ...(obj.shared ? { shared: { includedIps: num(obj.shared.includedIps), totalIps: num(obj.shared.totalIps), scope: str(obj.shared.scope) } } : {}) };
@@ -251,7 +259,19 @@ export function validateReport(input: unknown): TrafficReport {
 
 export function ipTableRows(report: TrafficReport, rows = report.ips): string[][] {
   const names = new Map(report.dataset.sources.map(source => [source.id, source.name]));
-  return [['IP address', 'IP version', 'Occurrences', 'Classification', 'Provider', 'Evidence', 'Published region', 'Service', 'Matched CIDR', '4xx/5xx responses', 'Response bytes'], ...rows.map(row => [row.address, String(row.version), String(row.count), row.label || row.category, [...new Set(row.matches.map(m => names.get(m.source) || m.source))].join('; '), [...new Set(row.matches.map(m => m.method === 'official' ? 'Official provider feed' : 'Current BGP origin'))].join('; '), [...new Set(row.matches.map(m => m.region).filter(Boolean))].join('; '), [...new Set(row.matches.map(m => m.service))].join('; '), [...new Set(row.matches.map(m => m.cidr))].join('; '), String(row.errors), String(row.bytes)])];
+  return [[
+    'IP address', 'IP version', 'Occurrences', 'Classification', 'Provider', 'Evidence', 'Published region', 'Service', 'Matched CIDR',
+    'ASN', 'Network organization', 'ISP', 'Approximate country', 'Approximate region', 'Approximate city', 'Time zone', 'Reverse DNS',
+    '4xx/5xx responses', 'Response bytes',
+  ], ...rows.map(row => [
+    row.address, String(row.version), String(row.count), row.label || row.category,
+    [...new Set(row.matches.map(m => names.get(m.source) || m.source))].join('; '),
+    [...new Set(row.matches.map(m => m.method === 'official' ? 'Official provider feed' : 'Current BGP origin'))].join('; '),
+    [...new Set(row.matches.map(m => m.region).filter(Boolean))].join('; '), [...new Set(row.matches.map(m => m.service))].join('; '), [...new Set(row.matches.map(m => m.cidr))].join('; '),
+    row.enrichment?.network?.asn ? `AS${row.enrichment.network.asn}` : '', row.enrichment?.network?.organization || '', row.enrichment?.network?.isp || '',
+    row.enrichment?.location?.country || '', row.enrichment?.location?.region || '', row.enrichment?.location?.city || '', row.enrichment?.location?.timezone || '', row.enrichment?.reverseDns.join('; ') || '',
+    String(row.errors), String(row.bytes),
+  ])];
 }
 
 export function csvTable(rows: string[][]): string {

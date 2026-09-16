@@ -30,7 +30,7 @@ const guide = guideBySlug('identify-cloud-hosting-ips-in-access-logs');
   <ol>
     <li>Paste one IP, a column of addresses, or text containing IPv4 and IPv6 values into the <a href="/ip-lookup/">bulk IP lookup</a>.</li>
     <li>Review the primary classification: cloud, hosting/VPS, CDN/proxy, service network, crawler, special-use, or unmatched.</li>
-    <li>Open an address to see every matching CIDR, provider, service, published region, and evidence method.</li>
+    <li>Open an address to see every matching CIDR, provider, service, published region, and evidence method, plus optional live ASN, ISP, approximate geolocation, and reverse DNS.</li>
     <li>Filter by provider or classification. Repeated addresses remain counted, so a noisy source is easy to spot.</li>
     <li>Share the filtered investigation or export it as CSV, Excel, JSON, or a printable PDF.</li>
   </ol>
@@ -47,7 +47,8 @@ const guide = guideBySlug('identify-cloud-hosting-ips-in-access-logs');
   </ul>
 
   <h2>What leaves the browser</h2>
-  <p>The analyzer extracts unique normalized IP addresses locally and sends only those addresses to the Bug Days lookup API. Raw log lines, request paths, query strings, headers, and user-agent strings are not part of the lookup request. Matching results return as a small set of CIDRs; counting, timing, filtering, and report construction remain in the browser.</p>
+  <p>The analyzer extracts unique normalized IP addresses locally and sends only those addresses to the Bug Days range lookup API. Raw log lines, request paths, query strings, headers, and user-agent strings are not part of the lookup request. Matching results return as a small set of CIDRs; counting, timing, filtering, and report construction remain in the browser.</p>
+  <p>When you choose one public address for details, only that selected IP is checked with IPWhois.io for live ASN, ISP, and approximate geolocation and with Cloudflare DNS for its reverse-DNS PTR record. The complete log and bulk IP list are not sent to those enrichment services.</p>
   <p>This design also avoids downloading a multi-megabyte global prefix catalog for a lookup that may contain only one address. The report records the dataset timestamp and evidence used, so a shared result can be interpreted later.</p>
 
   <h2>Share a finding without sharing the whole incident</h2>

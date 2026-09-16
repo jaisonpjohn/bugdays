@@ -15,6 +15,20 @@ export interface Guide {
 
 export const guides: Guide[] = [
   {
+    slug: 'ip-address-lookup-isp-asn-reverse-dns',
+    title: 'How to Look Up an IP Address: ISP, ASN, Location, and Reverse DNS',
+    shortTitle: 'Look up an IP address and its network',
+    description: 'Learn what an IP address lookup can reveal about an ISP, ASN, network owner, approximate location, reverse DNS, and cloud provider—and what it cannot prove.',
+    topic: 'IP and network investigation',
+    published: '2026-09-15',
+    updated: '2026-09-15',
+    readingMinutes: 8,
+    image: '/og-image.png',
+    imageAlt: 'Bug Days IP address lookup report showing ISP, ASN, approximate location, reverse DNS, and cloud provider evidence',
+    toolHref: '/ip-lookup',
+    toolName: 'IP Address, ISP and Cloud Lookup',
+  },
+  {
     slug: 'identify-cloud-hosting-ips-in-access-logs',
     title: 'How to Identify Cloud, Hosting, and Crawler IPs in Access Logs',
     shortTitle: 'Identify hosting IPs in access logs',
@@ -26,7 +40,7 @@ export const guides: Guide[] = [
     image: '/og-image.png',
     imageAlt: 'Bug Days network investigation workflow for matching access-log addresses to cloud, hosting, CDN, and crawler ranges',
     toolHref: '/ip-lookup',
-    toolName: 'Bulk Cloud and Hosting IP Lookup',
+    toolName: 'IP Address, ISP and Cloud Lookup',
   },
   {
     slug: 'test-grpc-api-proto-metadata-streaming',

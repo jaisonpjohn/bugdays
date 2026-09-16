@@ -4,6 +4,8 @@ import type { IpDataset } from './ip-datasets';
 import { mergeIpDatasets } from './ip-range-database';
 import { filterIpRows, reportShareSnapshot, validateReport, ipTableRows, csvTable, safeSpreadsheetCell } from './traffic-analysis';
 import type { TrafficReport, IpRow, CountRow, TrafficMode } from './traffic-analysis';
+import { validateIpEnrichment } from './ip-enrichment';
+import type { IpEnrichment } from './ip-enrichment';
 import { createXlsxBlob } from './spreadsheet-export';
 
 const escapeHtml = (value: unknown) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
@@ -39,6 +41,7 @@ export function initTrafficWorkbench() {
   let report: TrafficReport | null = null;
   let dataset: IpDataset = { version: 1, fetchedAt: '', sources: [], ranges: [], failures: [] };
   const knownIps = new Set<string>();
+  const enrichmentRequests = new Map<string, Promise<IpEnrichment>>(), enrichmentErrors = new Map<string, string>();
   let worker: Worker | null = null, revision = 0, timer = 0, toastTimer = 0, page = 0, activeIp: IpRow | null = null, shareOverride: TrafficReport | null = null;
 
   function toast(message: string) { const el = get('toast'); el.textContent = message; el.hidden = false; window.clearTimeout(toastTimer); toastTimer = window.setTimeout(() => { el.hidden = true; }, 3500); }
@@ -65,8 +68,33 @@ export function initTrafficWorkbench() {
       })));
     }
     dataset = mergeIpDatasets([dataset, ...additions]);
-    get('data-status').textContent = 'Official feeds + current BGP ranges';
+    get('data-status').textContent = 'Published ranges + live network details';
     return dataset;
+  }
+
+  async function loadEnrichment(row: IpRow, retry = false) {
+    if (row.enrichment || row.category === 'special') return row.enrichment;
+    if (retry) enrichmentErrors.delete(row.address);
+    if (enrichmentErrors.has(row.address) && !retry) return;
+    const existing = enrichmentRequests.get(row.address);
+    if (existing) return existing;
+    const request = (async () => {
+      const response = await fetch('/api/ip-enrich', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ip: row.address }), signal: AbortSignal.timeout(12_000) });
+      const data = await response.json().catch(() => null) as (IpEnrichment & { error?: string }) | null;
+      if (!response.ok || !data) throw new Error(data?.error || 'Live IP details are temporarily unavailable.');
+      const enrichment = validateIpEnrichment(data, row.address);
+      row.enrichment = enrichment;
+      enrichmentErrors.delete(row.address);
+      return enrichment;
+    })();
+    enrichmentRequests.set(row.address, request);
+    try { return await request; }
+    catch (cause) { enrichmentErrors.set(row.address, cause instanceof Error ? cause.message : 'Live IP details are temporarily unavailable.'); return undefined; }
+    finally {
+      enrichmentRequests.delete(row.address);
+      if (report?.ips.includes(row)) renderRows();
+      if (activeIp === row && detail.open) renderDetail();
+    }
   }
 
   async function analyze() {
@@ -153,13 +181,16 @@ export function initTrafficWorkbench() {
     get('sources').innerHTML = report.dataset.sources.map(s => `<div><a href="${escapeHtml(feedDefinitions.find(feed => feed.id === s.id)?.url || '#')}" target="_blank" rel="noopener noreferrer">${escapeHtml(sourceName(s.id))} ↗</a><span>${s.method === 'bgp' ? `BGP origin${s.asns?.length ? ` · ${s.asns.map(asn => `AS${asn}`).join(', ')}` : ''}` : 'Official feed'} · ${number(s.count)} published ranges${s.publishedAt ? ` · ${escapeHtml(s.publishedAt)}` : ''}</span></div>`).join('') + `<p>Dataset updated ${escapeHtml(date(report.dataset.fetchedAt))}. Bug Days receives only the unique IP addresses needed for matching; access-log lines, paths, headers, and user agents stay in this browser.</p>`;
     get('issues').innerHTML = `<p>${number(s.accepted)} ${mode === 'log' ? 'requests parsed' : 'IP occurrences extracted'}; ${number(s.skipped)} lines skipped.${report.dataset.failures.length ? ` Unavailable feeds: ${escapeHtml(report.dataset.failures.join(', '))}.` : ''}</p>` + report.issues.map(issue => `<p>Line ${issue.line}: ${escapeHtml(issue.reason)}</p>`).join('');
     renderRows();
+    if (mode === 'ip' && report.ips.length === 1 && !report.ips[0].enrichment && report.ips[0].category !== 'special') void loadEnrichment(report.ips[0]);
   }
 
   function rowHtml(row: IpRow) {
-    const providers = [...new Set(row.matches.map(m => sourceName(m.source)))];
+    const providers = [...new Set([...row.matches.map(m => sourceName(m.source)), row.enrichment?.network?.organization || '', row.enrichment?.network?.isp || ''].filter(Boolean))];
     const regions = [...new Set(row.matches.map(m => m.region).filter(Boolean))];
     const evidence = [...new Set(row.matches.map(m => m.method === 'bgp' ? 'BGP origin' : 'Official feed'))];
-    return `<tr><td><button class="traffic-ip-button" type="button" data-ip="${escapeHtml(row.address)}">${escapeHtml(row.address)}</button><span class="traffic-cell-note">IPv${row.version}</span></td><td><span class="traffic-badge traffic-badge-${row.category}">${escapeHtml(row.label || categoryLabel(row.category))}</span><span class="traffic-cell-note">${escapeHtml(providers.join(' · '))}</span></td><td><span title="${escapeHtml(regions.join(', '))}">${escapeHtml(regions.slice(0, 2).join(', ') || evidence.join(' · ') || '—')}${regions.length > 2 ? ` +${regions.length - 2}` : ''}</span></td><td class="traffic-number">${number(row.count)}</td>${mode === 'log' ? `<td class="traffic-number">${number(row.errors)}</td>` : ''}<td><button type="button" data-ip="${escapeHtml(row.address)}" class="traffic-text-button" aria-label="Inspect ${escapeHtml(row.address)}">↗</button></td></tr>`;
+    const location = [row.enrichment?.location?.city, row.enrichment?.location?.region, row.enrichment?.location?.country].filter(Boolean).join(', ');
+    const regionEvidence = [location, ...regions, ...evidence].filter(Boolean);
+    return `<tr><td><button class="traffic-ip-button" type="button" data-ip="${escapeHtml(row.address)}">${escapeHtml(row.address)}</button><span class="traffic-cell-note">IPv${row.version}${row.enrichment?.network?.asn ? ` · AS${row.enrichment.network.asn}` : ''}</span></td><td><span class="traffic-badge traffic-badge-${row.category}">${escapeHtml(row.label || categoryLabel(row.category))}</span><span class="traffic-cell-note">${escapeHtml(providers.join(' · '))}</span></td><td><span title="${escapeHtml(regionEvidence.join(' · '))}">${escapeHtml(location || regions.slice(0, 2).join(', ') || evidence.join(' · ') || (enrichmentRequests.has(row.address) ? 'Checking live details…' : '—'))}${!location && regions.length > 2 ? ` +${regions.length - 2}` : ''}</span></td><td class="traffic-number">${number(row.count)}</td>${mode === 'log' ? `<td class="traffic-number">${number(row.errors)}</td>` : ''}<td><button type="button" data-ip="${escapeHtml(row.address)}" class="traffic-text-button" aria-label="Inspect ${escapeHtml(row.address)}">Details ↗</button></td></tr>`;
   }
 
   function renderRows() {
@@ -171,17 +202,54 @@ export function initTrafficWorkbench() {
     get('page-label').textContent = rows.length ? `${number(page * PAGE_SIZE + 1)}–${number(Math.min(rows.length, (page + 1) * PAGE_SIZE))} of ${number(rows.length)}` : '0 addresses';
     get<HTMLButtonElement>('prev').disabled = page === 0; get<HTMLButtonElement>('next').disabled = (page + 1) * PAGE_SIZE >= rows.length;
     const shareCount = reportShareSnapshot(report, rows).ips.length;
-    get('share-description').textContent = `Sharing includes the report title, full-analysis totals, ${shareCount} filtered IPs (up to 200 within the link size limit), and the top 50 paths. IPs and paths are visible to recipients; raw lines and query strings are excluded. CSV/Excel use all filtered rows. Report JSON preserves all results available here.`;
+    get('share-description').textContent = `Sharing includes the report title, full-analysis totals, ${shareCount} filtered IPs (up to 200 within the link size limit), saved live details for addresses you inspected, and the top 50 paths. IPs and paths are visible to recipients; raw lines and query strings are excluded. CSV/Excel use all filtered rows.`;
     get<HTMLButtonElement>('share').disabled = !rows.length;
     for (const id of ['csv', 'xlsx', 'copy']) get<HTMLButtonElement>(id).disabled = !rows.length;
+  }
+
+  function enrichmentHtml(row: IpRow) {
+    if (row.category === 'special') return '';
+    const enrichment = row.enrichment;
+    if (!enrichment) {
+      const message = enrichmentErrors.get(row.address);
+      if (message) return `<article class="traffic-enrichment-card"><div class="traffic-enrichment-heading"><h3>Live ISP, ASN & location</h3><span>ON DEMAND</span></div><p class="traffic-small">${escapeHtml(message)}</p><button type="button" class="traffic-button" data-enrichment-retry>Retry live lookup</button></article>`;
+      return `<article class="traffic-enrichment-card"><div class="traffic-enrichment-heading"><h3>Live ISP, ASN & location</h3><span>CHECKING…</span></div><p class="traffic-small">Looking up the network operator, approximate location, time zone, and reverse DNS for this address.</p><div class="traffic-enrichment-loading" aria-label="Loading live IP details"></div></article>`;
+    }
+    const location = enrichment.location, network = enrichment.network;
+    const place = [location?.city, location?.region, location?.country].filter(Boolean).join(', ');
+    const coordinates = location?.latitude !== undefined && location.longitude !== undefined ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : '';
+    const positiveSignals = enrichment.security ? Object.entries(enrichment.security).filter(([, enabled]) => enabled).map(([name]) => name === 'tor' ? 'Tor' : name[0].toUpperCase() + name.slice(1)) : [];
+    const rows = [
+      ['ASN', network?.asn ? `AS${network.asn}` : 'Not returned'],
+      ['Organization', network?.organization || 'Not returned'],
+      ['ISP / network', network?.isp || 'Not returned'],
+      ['Network domain', network?.domain || 'Not returned'],
+      ['Approx. location', `${location?.flagEmoji ? `${location.flagEmoji} ` : ''}${place || 'Not returned'}`],
+      ['Coordinates', coordinates || 'Not returned'],
+      ['Time zone', [location?.timezone, location?.utcOffset].filter(Boolean).join(' · ') || 'Not returned'],
+      ['Reverse DNS', enrichment.reverseDns.join(', ') || 'No PTR record found'],
+      ...(enrichment.security ? [['Reported signals', positiveSignals.join(', ') || 'No security flags reported']] : []),
+    ];
+    const sources = [
+      enrichment.sources.includes('ipwhois') ? '<a href="https://ipwhois.io/" target="_blank" rel="noopener noreferrer">IPWhois.io</a>' : '',
+      enrichment.sources.includes('cloudflare-dns') ? '<a href="https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/" target="_blank" rel="noopener noreferrer">Cloudflare DNS</a>' : '',
+    ].filter(Boolean).join(' · ');
+    return `<article class="traffic-enrichment-card"><div class="traffic-enrichment-heading"><h3>Live ISP, ASN & location</h3><span>${escapeHtml(date(enrichment.lookedUpAt))}</span></div><dl>${rows.map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd>`).join('')}</dl><p class="traffic-small">${sources ? `Sources: ${sources}. ` : ''}IP geolocation is approximate network context, not a street address or proof of a person’s location.${enrichment.warnings.length ? ` ${escapeHtml(enrichment.warnings.join(' '))}` : ''}</p></article>`;
+  }
+
+  function renderDetail() {
+    if (!activeIp) return;
+    get('detail-title').textContent = activeIp.address;
+    const rangeEvidence = activeIp.matches.length ? activeIp.matches.map(match => { const source = report?.dataset.sources.find(source => source.id === match.source); return `<article><h3>${escapeHtml(sourceName(match.source))}</h3><dl><dt>Matched range</dt><dd><code>${escapeHtml(match.cidr)}</code></dd><dt>Evidence</dt><dd>${match.method === 'bgp' ? `Current BGP origin${source?.asns?.length ? ` (${source.asns.map(asn => `AS${asn}`).join(', ')})` : ''}` : 'Official published feed'}</dd><dt>Service</dt><dd>${escapeHtml(match.service || 'Not specified')}</dd><dt>Region</dt><dd>${escapeHtml(match.region || (match.method === 'bgp' ? 'Not published by BGP' : 'Not specified'))}</dd></dl></article>`; }).join('') : `<p class="traffic-small">${activeIp.category === 'special' ? 'This address is in a recognized special-use range.' : 'No match in the checked provider datasets. Live network context above may still identify its ISP or organization.'}</p>`;
+    get('detail-body').innerHTML = `<p>${number(activeIp.count)} ${mode === 'log' ? 'requests' : 'occurrences'} · ${escapeHtml(activeIp.label || categoryLabel(activeIp.category))}</p>${enrichmentHtml(activeIp)}${rangeEvidence}${activeIp.category === 'crawler' ? '<p class="traffic-small">This address matches a crawler range published by the named operator. Confirm request behavior and identity signals before making a blocking decision.</p>' : ''}`;
   }
 
   function showDetail(address: string) {
     activeIp = report?.ips.find(row => row.address === address) || null;
     if (!activeIp) return;
-    get('detail-title').textContent = activeIp.address;
-    get('detail-body').innerHTML = `<p>${number(activeIp.count)} ${mode === 'log' ? 'requests' : 'occurrences'} · ${escapeHtml(activeIp.label || categoryLabel(activeIp.category))}</p>` + (activeIp.matches.length ? activeIp.matches.map(match => { const source = report?.dataset.sources.find(source => source.id === match.source); return `<article><h3>${escapeHtml(sourceName(match.source))}</h3><dl><dt>Matched range</dt><dd><code>${escapeHtml(match.cidr)}</code></dd><dt>Evidence</dt><dd>${match.method === 'bgp' ? `Current BGP origin${source?.asns?.length ? ` (${source.asns.map(asn => `AS${asn}`).join(', ')})` : ''}` : 'Official published feed'}</dd><dt>Service</dt><dd>${escapeHtml(match.service || 'Not specified')}</dd><dt>Region</dt><dd>${escapeHtml(match.region || (match.method === 'bgp' ? 'Not published by BGP' : 'Not specified'))}</dd></dl></article>`; }).join('') : `<p class="traffic-small">${activeIp.category === 'special' ? 'This address is in a recognized special-use range.' : 'No match in the checked datasets. This does not establish whether the address is residential, hosted, or a bot.'}</p>`) + (activeIp.category === 'crawler' ? '<p class="traffic-small">This address matches a crawler range published by the named operator. Confirm request behavior and identity signals before making a blocking decision.</p>' : '');
+    renderDetail();
     detail.showModal();
+    if (!activeIp.enrichment && activeIp.category !== 'special') void loadEnrichment(activeIp);
   }
 
   function download(blob: Blob, extension: string) {
@@ -189,7 +257,7 @@ export function initTrafficWorkbench() {
     const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = `${slug}.${extension}`; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
   function updateInput() {
-    window.clearTimeout(timer); stop(); error(''); notice(''); report = null; get('report').hidden = true; get('empty').hidden = false;
+    window.clearTimeout(timer); stop(); error(''); notice(''); report = null; activeIp = null; enrichmentErrors.clear(); get('report').hidden = true; get('empty').hidden = false;
     const size = new TextEncoder().encode(input.value).length;
     get('input-size').textContent = size ? `${number(size)} bytes` : 'No input yet';
     if (get<HTMLInputElement>('auto').checked && input.value.trim()) timer = window.setTimeout(analyze, 600);
@@ -241,6 +309,7 @@ export function initTrafficWorkbench() {
   get('reset-filters').addEventListener('click', () => { search.value = source.value = category.value = ''; sort.value = 'count'; page = 0; renderRows(); });
   get('prev').addEventListener('click', () => { page--; renderRows(); }); get('next').addEventListener('click', () => { page++; renderRows(); });
   get('ip-rows').addEventListener('click', event => { const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-ip]'); if (button?.dataset.ip) showDetail(button.dataset.ip); });
+  get('detail-body').addEventListener('click', event => { if ((event.target as HTMLElement).closest('[data-enrichment-retry]') && activeIp) { void loadEnrichment(activeIp, true); renderDetail(); } });
   get('detail-close').addEventListener('click', () => detail.close());
   get('share').addEventListener('click', () => document.getElementById('share-btn')?.click());
   get('share-ip').addEventListener('click', () => {

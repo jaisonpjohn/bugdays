@@ -4,7 +4,7 @@ import { parseIp, parseCidr, extractIps, specialIpLabel } from '../src/lib/ip-ad
 import { RangeIndex, analyzeTraffic, parseLogLine, parseLogTime, filterIpRows, reportShareSnapshot, validateReport, ipTableRows, csvTable, safeSpreadsheetCell } from '../src/lib/traffic-analysis.ts';
 import { feedDefinitions, fetchIpDataset } from '../src/lib/ip-datasets.ts';
 import { addressLookupKeys, datasetFromRows, mergeIpDatasets, rangeLookupKey } from '../src/lib/ip-range-database.ts';
-import { fixtureDataset, fixtureLog } from './traffic-fixtures.mjs';
+import { fixtureDataset, fixtureEnrichment, fixtureLog } from './traffic-fixtures.mjs';
 import { onRequestPost as lookupPost } from '../functions/api/ip-lookup.ts';
 
 test('IPv4 is strict; equivalent IPv6 and mapped addresses normalize consistently', () => {
@@ -158,6 +158,21 @@ test('CSV escapes quotes and spreadsheet expressions; table export includes all 
   for (const cell of ['=CMD()', '+123', '-123', '@SUM(A1)', '\tformula', '   =SUM(A1)']) assert.equal(safeSpreadsheetCell(cell), "'" + cell);
   const report = await analyzeTraffic('3.5.140.1\n34.80.0.1', 'ip', fixtureDataset);
   assert.equal(ipTableRows(report).length, 3);
+});
+
+test('live IP details survive validation, sharing, and tabular export', async () => {
+  const report = await analyzeTraffic('8.8.8.8', 'ip', fixtureDataset);
+  report.ips[0].enrichment = structuredClone(fixtureEnrichment);
+  const reopened = validateReport(JSON.parse(JSON.stringify(report)));
+  const shared = reportShareSnapshot(reopened, reopened.ips);
+  const table = ipTableRows(shared);
+  assert.equal(shared.ips[0].enrichment.network.asn, 15169);
+  assert.equal(shared.ips[0].enrichment.reverseDns[0], 'dns.google');
+  assert.ok(table[0].includes('ASN'));
+  assert.ok(table[0].includes('Reverse DNS'));
+  assert.ok(table[1].includes('AS15169'));
+  assert.ok(table[1].includes('San Jose'));
+  assert.ok(table[1].includes('dns.google'));
 });
 
 test('large inputs are bounded and 200,000 repeated addresses remain responsive', async () => {

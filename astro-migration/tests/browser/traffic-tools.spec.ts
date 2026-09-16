@@ -2,12 +2,13 @@ import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
 import LZString from 'lz-string';
-import { fixtureDataset, fixtureLog } from '../traffic-fixtures.mjs';
+import { fixtureDataset, fixtureEnrichment, fixtureLog } from '../traffic-fixtures.mjs';
 import { analyzeTraffic } from '../../src/lib/traffic-analysis';
 
 test.beforeEach(async ({ page }) => {
   await page.route('https://**/*', route => route.abort());
   await page.route('**/api/ip-lookup', route => route.fulfill({ json: fixtureDataset }));
+  await page.route('**/api/ip-enrich', route => route.fulfill({ json: { ...fixtureEnrichment, ip: route.request().postDataJSON().ip } }));
   await page.addInitScript(() => {
     localStorage.setItem('cookie-notice-dismissed', 'true');
     localStorage.removeItem('bd-share-method');
@@ -50,6 +51,30 @@ test('auto-analysis, filters, IPv6 details and keyboard dialog dismissal', async
   await page.locator('#traffic-search').fill('no-such-region');
   await expect(page.locator('#traffic-ip-rows')).toContainText('No addresses match');
   await expect(page.locator('#traffic-share')).toBeDisabled();
+});
+
+test('single IP lookup loads live ISP, ASN, location and reverse DNS into a shareable report', async ({ page }, testInfo) => {
+  const enrichmentBodies: unknown[] = [];
+  await page.route('**/api/ip-enrich', route => {
+    enrichmentBodies.push(route.request().postDataJSON());
+    return route.fulfill({ json: fixtureEnrichment });
+  });
+  await page.goto('/ip-lookup/');
+  await page.locator('#traffic-input').fill('8.8.8.8');
+  await expect(page.locator('#traffic-report')).toBeVisible();
+  await expect(page.locator('#traffic-ip-rows')).toContainText('AS15169');
+  await expect(page.locator('#traffic-ip-rows')).toContainText('San Jose');
+  await page.getByRole('button', { name: '8.8.8.8', exact: true }).click();
+  await expect(page.locator('#traffic-detail-body')).toContainText('Google Public DNS');
+  await expect(page.locator('#traffic-detail-body')).toContainText('dns.google');
+  await expect(page.locator('#traffic-detail-body')).toContainText('approximate network context');
+  await page.screenshot({ path: testInfo.outputPath('ip-enrichment-detail.png'), fullPage: true });
+  await page.locator('#traffic-share-ip').click();
+  const url = await shareUrl(page);
+  const state = JSON.parse(LZString.decompressFromEncodedURIComponent(url.split('#lz:')[1])!);
+  expect(state.d.report.ips[0].enrichment.network.asn).toBe(15169);
+  expect(state.d.report.ips[0].enrichment.reverseDns).toEqual(['dns.google']);
+  expect(enrichmentBodies).toEqual([{ ip: '8.8.8.8' }]);
 });
 
 test('IP report sends only IPs for matching and shares its filtered snapshot', async ({ page }) => {
@@ -215,8 +240,8 @@ test('light/dark layouts fit the viewport and both pages have discoverable metad
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `https://bugdays.com${path}`);
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /IP|logs/);
     if (path === '/ip-lookup/') {
-      await expect(page.locator('.traffic-hero h1')).toHaveText('Bulk Cloud & Hosting IP Lookup');
-      await expect(page.locator('.ip-lookup-faq details')).toHaveCount(5);
+      await expect(page.locator('.traffic-hero h1')).toHaveText('IP Address Lookup: ISP, ASN, Location & Cloud Provider');
+      await expect(page.locator('.ip-lookup-faq details')).toHaveCount(7);
       const structuredData = await page.locator('script[type="application/ld+json"]').allTextContents();
       expect(structuredData.some(value => value.includes('FAQPage') && value.includes('cloud or hosting provider'))).toBeTruthy();
     }
