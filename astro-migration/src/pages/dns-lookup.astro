@@ -1,0 +1,269 @@
+---
+import Layout from '../layouts/Layout.astro';
+import LocalBridgeAccessDialog from '../components/LocalBridgeAccessDialog.astro';
+
+const jsonLd = [
+  {
+    '@context': 'https://schema.org', '@type': 'WebApplication',
+    name: 'DNS Lookup and Reverse DNS Checker',
+    description: 'Check A, AAAA, CNAME, MX, TXT, NS, SOA, SRV, CAA, and PTR records with public DNS or the DNS resolver on your device, VPN, or private network.',
+    url: 'https://bugdays.com/dns-lookup', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+    featureList: ['Forward and reverse DNS lookup', 'Public and system resolver comparison', 'Private and split-horizon DNS support', 'PTR forward-confirmation', 'CSV, Excel, JSON, copy, print, and share exports'],
+  },
+  {
+    '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: [
+      { '@type': 'Question', name: 'Can a browser check the DNS used by my computer or VPN?', acceptedAnswer: { '@type': 'Answer', text: 'Normal web pages cannot read the operating system DNS resolver directly. Bug Days can query public DNS in the browser and use the optional Holy CORS local bridge to query the DNS configured on your device, VPN, or corporate network.' } },
+      { '@type': 'Question', name: 'How do I perform a reverse DNS lookup?', acceptedAnswer: { '@type': 'Answer', text: 'Enter an IPv4 or IPv6 address. The checker requests its PTR record and then resolves returned hostnames to see whether they map back to the original address.' } },
+      { '@type': 'Question', name: 'Why do public DNS and system DNS return different records?', acceptedAnswer: { '@type': 'Answer', text: 'VPNs, private zones, split-horizon DNS, search domains, local hosts files, resolver caches, and propagation can make the resolver on a device return different answers from a public resolver.' } },
+    ],
+  },
+];
+---
+
+<Layout
+  title="DNS Lookup & Reverse DNS Checker – A, MX, TXT, PTR"
+  description="Free DNS lookup and reverse DNS checker for A, AAAA, CNAME, MX, TXT, NS, SOA, SRV, CAA, and PTR. Compare public DNS with your device, VPN, or private network resolver."
+  keywords="DNS lookup, DNS checker, reverse DNS lookup, PTR lookup, DNS records checker, A record lookup, MX lookup, TXT lookup, private DNS lookup, split horizon DNS, DNS propagation checker"
+  breadcrumb={[{ name: 'Network Tools', href: '/network-tools' }, { name: 'DNS Lookup' }]}
+  toolId="dns-lookup"
+  jsonLd={jsonLd}
+>
+  <div class="dns-tool">
+    <header class="dns-intro">
+      <div>
+        <div class="dns-kicker">NETWORK DIAGNOSTICS</div>
+        <h1>DNS Lookup & Reverse DNS Checker</h1>
+        <p>Inspect DNS records, resolve an IP back to its PTR hostname, and compare public answers with the DNS used by this device, VPN, or private network.</p>
+      </div>
+      <div class="dns-badges" aria-label="Features"><span>A · AAAA · MX · TXT</span><span>PTR reverse lookup</span><span>Share + export</span></div>
+    </header>
+
+    <div class="dns-grid">
+      <section class="dns-card dns-controls" aria-labelledby="dns-input-heading">
+        <div class="dns-section-label">01 / QUERY</div>
+        <h2 id="dns-input-heading">Hostname or IP address</h2>
+        <label for="dns-target">Domain, internal hostname, URL, IPv4, or IPv6</label>
+        <input id="dns-target" data-share-key="target" autocomplete="off" spellcheck="false" value="bugdays.com" placeholder="api.example.com or 8.8.8.8" />
+
+        <fieldset>
+          <legend>Resolver</legend>
+          <div class="dns-segments">
+            <label><input type="radio" name="dns-mode" value="compare" checked /><span>Compare both</span></label>
+            <label><input type="radio" name="dns-mode" value="public" /><span>Public DNS</span></label>
+            <label><input type="radio" name="dns-mode" value="system" /><span>Device / VPN</span></label>
+          </div>
+        </fieldset>
+
+        <fieldset id="dns-types-fieldset">
+          <legend>Record types</legend>
+          <div class="dns-types">
+            {['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'NS', 'SOA', 'SRV', 'CAA'].map(type => <label><input type="checkbox" name="dns-type" value={type} checked={['A', 'AAAA', 'CNAME', 'MX', 'TXT'].includes(type)} /><span>{type}</span></label>)}
+          </div>
+          <p id="dns-reverse-note" hidden>IP detected — this will run a PTR reverse lookup and a forward-confirmation check.</p>
+        </fieldset>
+
+        <button id="dns-run" type="button" class="dns-primary">Check DNS records <span aria-hidden="true">↗</span></button>
+        <button id="dns-example" type="button" class="dns-link">Try reverse DNS with 8.8.8.8 →</button>
+
+        <details class="dns-bridge-settings">
+          <summary>Device / VPN resolver setup</summary>
+          <label for="dns-bridge-url">Holy CORS URL</label>
+          <input id="dns-bridge-url" value="http://127.0.0.1:2345" spellcheck="false" />
+          <p>For private zones and split DNS, run the Bug Days bridge on this computer:</p>
+          <code>brew tap bugdays-com/holy-cors &amp;&amp; brew install holy-cors &amp;&amp; holy-cors</code>
+          <code>docker run --rm -p 127.0.0.1:2345:2345 ghcr.io/bugdays-com/holy-cors:latest</code>
+          <p>Native installs use this device’s resolver directly. Docker uses the container’s configured DNS.</p>
+        </details>
+      </section>
+
+      <main class="dns-results-column">
+        <div id="dns-error" class="dns-message dns-error" role="alert" hidden></div>
+        <div id="dns-notice" class="dns-message" role="status" hidden></div>
+        <section id="dns-empty" class="dns-card dns-empty">
+          <div class="dns-route" aria-hidden="true"><span>NAME</span><i></i><b>DNS</b><i></i><span>ANSWER</span></div>
+          <h2>See the answer each resolver sees.</h2>
+          <p>Check public records immediately. Add the device resolver to diagnose VPN DNS, internal zones, split-horizon answers, and local configuration.</p>
+        </section>
+
+        <div id="dns-report" hidden>
+          <section class="dns-card dns-report-heading">
+            <div><div class="dns-section-label">02 / RESULT</div><h2 id="dns-report-title"></h2><p id="dns-report-meta"></p></div>
+            <button type="button" class="dns-primary share-trigger">Share DNS report ↗</button>
+          </section>
+          <section id="dns-summary" class="dns-summary" aria-label="DNS result summary"></section>
+          <section id="dns-source-cards" class="dns-source-grid"></section>
+          <section class="dns-card dns-table-card">
+            <div class="dns-table-heading"><div><h2>DNS answers</h2><p id="dns-table-caption"></p></div></div>
+            <div class="dns-table-scroll"><table><thead><tr><th>Resolver</th><th>Type</th><th>Status</th><th>TTL</th><th>Record name</th><th>Answer</th><th>Time</th></tr></thead><tbody id="dns-rows"></tbody></table></div>
+          </section>
+          <section class="dns-card dns-export"><div><h2>Share or take the result with you</h2><p>The shared snapshot opens with these answers; it does not silently rerun the lookup.</p></div><div><button id="dns-csv">CSV</button><button id="dns-xlsx">Excel</button><button id="dns-json">JSON</button><button id="dns-copy">Copy table</button><button id="dns-print">Print / PDF</button></div></section>
+        </div>
+      </main>
+    </div>
+
+    <section class="dns-guide dns-card">
+      <div><h2>Public DNS and the resolver on your device answer different questions</h2><p>A public DNS lookup shows what an internet resolver sees. The device lookup follows the DNS configuration available to Holy CORS, which can include a VPN, a corporate DNS server, private zones, or split-horizon records. Compare them when a hostname works on one network but not another.</p></div>
+      <div><h3>Reverse DNS and forward-confirmed PTR</h3><p>Enter an IP address to query its PTR record. The checker also resolves returned hostnames back to A or AAAA records. A matching forward result is useful evidence of consistent DNS configuration, though it is not proof of ownership or identity.</p></div>
+      <div><h3>DNS record types in this checker</h3><p>Inspect A and AAAA addresses, CNAME aliases, MX mail exchangers, TXT policy and verification values, NS delegation, SOA zone data, SRV service locations, CAA certificate-authority policy, and PTR reverse mappings.</p></div>
+      <p class="dns-related">Need the full workflow? Read <a href="/guides/dns-lookup-public-vs-system-resolver">how to compare public, system, VPN, and reverse DNS</a>. Investigating an address? Open the <a href="/ip-lookup">IP, ISP, ASN, and cloud lookup</a>. Checking the service identity next? Use the <a href="/certificate-inspector">TLS certificate chain checker</a>.</p>
+    </section>
+
+    <LocalBridgeAccessDialog directOption="Choose Public DNS if you do not need the resolver on this device or VPN." />
+    <div id="dns-toast" class="dns-toast" role="status" hidden></div>
+  </div>
+</Layout>
+
+<script>
+  import { BridgeUnavailableError, DNS_RECORD_TYPES, dnsReportRows, dnsReportsDiffer, normalizeDnsTarget, queryPublicDns, querySystemDns, selectedDnsTypes, validateDnsSource, type DnsMode, type DnsReport, type DnsSourceReport } from '../lib/dns-lookup';
+  import { parseIp } from '../lib/ip-address';
+  import { createLocalBridgeAccessGuard } from '../lib/local-bridge-access';
+  import { ShareManager } from '../lib/share';
+  import { createXlsxBlob, tableToDelimited } from '../lib/spreadsheet-export';
+
+  const byId = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+  const target = byId<HTMLInputElement>('dns-target');
+  const bridgeUrl = byId<HTMLInputElement>('dns-bridge-url');
+  const runButton = byId<HTMLButtonElement>('dns-run');
+  const empty = byId<HTMLElement>('dns-empty');
+  const reportView = byId<HTMLElement>('dns-report');
+  const errorBox = byId<HTMLElement>('dns-error');
+  const noticeBox = byId<HTMLElement>('dns-notice');
+  const toast = byId<HTMLElement>('dns-toast');
+  const confirmBridge = createLocalBridgeAccessGuard();
+  let report: DnsReport | null = null;
+  let toastTimer = 0;
+
+  function mode(): DnsMode { return (document.querySelector<HTMLInputElement>('input[name="dns-mode"]:checked')?.value || 'compare') as DnsMode; }
+  function checkedTypes(): string[] { return [...document.querySelectorAll<HTMLInputElement>('input[name="dns-type"]:checked')].map(input => input.value); }
+  function setMessage(element: HTMLElement, message = '') { element.textContent = message; element.hidden = !message; }
+  function showToast(message: string) { window.clearTimeout(toastTimer); toast.textContent = message; toast.hidden = false; toastTimer = window.setTimeout(() => { toast.hidden = true; }, 2400); }
+  function text(tag: string, value: string, className = ''): HTMLElement { const node = document.createElement(tag); node.textContent = value; node.className = className; return node; }
+
+  function updateTargetMode() {
+    let normalized = '';
+    try { normalized = normalizeDnsTarget(target.value); } catch {}
+    const reverse = Boolean(parseIp(normalized));
+    byId<HTMLElement>('dns-types-fieldset').classList.toggle('dns-types-disabled', reverse);
+    byId<HTMLElement>('dns-reverse-note').hidden = !reverse;
+  }
+
+  function statusClass(status: string): string { return status === 'NOERROR' ? 'dns-ok' : status === 'NXDOMAIN' ? 'dns-warn' : 'dns-bad'; }
+
+  function renderSourceCards(sources: DnsSourceReport[]) {
+    const container = byId<HTMLElement>('dns-source-cards'); container.replaceChildren();
+    for (const source of sources) {
+      const card = document.createElement('article'); card.className = 'dns-card dns-source-card';
+      const heading = document.createElement('div'); heading.className = 'dns-source-heading';
+      const title = document.createElement('div'); title.append(text('span', source.resolver === 'public' ? 'PUBLIC DNS' : 'DEVICE / VPN', 'dns-section-label'), text('h2', source.resolver === 'public' ? 'Cloudflare resolver' : 'System resolver'));
+      const answerCount = source.results.reduce((sum, result) => sum + result.answers.length, 0);
+      heading.append(title, text('span', `${source.elapsedMs} ms`, 'dns-latency')); card.append(heading);
+      if (source.reverseLookup) {
+        const ptrs = source.results.flatMap(result => result.answers).filter(answer => answer.type === 'PTR').map(answer => answer.data);
+        const reverse = document.createElement('div'); reverse.className = 'dns-reverse-result';
+        reverse.append(text('div', ptrs.length ? ptrs.join(', ') : 'No PTR hostname is published', 'dns-reverse-host'));
+        if (ptrs.length && source.forwardConfirmed !== undefined) reverse.append(text('p', source.forwardConfirmed ? `Forward-confirmed: ${source.forwardAddresses.join(', ')}` : `PTR found, but its A/AAAA records do not map back to ${source.query}.`, source.forwardConfirmed ? 'dns-confirmed' : 'dns-not-confirmed'));
+        card.append(reverse);
+      } else {
+        const chips = document.createElement('div'); chips.className = 'dns-source-stats';
+        chips.append(text('span', `${source.results.length} record types`), text('span', `${answerCount} answers`));
+        const failures = source.results.filter(result => result.status !== 'NOERROR'); if (failures.length) chips.append(text('span', `${failures.length} without answers`));
+        card.append(chips);
+      }
+      container.append(card);
+    }
+  }
+
+  function renderReport(next: DnsReport) {
+    report = next; empty.hidden = true; reportView.hidden = false;
+    byId<HTMLElement>('dns-report-title').textContent = next.target;
+    byId<HTMLElement>('dns-report-meta').textContent = `${new Date(next.lookedUpAt).toLocaleString()} · ${next.sources.map(source => source.resolver === 'public' ? 'public DNS' : 'device / VPN DNS').join(' + ')}`;
+    const totalAnswers = next.sources.reduce((sum, source) => sum + source.results.reduce((count, result) => count + result.answers.length, 0), 0);
+    const isReverse = Boolean(parseIp(next.target)); const differs = dnsReportsDiffer(next);
+    const summary = byId<HTMLElement>('dns-summary'); summary.replaceChildren();
+    const stats = [
+      ['Resolvers', String(next.sources.length), next.sources.length > 1 ? 'compared side by side' : 'one resolver'],
+      [isReverse ? 'PTR hostnames' : 'Answers', String(totalAnswers), isReverse ? 'reverse DNS records' : 'across selected types'],
+      ['Result', next.sources.length > 1 ? (differs ? 'Different' : 'Match') : 'Complete', next.sources.length > 1 ? (differs ? 'resolver answers differ' : 'same answer data') : 'lookup finished'],
+    ];
+    for (const [label, value, detail] of stats) { const card = document.createElement('article'); card.className = 'dns-card dns-stat'; card.append(text('span', label), text('strong', value), text('small', detail)); summary.append(card); }
+    renderSourceCards(next.sources);
+    const body = byId<HTMLTableSectionElement>('dns-rows'); body.replaceChildren();
+    for (const source of next.sources) for (const result of source.results) {
+      const answers = result.answers.length ? result.answers : [{ name: '', type: result.recordType, ttl: 0, data: result.error || (result.status === 'NOERROR' ? 'No record published' : 'No answer') }];
+      for (const answer of answers) {
+        const row = document.createElement('tr');
+        const values = [source.resolver === 'public' ? 'Public' : 'Device / VPN', answer.type, result.status, answer.ttl ? String(answer.ttl) : '—', answer.name || '—', answer.data, `${result.elapsedMs} ms`];
+        values.forEach((value, index) => { const cell = document.createElement('td'); cell.textContent = value; if (index === 2) cell.className = statusClass(result.status); if (index === 5) cell.classList.add('dns-answer'); row.append(cell); }); body.append(row);
+      }
+    }
+    byId<HTMLElement>('dns-table-caption').textContent = `${body.children.length} row${body.children.length === 1 ? '' : 's'} · TTL is shown in seconds`;
+  }
+
+  async function runLookup() {
+    setMessage(errorBox); setMessage(noticeBox); runButton.disabled = true; runButton.textContent = 'Checking…';
+    try {
+      const normalized = normalizeDnsTarget(target.value); target.value = normalized;
+      const types = selectedDnsTypes(normalized, checkedTypes()); const selectedMode = mode(); const sources: DnsSourceReport[] = [];
+      const publicPromise = selectedMode !== 'system' ? queryPublicDns(normalized, types) : null;
+      if (selectedMode !== 'public') {
+        const allowed = await confirmBridge(bridgeUrl.value);
+        if (allowed) {
+          try { sources.push(await querySystemDns(normalized, types, bridgeUrl.value)); }
+          catch (error) {
+            const message = error instanceof Error ? error.message : 'Device DNS lookup failed.';
+            if (selectedMode === 'system') throw error;
+            setMessage(noticeBox, `${message} Public DNS results are still shown below.`);
+          }
+        } else if (selectedMode === 'system') {
+          setMessage(noticeBox, 'Device DNS lookup cancelled. Choose Public DNS to check without the local bridge.'); return;
+        }
+      }
+      if (publicPromise) sources.unshift(await publicPromise);
+      if (!sources.length) throw new Error('No resolver was selected.');
+      const next: DnsReport = { version: 1, target: normalized, lookedUpAt: new Date().toISOString(), requestedTypes: types, sources };
+      renderReport(next);
+    } catch (error) { setMessage(errorBox, error instanceof Error ? error.message : 'DNS lookup failed.'); }
+    finally { runButton.disabled = false; runButton.innerHTML = 'Check DNS records <span aria-hidden="true">↗</span>'; }
+  }
+
+  function download(data: BlobPart, name: string, type: string) { const url = URL.createObjectURL(new Blob([data], { type })); const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+  function exportRows(): string[][] { if (!report) throw new Error('Run a lookup first.'); return dnsReportRows(report); }
+  function exportName(): string { return `dns-${(report?.target || 'lookup').replace(/[^a-z0-9.-]+/gi, '-')}`; }
+
+  runButton.addEventListener('click', runLookup); target.addEventListener('keydown', event => { if (event.key === 'Enter') runLookup(); }); target.addEventListener('input', updateTargetMode);
+  byId<HTMLButtonElement>('dns-example').addEventListener('click', () => { target.value = '8.8.8.8'; updateTargetMode(); runLookup(); });
+  byId<HTMLButtonElement>('dns-csv').addEventListener('click', () => download(tableToDelimited(exportRows(), ','), `${exportName()}.csv`, 'text/csv;charset=utf-8'));
+  byId<HTMLButtonElement>('dns-xlsx').addEventListener('click', () => { const blob = createXlsxBlob(exportRows(), { sheetName: 'DNS lookup' }); download(blob, `${exportName()}.xlsx`, blob.type); });
+  byId<HTMLButtonElement>('dns-json').addEventListener('click', () => report && download(JSON.stringify(report, null, 2), `${exportName()}.json`, 'application/json;charset=utf-8'));
+  byId<HTMLButtonElement>('dns-copy').addEventListener('click', async () => { await navigator.clipboard.writeText(tableToDelimited(exportRows(), '\t')); showToast('DNS table copied.'); });
+  byId<HTMLButtonElement>('dns-print').addEventListener('click', () => window.print());
+
+  ShareManager.register({
+    tool: 'dns-lookup',
+    customCollect: () => ({ target: target.value, report }),
+    customRestore: data => {
+      if (typeof data.target === 'string') target.value = data.target.slice(0, 253);
+      const value = data.report as DnsReport | null;
+      if (value?.version === 1 && typeof value.target === 'string' && Array.isArray(value.sources)) {
+        try {
+          const normalized = normalizeDnsTarget(value.target);
+          const sources = value.sources.slice(0, 2).map(source => {
+            if (source.resolver !== 'public' && source.resolver !== 'system') throw new Error('Invalid resolver source.');
+            return validateDnsSource(source, source.resolver, normalized);
+          });
+          renderReport({ version: 1, target: normalized, lookedUpAt: typeof value.lookedUpAt === 'string' ? value.lookedUpAt : new Date().toISOString(), requestedTypes: Array.isArray(value.requestedTypes) ? value.requestedTypes.slice(0, DNS_RECORD_TYPES.length) : [], sources });
+          setMessage(noticeBox, 'Shared DNS snapshot restored. Run the lookup again for current answers.');
+        } catch { setMessage(errorBox, 'This shared DNS report is invalid or incomplete.'); }
+      }
+      updateTargetMode();
+    },
+  });
+  updateTargetMode();
+</script>
+
+<style is:global>
+  .dns-tool{--d-card:#fff;--d-soft:#f8fafc;--d-border:#e2e8f0;--d-ink:#172033;--d-muted:#64748b;--d-accent:#4f46e5;max-width:1450px;margin:auto;color:var(--d-ink)}.dark .dns-tool{--d-card:#152033;--d-soft:#101827;--d-border:#2b3950;--d-ink:#edf2fa;--d-muted:#a8b3c7;--d-accent:#a5b4fc}.dns-tool [hidden]{display:none!important}.dns-intro{display:flex;align-items:end;justify-content:space-between;gap:24px;padding:8px 2px 19px}.dns-kicker,.dns-section-label{font-size:10px;letter-spacing:.13em;font-weight:750;color:var(--d-accent)}.dns-intro h1{font-size:clamp(26px,3vw,38px);font-weight:760;letter-spacing:-.045em;margin:8px 0}.dns-intro p{font-size:14px;line-height:1.6;color:var(--d-muted);max-width:760px}.dns-badges{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.dns-badges span{font-size:10px;border:1px solid var(--d-border);padding:6px 9px;border-radius:999px;background:var(--d-card);color:var(--d-muted)}.dns-grid{display:grid;grid-template-columns:310px minmax(0,1fr);gap:18px;align-items:start}.dns-card{background:var(--d-card);border:1px solid var(--d-border);border-radius:14px;box-shadow:0 2px 6px #0f172a05}.dns-controls{padding:20px;position:sticky;top:74px}.dns-controls h2{font-size:17px;font-weight:700;margin:5px 0 18px}.dns-controls>label,.dns-controls legend,.dns-bridge-settings label{display:block;font-size:11px;font-weight:650;color:var(--d-muted);margin:0 0 7px}.dns-controls input[type=text],#dns-target,#dns-bridge-url{width:100%;border:1px solid var(--d-border);border-radius:9px;background:var(--d-soft);color:var(--d-ink);padding:11px 12px;font:12px ui-monospace,monospace;outline:none}.dns-controls input:focus{border-color:#818cf8;box-shadow:0 0 0 3px #818cf826}.dns-controls fieldset{margin-top:18px}.dns-segments{display:grid;grid-template-columns:1fr;border:1px solid var(--d-border);border-radius:9px;padding:3px;background:var(--d-soft)}.dns-segments input,.dns-types input{position:absolute;opacity:0}.dns-segments span{display:block;padding:7px 9px;border-radius:6px;font-size:11px;color:var(--d-muted);cursor:pointer}.dns-segments input:checked+span{background:var(--d-card);color:var(--d-ink);font-weight:700;box-shadow:0 1px 3px #0f172a14}.dns-types{display:flex;flex-wrap:wrap;gap:6px}.dns-types span{display:block;padding:5px 8px;border:1px solid var(--d-border);border-radius:6px;font:10px ui-monospace,monospace;color:var(--d-muted);cursor:pointer}.dns-types input:checked+span{border-color:#6366f1;background:#6366f112;color:var(--d-accent);font-weight:700}.dns-types-disabled .dns-types{opacity:.35;pointer-events:none}#dns-reverse-note{font-size:10px;color:var(--d-muted);line-height:1.5;margin-top:8px}.dns-primary,.dns-export button{border:1px solid #4f46e5;border-radius:8px;background:#4f46e5;color:#fff;padding:10px 12px;font-size:11px;font-weight:700;cursor:pointer}.dns-controls>.dns-primary{width:100%;margin-top:20px;display:flex;justify-content:space-between}.dns-primary:disabled{opacity:.6}.dns-link{color:var(--d-accent);font-size:11px;font-weight:650;margin-top:13px}.dns-bridge-settings{border-top:1px solid var(--d-border);margin-top:20px;padding-top:15px;color:var(--d-muted);font-size:10px;line-height:1.55}.dns-bridge-settings summary{cursor:pointer;font-weight:650;color:var(--d-ink);margin-bottom:10px}.dns-bridge-settings code{display:block;overflow-wrap:anywhere;background:var(--d-soft);border:1px solid var(--d-border);border-radius:6px;padding:7px;margin:7px 0}.dns-results-column{min-width:0}.dns-empty{min-height:430px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:34px;background:radial-gradient(ellipse at 50% 10%,#6366f10b,transparent 60%),var(--d-card)}.dns-empty h2{font-size:21px;font-weight:720;margin:25px 0 8px}.dns-empty p{font-size:13px;line-height:1.7;color:var(--d-muted);max-width:500px}.dns-route{display:flex;align-items:center;gap:10px;color:var(--d-muted);font:10px ui-monospace,monospace}.dns-route i{display:block;width:55px;border-top:1px dashed #818cf8}.dns-route b{font-size:15px;color:var(--d-accent);padding:13px;border:1px solid #818cf877;border-radius:50%}.dns-message{padding:12px 14px;border:1px solid #a5b4fc;border-radius:10px;background:#eef2ff;color:#3730a3;font-size:12px;margin-bottom:12px}.dark .dns-message{background:#312e8140;color:#c7d2fe}.dns-error{border-color:#fecaca;background:#fef2f2;color:#991b1b}.dark .dns-error{background:#7f1d1d35;color:#fecaca}.dns-report-heading{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:17px 20px}.dns-report-heading h2{font-size:20px;font-weight:720;margin:4px 0;overflow-wrap:anywhere}.dns-report-heading p,.dns-table-heading p{font-size:10px;color:var(--d-muted)}.dns-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}.dns-stat{padding:14px 16px}.dns-stat span,.dns-stat small{display:block;color:var(--d-muted);font-size:10px}.dns-stat strong{display:block;font-size:23px;line-height:1.2;margin:5px 0}.dns-source-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px}.dns-source-card{padding:17px}.dns-source-heading{display:flex;align-items:start;justify-content:space-between;gap:12px}.dns-source-heading h2{font-size:14px;font-weight:700;margin-top:4px}.dns-latency{font:10px ui-monospace,monospace;color:var(--d-muted);padding:5px 7px;border:1px solid var(--d-border);border-radius:6px}.dns-source-stats{display:flex;flex-wrap:wrap;gap:7px;margin-top:18px}.dns-source-stats span{font-size:10px;padding:6px 8px;border-radius:6px;background:var(--d-soft);color:var(--d-muted)}.dns-reverse-result{margin-top:16px}.dns-reverse-host{font:600 16px ui-monospace,monospace;overflow-wrap:anywhere}.dns-reverse-result p{font-size:10px;margin-top:7px}.dns-confirmed{color:#047857}.dns-not-confirmed{color:#b45309}.dns-table-card{overflow:hidden}.dns-table-heading{padding:15px 17px;border-bottom:1px solid var(--d-border)}.dns-table-heading h2,.dns-export h2{font-size:14px;font-weight:700}.dns-table-scroll{overflow:auto}.dns-table-card table{width:100%;font-size:11px}.dns-table-card th{text-align:left;padding:10px 12px;background:var(--d-soft);color:var(--d-muted);font-size:9px;text-transform:uppercase;letter-spacing:.07em}.dns-table-card td{padding:10px 12px;border-top:1px solid var(--d-border);vertical-align:top}.dns-answer{font-family:ui-monospace,monospace;min-width:180px;max-width:440px;overflow-wrap:anywhere}.dns-ok{color:#047857;font-weight:700}.dns-warn{color:#b45309;font-weight:700}.dns-bad{color:#b91c1c;font-weight:700}.dns-export{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:17px 20px;margin-top:12px}.dns-export p{font-size:10px;color:var(--d-muted);margin-top:4px}.dns-export>div:last-child{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.dns-export button{background:var(--d-card);color:var(--d-ink);border-color:var(--d-border);padding:7px 10px}.dns-guide{margin-top:24px;padding:22px;display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:24px}.dns-guide h2{font-size:18px;font-weight:720;margin-bottom:7px}.dns-guide h3{font-size:13px;font-weight:700;margin-bottom:7px}.dns-guide p{font-size:11px;line-height:1.75;color:var(--d-muted)}.dns-related{grid-column:1/-1;border-top:1px solid var(--d-border);padding-top:15px}.dns-guide a{color:var(--d-accent);text-decoration:underline}.dns-toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;border-radius:8px;padding:9px 14px;font-size:11px;z-index:60}
+  @media(max-width:900px){.dns-grid{grid-template-columns:1fr}.dns-controls{position:static}.dns-empty{min-height:300px}.dns-guide{grid-template-columns:1fr 1fr}.dns-guide>div:first-child{grid-column:1/-1}.dns-intro{display:block}.dns-badges{justify-content:flex-start;margin-top:12px}}@media(max-width:600px){.dns-source-grid,.dns-summary,.dns-guide{grid-template-columns:1fr}.dns-guide>div:first-child{grid-column:auto}.dns-report-heading,.dns-export{align-items:flex-start;flex-direction:column}.dns-report-heading .dns-primary{width:100%}.dns-intro h1{font-size:28px}.dns-table-card td,.dns-table-card th{padding:9px}}
+  @media print{#sidebar,body header,body footer,.share-trigger,#share-btn-floating,#feedback-btn,.dns-controls,.dns-intro,.dns-empty,.dns-message,.dns-export,.dns-guide,.dns-toast{display:none!important}body>div{margin-left:0!important}main{padding:0!important}.dns-grid{display:block}.dns-card{box-shadow:none}.dns-table-scroll{overflow:visible}.dns-source-grid{grid-template-columns:1fr 1fr}.dns-tool{--d-card:#fff;--d-soft:#f8fafc;--d-border:#ddd;--d-ink:#111;--d-muted:#555}}
+</style>

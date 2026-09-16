@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import LocalBridgeAccessDialog from '../components/LocalBridgeAccessDialog.astro';
 
 const sampleCertificate = `-----BEGIN CERTIFICATE-----
 MIIDrDCCApSgAwIBAgIUV6JcH3NME/AyM22g9GP+UqH0TwcwDQYJKoZIhvcNAQEL
@@ -28,14 +29,17 @@ const jsonLd = [
   {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
-    name: 'Certificate Inspector & Converter',
-    description: 'Inspect X.509 TLS certificates and convert PEM, DER, CER, Base64, hex, and PKCS#7 formats locally in the browser.',
+    name: 'TLS Certificate Chain Checker, Inspector & Converter',
+    description: 'Check a live TLS certificate chain on any port, inspect expiry and SAN hostname coverage, and convert PEM, DER, CER, Base64, hex, and PKCS#7 formats.',
     url: 'https://bugdays.com/certificate-inspector',
     applicationCategory: 'SecurityApplication',
     operatingSystem: 'Any',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
     featureList: [
-      'X.509 certificate inspection',
+      'Live TLS certificate chain and expiry check on any port',
+      'SAN hostname and IP address match analysis',
+      'HTTPS, Kafka SSL, LDAPS, SMTPS, IMAPS, and raw TLS support',
+      'X.509 certificate file inspection',
       'PEM, DER, CER, Base64, hex, and PKCS#7 input',
       'PEM, DER/CER, Base64, hex, JSON, and PKCS#7 export',
       'Certificate chain and bundle support',
@@ -49,6 +53,16 @@ const jsonLd = [
     mainEntity: [
       {
         '@type': 'Question',
+        name: 'Can I check a TLS certificate on a non-HTTPS port?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Yes. Enter a hostname or IP, any direct-TLS port, and an optional SNI server name. The local Holy CORS bridge can inspect certificate chains from HTTPS, Kafka SSL, LDAPS, SMTPS, IMAPS, and other services where TLS starts immediately.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Does the certificate match a hostname or IP address?',
+        acceptedAnswer: { '@type': 'Answer', text: 'The live checker compares the requested server name with DNS or IP Subject Alternative Names, reports wildcard matches, and flags a mismatch. It also checks validity dates, chain trust, missing intermediates, weak keys, and legacy signatures.' },
+      },
+      {
+        '@type': 'Question',
         name: 'How do I inspect a PEM or CER certificate?',
         acceptedAnswer: { '@type': 'Answer', text: 'Paste a PEM certificate or open a PEM, CRT, CER, DER, or P7B file. The inspector shows identity, validity, public key, fingerprints, SANs, usages, and extensions.' },
       },
@@ -59,8 +73,8 @@ const jsonLd = [
       },
       {
         '@type': 'Question',
-        name: 'Does the certificate leave my browser?',
-        acceptedAnswer: { '@type': 'Answer', text: 'No. Certificate parsing, fingerprinting, inspection, and conversion happen locally in the browser.' },
+        name: 'How does live certificate inspection connect to the service?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Holy CORS runs on your computer and opens the TLS connection to the hostname, IP, and port you enter. The certificate analysis and format conversion then happen in your browser.' },
       },
     ],
   },
@@ -68,32 +82,52 @@ const jsonLd = [
 ---
 
 <Layout
-  title="X.509 Certificate Decoder & PEM/DER Converter"
-  description="Decode X.509 TLS certificates and convert PEM, DER, CER, Base64, hex, and PKCS#7. Inspect SANs, expiry, key usage, fingerprints, extensions, and chains locally."
-  keywords="certificate inspector, certificate decoder, PEM to DER, DER to PEM, CER converter, X509 certificate viewer, SSL certificate decoder, TLS certificate checker, P7B converter, certificate fingerprint"
+  title="TLS Certificate Chain Checker, Expiry & SAN Inspector"
+  description="Check a live TLS/SSL certificate chain on any hostname, IP, and port. Verify expiry, SAN and SNI matches, trust and intermediates; export or convert PEM, DER, CER, JSON, CSV, Excel, and P7B."
+  keywords="SSL certificate checker, TLS certificate checker, certificate chain checker, SSL expiry checker, SAN checker, hostname certificate match, check certificate on port, Kafka SSL certificate, X509 certificate inspector, PEM to DER, DER to PEM, P7B converter"
   breadcrumb={[{ name: 'Security Tools', href: '/security-tools' }, { name: 'Certificate Inspector' }]}
   toolId="certificate-inspector"
   jsonLd={jsonLd}
   image="/og/certificate-inspector.png"
-  imageAlt="X.509 certificate decoder showing identity, validity, fingerprints, and format exports"
+  imageAlt="TLS certificate chain checker showing hostname match, expiry, trust, SANs, and format exports"
   imageWidth={1280}
   imageHeight={720}
 >
   <div class="max-w-[1450px] mx-auto">
     <div class="mb-5">
       <div class="flex flex-wrap items-center gap-3 mb-2">
-        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100">Certificate Inspector & Converter</h1>
-        <span class="px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">X.509 · Browser only</span>
+        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100">TLS Certificate Chain Checker & Converter</h1>
+        <span class="px-2 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 text-xs font-semibold">Live TLS + X.509 files</span>
       </div>
       <p class="text-gray-600 dark:text-slate-300 max-w-5xl">
-        Drop a certificate or paste its text to see what it identifies, when it expires, what it can be used for, and whether a bundle contains a chain. Export the same public certificate in the format your server or application needs.
+        Connect to HTTPS, Kafka SSL, LDAPS, mail, or another direct-TLS port to inspect every certificate the service presents. Check expiry, SAN hostname or IP coverage, trust, and chain issues—or open a certificate file and convert its format.
       </p>
     </div>
+
+    <section class="mb-4 bg-gradient-to-br from-indigo-50 to-white dark:from-indigo-950/30 dark:to-slate-800 rounded-xl shadow-sm border border-indigo-200 dark:border-indigo-800/70 overflow-hidden">
+      <div class="px-4 py-3 border-b border-indigo-100 dark:border-indigo-900 flex flex-wrap items-center justify-between gap-3">
+        <div><h2 class="font-semibold text-gray-800 dark:text-slate-100">Check a live TLS certificate chain</h2><p class="text-xs text-gray-500 dark:text-slate-400">Any hostname or IP · any port where TLS starts immediately</p></div>
+        <div class="flex gap-2 text-[11px] text-indigo-700 dark:text-indigo-300"><span class="px-2 py-1 rounded bg-white/70 dark:bg-slate-900/50">Expiry</span><span class="px-2 py-1 rounded bg-white/70 dark:bg-slate-900/50">SAN / SNI</span><span class="px-2 py-1 rounded bg-white/70 dark:bg-slate-900/50">Full chain</span></div>
+      </div>
+      <div class="p-4 grid lg:grid-cols-[minmax(0,1fr)_130px_minmax(0,1fr)_auto] gap-3 items-end">
+        <label class="block"><span class="block text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1.5">Hostname or IP</span><input id="tls-host" value="bugdays.com" autocomplete="off" spellcheck="false" class="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 font-mono text-sm" placeholder="broker.internal or 10.0.0.8" /></label>
+        <label class="block"><span class="block text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1.5">Port</span><input id="tls-port" type="number" min="1" max="65535" value="443" class="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 font-mono text-sm" /></label>
+        <label class="block"><span class="block text-xs font-semibold text-gray-600 dark:text-slate-300 mb-1.5">SNI / name to verify <span class="font-normal text-gray-400">(optional)</span></span><input id="tls-server-name" autocomplete="off" spellcheck="false" class="w-full px-3 py-2.5 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-900 font-mono text-sm" placeholder="Defaults to hostname; useful when connecting by IP" /></label>
+        <button id="tls-inspect-btn" type="button" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold whitespace-nowrap">Inspect service ↗</button>
+      </div>
+      <div class="px-4 pb-4 flex flex-wrap items-center gap-2">
+        <span class="text-[11px] text-gray-500 dark:text-slate-400">Quick ports:</span>
+        <button type="button" data-tls-port="443" class="tls-port-chip">HTTPS 443</button><button type="button" data-tls-port="9093" class="tls-port-chip">Kafka SSL 9093</button><button type="button" data-tls-port="636" class="tls-port-chip">LDAPS 636</button><button type="button" data-tls-port="465" class="tls-port-chip">SMTPS 465</button><button type="button" data-tls-port="993" class="tls-port-chip">IMAPS 993</button>
+        <details class="ml-auto text-xs text-gray-500 dark:text-slate-400"><summary class="cursor-pointer text-indigo-600 dark:text-indigo-400 font-medium">Bridge setup</summary><div class="mt-2 max-w-xl space-y-2"><label class="block">Holy CORS URL <input id="tls-bridge-url" value="http://127.0.0.1:2345" class="ml-2 px-2 py-1 border border-gray-300 dark:border-slate-600 rounded bg-white dark:bg-slate-900 font-mono" /></label><p>Start with <code>brew tap bugdays-com/holy-cors &amp;&amp; brew install holy-cors &amp;&amp; holy-cors</code>, or <code>docker run --rm -p 127.0.0.1:2345:2345 ghcr.io/bugdays-com/holy-cors:latest</code>.</p></div></details>
+      </div>
+    </section>
+
+    <div id="tls-error-box" class="hidden mb-4 p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 text-sm" role="alert"></div>
 
     <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
       <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="font-semibold text-gray-800 dark:text-slate-100">Open a public certificate</h2>
+          <h2 class="font-semibold text-gray-800 dark:text-slate-100">Or inspect and convert a certificate file</h2>
           <p class="text-xs text-gray-500 dark:text-slate-400">PEM, CRT, CER, DER, Base64, hex, or PKCS#7/P7B · up to 5 MB</p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -114,7 +148,8 @@ const jsonLd = [
         wrap="off"
         aria-label="Certificate input"
         placeholder="Paste a -----BEGIN CERTIFICATE----- block, Base64 DER, or hex DER…"
-      >{sampleCertificate}</textarea>
+      ></textarea>
+      <script id="certificate-sample" type="application/x-pem-file">{sampleCertificate}</script>
       <div class="px-4 py-3 border-t border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex flex-wrap items-center gap-3">
         <button id="inspect-btn" data-share-action="inspect" type="button" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold">Inspect certificate</button>
         <span class="text-xs text-gray-500 dark:text-slate-400">Pasted text is inspected automatically. Files never leave this browser.</span>
@@ -124,10 +159,21 @@ const jsonLd = [
     <div id="error-box" class="hidden mt-4 p-4 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-300 text-sm" role="alert"></div>
 
     <div id="results" class="hidden mt-4 space-y-4">
+      <section id="live-tls-summary" class="hidden bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <div class="px-4 py-4 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-start justify-between gap-4">
+          <div><div class="text-[10px] tracking-widest font-bold text-indigo-600 dark:text-indigo-400">LIVE TLS REPORT</div><h2 id="live-endpoint" class="mt-1 text-xl font-bold text-gray-800 dark:text-slate-100 font-mono break-all"></h2><p id="live-connection-meta" class="mt-1 text-xs text-gray-500 dark:text-slate-400"></p></div>
+          <button type="button" class="share-trigger px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold">Share certificate report ↗</button>
+        </div>
+        <div id="live-status-grid" class="p-4 grid sm:grid-cols-2 xl:grid-cols-4 gap-3"></div>
+        <div class="px-4 pb-4 grid lg:grid-cols-[1fr_auto] gap-4 items-start">
+          <div><h3 class="text-sm font-semibold text-gray-800 dark:text-slate-100 mb-2">Checks and findings</h3><div id="live-issues" class="grid md:grid-cols-2 gap-2"></div></div>
+          <div class="flex flex-wrap lg:max-w-64 gap-2"><button id="live-csv" class="certificate-export-button">CSV</button><button id="live-xlsx" class="certificate-export-button">Excel</button><button id="live-json" class="certificate-export-button">JSON report</button><button id="live-copy" class="certificate-export-button">Copy chain table</button><button id="live-print" class="certificate-export-button">Print / PDF</button></div>
+        </div>
+      </section>
       <section class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
         <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 class="font-semibold text-gray-800 dark:text-slate-100">Certificates found</h2>
+            <h2 class="font-semibold text-gray-800 dark:text-slate-100">Certificate chain</h2>
             <p id="source-summary" class="text-xs text-gray-500 dark:text-slate-400"></p>
           </div>
           <span id="chain-count" class="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold"></span>
@@ -264,19 +310,19 @@ const jsonLd = [
     <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 hidden px-4 py-2.5 rounded-lg bg-slate-900 text-white shadow-xl text-sm" role="status" aria-live="polite"></div>
 
     <section class="mt-8 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">Know what is inside before you install it</h2>
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">Check the certificate a service actually presents</h2>
       <div class="grid md:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-slate-300">
         <div>
-          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Identity and expiry at a glance</h3>
-          <p>See the subject, issuer, serial number, validity window, SAN hostnames and IPs, public-key details, signature algorithm, and SHA fingerprints.</p>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Hostname, IP, SAN, and SNI checks</h3>
+          <p>Verify that the leaf certificate covers the name used by a client. When connecting to an IP, provide the expected DNS name as SNI or check whether the certificate contains that IP as a SAN.</p>
         </div>
         <div>
-          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Certificate format conversion</h3>
-          <p>Convert a certificate between PEM text, binary DER/CER, Base64 DER, and hex. Export a machine-readable JSON report or package multiple certificates as a PEM chain or PKCS#7 bundle.</p>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Any direct-TLS service and port</h3>
+          <p>Inspect HTTPS on 443, Kafka SSL on 9093, LDAPS on 636, SMTPS on 465, IMAPS on 993, or a custom service where TLS begins as soon as the TCP connection opens.</p>
         </div>
         <div>
-          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Useful scope, honest result</h3>
-          <p>The inspector decodes public X.509 data and computes fingerprints locally. It does not send private keys anywhere or contact revocation, Certificate Transparency, or trust-store services.</p>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Export and share the whole finding</h3>
+          <p>Share a restorable snapshot, copy a chain table, print or save as PDF, and export CSV, Excel, JSON, PEM, DER/CER, Base64, hex, or PKCS#7.</p>
         </div>
       </div>
       <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700 grid md:grid-cols-2 gap-6 text-sm text-gray-600 dark:text-slate-300">
@@ -285,12 +331,13 @@ const jsonLd = [
           <p>PEM is Base64-wrapped DER with readable boundary lines; DER is the binary X.509 encoding. A <code class="text-xs">.cer</code> or <code class="text-xs">.crt</code> filename may contain either one, while PKCS#7 files commonly carry a certificate chain without a private key. Open the file and let the decoder identify the actual encoding before converting it.</p>
         </div>
         <div>
-          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">A certificate viewer, not a live trust check</h3>
-          <p>The report explains the certificate presented in the file: subject, issuer, Subject Alternative Names, dates, algorithms, usages, extensions, and fingerprints. It does not prove that a remote server currently presents that certificate or that your operating system trusts the chain.</p>
+          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Trust and chain diagnostics</h3>
+          <p>The live checker captures every certificate the server presents even when trust validation fails, then reports expiry, name mismatch, unknown issuer, missing or misordered intermediates, weak RSA keys, legacy signatures, and server-auth usage.</p>
         </div>
       </div>
-      <p class="mt-5 text-sm text-gray-600 dark:text-slate-300">Not sure what you were sent? Read the guide to <a href="/guides/pem-vs-der-vs-cer-vs-p7b-certificate-formats" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">PEM, DER, CER, and P7B certificate formats</a>. Testing the service that uses it? Open the <a href="/soap-client" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">online SOAP and WSDL client</a>. For encoded fragments, use the <a href="/base64-encoder-decoder" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">Base64 decoder</a>.</p>
+      <p class="mt-5 text-sm text-gray-600 dark:text-slate-300">Follow the <a href="/guides/check-tls-certificate-chain-any-port" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">TLS certificate chain, expiry, SAN, and SNI checklist</a>, or learn the difference between <a href="/guides/pem-vs-der-vs-cer-vs-p7b-certificate-formats" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">PEM, DER, CER, and P7B certificate formats</a>. Also try the <a href="/dns-lookup" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">DNS and reverse DNS checker</a> or <a href="/grpc-client" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">gRPC client</a>.</p>
     </section>
+    <LocalBridgeAccessDialog directOption="Cancel if you only want to inspect a certificate file below." />
   </div>
 </Layout>
 
@@ -310,9 +357,20 @@ const jsonLd = [
     type CertificateReport,
   } from '../lib/certificate-inspector';
   import { ShareManager } from '../lib/share';
+  import { createLocalBridgeAccessGuard } from '../lib/local-bridge-access';
+  import { createXlsxBlob, tableToDelimited } from '../lib/spreadsheet-export';
+  import {
+    analyzeTlsConnection,
+    inspectTlsService,
+    tlsReportRows,
+    tlsShareSnapshot,
+    validateTlsInspectResult,
+    type TlsAnalysis,
+    type TlsInspectResult,
+  } from '../lib/tls-certificate-check';
 
   const input = document.getElementById('certificate-input') as HTMLTextAreaElement;
-  const sample = input.value;
+  const sample = document.getElementById('certificate-sample')?.textContent?.trim() || '';
   const fileInput = document.getElementById('certificate-file') as HTMLInputElement;
   const dropZone = document.getElementById('file-drop') as HTMLLabelElement;
   const results = document.getElementById('results') as HTMLElement;
@@ -321,8 +379,11 @@ const jsonLd = [
   let parsedInput: CertificateInput | null = null;
   let reports: CertificateReport[] = [];
   let selectedIndex = 0;
+  let liveTlsResult: TlsInspectResult | null = null;
+  let liveTlsAnalysis: TlsAnalysis | null = null;
   let inspectTimer = 0;
   let toastTimer = 0;
+  const confirmLocalBridgeAccess = createLocalBridgeAccessGuard();
 
   const element = (id: string): HTMLElement => document.getElementById(id) as HTMLElement;
 
@@ -474,9 +535,14 @@ const jsonLd = [
     });
   }
 
-  async function inspect(value: string | ArrayBuffer | Uint8Array = input.value): Promise<void> {
+  async function inspect(value: string | ArrayBuffer | Uint8Array = input.value, keepLive = false): Promise<void> {
     window.clearTimeout(inspectTimer);
     clearError();
+    if (!keepLive) {
+      liveTlsResult = null;
+      liveTlsAnalysis = null;
+      element('live-tls-summary').classList.add('hidden');
+    }
     if (typeof value === 'string' && !value.trim()) {
       parsedInput = null;
       reports = [];
@@ -537,6 +603,128 @@ const jsonLd = [
     }
   }
 
+  function normalizeLiveTarget(): { host: string; port: number; serverName: string } {
+    const hostInput = document.getElementById('tls-host') as HTMLInputElement;
+    const portInput = document.getElementById('tls-port') as HTMLInputElement;
+    const serverNameInput = document.getElementById('tls-server-name') as HTMLInputElement;
+    let host = hostInput.value.trim();
+    let port = Number(portInput.value);
+    if (/^[a-z][a-z0-9+.-]*:\/\//i.test(host)) {
+      const url = new URL(host);
+      host = url.hostname;
+      if (url.port) port = Number(url.port);
+      else if (url.protocol === 'https:') port = 443;
+    }
+    host = host.replace(/^\[|\]$/g, '');
+    if (!host || /[\s/@]/.test(host) || host.includes('://')) throw new Error('Enter a valid hostname or IP address without a path.');
+    if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Port must be between 1 and 65535.');
+    const serverName = serverNameInput.value.trim() || host;
+    hostInput.value = host;
+    portInput.value = String(port);
+    return { host, port, serverName };
+  }
+
+  function certificatesToPem(result: TlsInspectResult): string {
+    return result.certificates.map(item => {
+      const lines = item.derBase64.match(/.{1,64}/g)?.join('\n') || item.derBase64;
+      return `-----BEGIN CERTIFICATE-----\n${lines}\n-----END CERTIFICATE-----`;
+    }).join('\n');
+  }
+
+  function liveReportObject() {
+    if (!liveTlsResult || !liveTlsAnalysis) return null;
+    return {
+      endpoint: { host: liveTlsResult.host, port: liveTlsResult.port, serverName: liveTlsResult.serverName, peerAddress: liveTlsResult.peerAddress },
+      connection: { tlsVersion: liveTlsResult.tlsVersion, cipherSuite: liveTlsResult.cipherSuite, alpn: liveTlsResult.alpn, connectedAt: new Date(liveTlsResult.connectedAt).toISOString(), elapsedMs: liveTlsResult.elapsedMs },
+      validation: liveTlsResult.validation,
+      checks: liveTlsAnalysis,
+      certificates: reports.map(report => JSON.parse(reportToJson(report))),
+    };
+  }
+
+  function renderLiveSummary(result: TlsInspectResult): void {
+    liveTlsAnalysis = analyzeTlsConnection(result, reports);
+    element('live-tls-summary').classList.remove('hidden');
+    element('live-endpoint').textContent = `${result.host}:${result.port}`;
+    element('live-connection-meta').textContent = `SNI / checked name: ${result.serverName} · Connected to ${result.peerAddress} · ${new Date(result.connectedAt).toLocaleString()}`;
+    const statusGrid = element('live-status-grid');
+    statusGrid.replaceChildren();
+    const leaf = reports[0];
+    const statuses = [
+      ['Name match', liveTlsAnalysis.identityMatches ? 'Pass' : 'Mismatch', liveTlsAnalysis.matchedIdentity || result.serverName, liveTlsAnalysis.identityMatches],
+      ['Device trust', result.validation.trusted ? 'Trusted' : 'Not trusted', result.validation.trusted ? 'Root store + dates + name' : 'See finding below', result.validation.trusted],
+      ['Leaf expiry', leaf?.statusLabel || 'Unknown', leaf ? leaf.notAfter.toLocaleDateString() : 'No leaf certificate', leaf?.status === 'valid' && leaf.daysRemaining > 30],
+      ['Connection', result.tlsVersion || 'TLS', `${result.cipherSuite || 'Cipher unavailable'}${result.alpn ? ` · ${result.alpn}` : ''}`, true],
+    ] as const;
+    statuses.forEach(([label, value, detail, pass]) => {
+      const card = document.createElement('div');
+      card.className = `p-3 rounded-lg border ${pass ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/20' : 'border-red-200 dark:border-red-800 bg-red-50/60 dark:bg-red-950/20'}`;
+      const labelNode = document.createElement('div'); labelNode.className = 'text-[10px] uppercase tracking-wide text-gray-500 dark:text-slate-400'; labelNode.textContent = label;
+      const valueNode = document.createElement('div'); valueNode.className = 'mt-1 font-bold text-gray-800 dark:text-slate-100'; valueNode.textContent = value;
+      const detailNode = document.createElement('div'); detailNode.className = 'mt-1 text-[11px] text-gray-500 dark:text-slate-400 break-words'; detailNode.textContent = detail;
+      card.append(labelNode, valueNode, detailNode); statusGrid.append(card);
+    });
+    const issues = element('live-issues'); issues.replaceChildren();
+    liveTlsAnalysis.issues.forEach(issue => {
+      const item = document.createElement('article');
+      const colors = issue.severity === 'pass' ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20' : issue.severity === 'error' ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/20' : 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20';
+      item.className = `p-3 rounded-lg border ${colors}`;
+      const title = document.createElement('h4'); title.className = 'text-xs font-bold text-gray-800 dark:text-slate-100'; title.textContent = `${issue.severity === 'pass' ? '✓' : issue.severity === 'error' ? '!' : '•'} ${issue.title}`;
+      const detail = document.createElement('p'); detail.className = 'mt-1 text-[11px] leading-5 text-gray-600 dark:text-slate-300 break-words'; detail.textContent = issue.detail;
+      item.append(title, detail); issues.append(item);
+    });
+  }
+
+  async function restoreLiveResult(value: unknown): Promise<void> {
+    try {
+      const restored = validateTlsInspectResult(value);
+      liveTlsResult = restored;
+      const pem = certificatesToPem(restored);
+      input.value = pem;
+      await inspect(pem, true);
+      if (!reports.length) throw new Error('The shared certificate chain could not be decoded.');
+      element('source-summary').textContent = `Shared snapshot from ${restored.host}:${restored.port} · ${reports.length} certificate${reports.length === 1 ? '' : 's'}`;
+      renderLiveSummary(restored);
+      showToast('Shared TLS certificate report restored.');
+    } catch (error) {
+      showError(error instanceof Error ? error.message : 'Could not restore the shared TLS report.');
+    }
+  }
+
+  async function inspectLiveService(): Promise<void> {
+    const button = document.getElementById('tls-inspect-btn') as HTMLButtonElement;
+    const liveError = element('tls-error-box');
+    liveError.classList.add('hidden'); liveError.textContent = '';
+    button.disabled = true; button.textContent = 'Connecting…';
+    try {
+      const request = normalizeLiveTarget();
+      const bridge = (document.getElementById('tls-bridge-url') as HTMLInputElement).value;
+      if (!await confirmLocalBridgeAccess(bridge)) return;
+      const response = await inspectTlsService(request.host, request.port, request.serverName, bridge);
+      liveTlsResult = response;
+      const pem = certificatesToPem(response);
+      input.value = pem;
+      await inspect(pem, true);
+      if (!reports.length) throw new Error('The service returned a certificate chain that could not be decoded.');
+      element('source-summary').textContent = `${response.host}:${response.port} · server-presented chain · inspected locally`;
+      element('chain-count').textContent = `${reports.length} certificate${reports.length === 1 ? '' : 's'} in chain`;
+      renderLiveSummary(response);
+      results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (error) {
+      liveTlsResult = null; liveTlsAnalysis = null;
+      liveError.textContent = error instanceof Error ? error.message : 'Could not inspect that TLS service.';
+      liveError.classList.remove('hidden');
+    } finally {
+      button.disabled = false; button.textContent = 'Inspect service ↗';
+    }
+  }
+
+  document.getElementById('tls-inspect-btn')?.addEventListener('click', inspectLiveService);
+  document.getElementById('tls-host')?.addEventListener('keydown', event => { if ((event as KeyboardEvent).key === 'Enter') inspectLiveService(); });
+  document.getElementById('tls-server-name')?.addEventListener('keydown', event => { if ((event as KeyboardEvent).key === 'Enter') inspectLiveService(); });
+  document.querySelectorAll<HTMLButtonElement>('[data-tls-port]').forEach(button => button.addEventListener('click', () => {
+    (document.getElementById('tls-port') as HTMLInputElement).value = button.dataset.tlsPort || '443';
+  }));
   document.getElementById('inspect-btn')?.addEventListener('click', () => inspect());
   input.addEventListener('input', () => {
     window.clearTimeout(inspectTimer);
@@ -623,6 +811,40 @@ const jsonLd = [
     if (parsedInput) download(certificateBundlePem(parsedInput.certificates), 'certificate-bundle.p7b.pem', 'application/x-pem-file;charset=utf-8');
   });
 
-  ShareManager.register({ tool: 'certificate-inspector', actions: { inspect: () => inspect() }, afterLoad: () => inspect() });
+  document.getElementById('live-csv')?.addEventListener('click', () => {
+    if (liveTlsResult) download(tableToDelimited(tlsReportRows(liveTlsResult, reports), ','), `tls-chain-${filename(reports[0])}.csv`, 'text/csv;charset=utf-8');
+  });
+  document.getElementById('live-xlsx')?.addEventListener('click', () => {
+    if (!liveTlsResult) return;
+    const blob = createXlsxBlob(tlsReportRows(liveTlsResult, reports), { sheetName: 'TLS certificate chain' });
+    download(blob, `tls-chain-${filename(reports[0])}.xlsx`, blob.type);
+  });
+  document.getElementById('live-json')?.addEventListener('click', () => {
+    const report = liveReportObject();
+    if (report) download(JSON.stringify(report, null, 2), `tls-report-${filename(reports[0])}.json`, 'application/json;charset=utf-8');
+  });
+  document.getElementById('live-copy')?.addEventListener('click', () => {
+    if (liveTlsResult) copy(tableToDelimited(tlsReportRows(liveTlsResult, reports), '\t'), 'Certificate chain table copied.');
+  });
+  document.getElementById('live-print')?.addEventListener('click', () => window.print());
+
+  ShareManager.register({
+    tool: 'certificate-inspector',
+    customCollect: () => liveTlsResult
+      ? { mode: 'live', liveResult: tlsShareSnapshot(liveTlsResult) }
+      : { mode: 'file', certificate: parsedInput ? certificateChainPem(parsedInput.certificates) : input.value },
+    customRestore: data => {
+      if (data.mode === 'live' && data.liveResult) {
+        restoreLiveResult(data.liveResult);
+      } else if (typeof data.certificate === 'string') {
+        input.value = data.certificate.slice(0, 5 * 1024 * 1024);
+        inspect();
+      }
+    },
+  });
   inspect();
 </script>
+
+<style is:global>
+  .tls-port-chip,.certificate-export-button{padding:.38rem .6rem;border:1px solid rgb(203 213 225);border-radius:.45rem;background:white;color:rgb(71 85 105);font-size:.68rem;font-weight:600}.tls-port-chip:hover,.certificate-export-button:hover{border-color:rgb(129 140 248);color:rgb(79 70 229)}.dark .tls-port-chip,.dark .certificate-export-button{border-color:rgb(71 85 105);background:rgb(30 41 59);color:rgb(203 213 225)}@media print{#sidebar,body header,body footer,.share-trigger,#share-btn-floating,#feedback-btn,#tls-inspect-btn,.tls-port-chip,.certificate-export-button,#certificate-input,#file-drop,#paste-btn,#sample-btn,#clear-btn,#inspect-btn,#tls-error-box,#error-box{display:none!important}body>div{margin-left:0!important}main{padding:0!important}section{box-shadow:none!important;break-inside:avoid}.dark *{color:#111!important;background:white!important;border-color:#ddd!important}}
+</style>

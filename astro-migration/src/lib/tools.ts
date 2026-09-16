@@ -111,7 +111,7 @@ export const toolGroups: ToolGroup[] = [
     icon: "shield",
     items: [
       { name: "Hash Generator", href: "/hash-generator", description: "MD5, SHA-1, SHA-256 & more", keywords: ["md5", "sha", "checksum", "digest"] },
-      { name: "Certificate Inspector", href: "/certificate-inspector", description: "Inspect & convert X.509 certificates", keywords: ["ssl", "tls", "x509", "pem", "der", "cer", "crt", "p7b", "pkcs7", "certificate decoder"] },
+      { name: "TLS Certificate Checker", href: "/certificate-inspector", description: "Check live chains, expiry, SANs & convert X.509", keywords: ["ssl certificate checker", "tls", "certificate chain", "expiry", "san", "sni", "hostname match", "custom port", "kafka ssl", "x509", "pem", "der", "cer", "crt", "p7b", "pkcs7", "certificate decoder"] },
       { name: "JWT Decoder", href: "/jwt-decoder", description: "Decode & inspect JWT tokens", keywords: ["token", "json web token", "claims"] },
       { name: "Password Gen", href: "/password-generator", description: "Generate strong passwords", keywords: ["random", "secure", "passphrase"] },
       { name: "DBeaver Decrypt", href: "/dbeaver-password-decrypter", description: "Recover credentials-config.json", keywords: ["credentials", "recover", "database"] },
@@ -152,6 +152,7 @@ export const toolGroups: ToolGroup[] = [
     href: "/network-tools",
     icon: "globe",
     items: [
+      { name: "DNS Lookup & Reverse DNS", href: "/dns-lookup", description: "Compare public, device, VPN & PTR records", keywords: ["dns lookup", "dns checker", "reverse dns", "ptr", "a record", "aaaa", "mx", "txt", "cname", "private dns", "split horizon", "vpn"] },
       { name: "IP Address, ISP & Cloud Lookup", href: "/ip-lookup", description: "Find ISP, ASN, location, reverse DNS & provider ranges", keywords: ["ip address", "ip lookup", "isp", "asn", "location", "reverse dns", "organization", "hosting", "datacenter", "digitalocean", "hetzner", "ovh", "hostinger", "aws", "gcp", "azure", "cloudflare", "googlebot", "ipv6", "provider", "bot"] },
       { name: "Access Log Analyzer", href: "/access-log-analyzer", description: "Inspect traffic, errors & client networks", keywords: ["nginx", "apache", "logs", "requests", "bot traffic", "json logs", "404"] },
       { name: "CIDR Calculator", href: "/cidr-calculator", description: "Subnet & IP range calculator", keywords: ["subnet", "netmask", "ip range"] },

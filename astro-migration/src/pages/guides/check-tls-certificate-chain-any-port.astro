@@ -1,0 +1,78 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+const guide = guideBySlug('check-tls-certificate-chain-any-port');
+---
+
+<GuideLayout guide={guide} keywords="TLS certificate chain checker, SSL certificate expiry checker, SAN hostname mismatch, SNI certificate check, check SSL certificate custom port, Kafka SSL certificate, LDAPS certificate, missing intermediate certificate">
+  <p>A certificate file can be perfectly valid while the service still presents an expired leaf, omits an intermediate, or selects the wrong certificate for a client’s SNI name. The reliable starting point is the live TLS handshake from the network where the service is used.</p>
+
+  <blockquote><strong>Check three separate claims:</strong> the certificate is within its validity window, its SAN covers the name the client verifies, and the presented chain reaches a root trusted by that client environment.</blockquote>
+
+  <h2>Inspect the live certificate chain, not only port 443</h2>
+  <p>TLS protects more than HTTPS. Kafka brokers, LDAP directories, mail servers, databases, and custom TCP protocols can begin a TLS handshake immediately on their configured port. Enter the connection host, port, and optional SNI name in the <a href="/certificate-inspector">TLS certificate chain checker</a>.</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Service example</th><th>Common direct-TLS port</th><th>What to verify</th></tr></thead>
+    <tbody>
+      <tr><td>HTTPS</td><td>443</td><td>Public hostname, full chain, expiry, ALPN</td></tr>
+      <tr><td>Kafka SSL</td><td>9093 is common, but configurable</td><td>Broker hostname verification and every advertised listener</td></tr>
+      <tr><td>LDAPS</td><td>636</td><td>Directory hostname, private CA trust, intermediate chain</td></tr>
+      <tr><td>SMTPS</td><td>465</td><td>Mail service name and server-auth usage</td></tr>
+      <tr><td>IMAPS</td><td>993</td><td>Mail hostname, expiry, and client trust path</td></tr>
+    </tbody>
+  </table></div>
+  <p>Ports such as SMTP 25/587, IMAP 143, LDAP 389, and PostgreSQL 5432 commonly negotiate <strong>STARTTLS</strong> or a protocol-specific upgrade before the TLS handshake. A raw TLS checker does not perform those application commands; use a protocol-aware client when TLS does not start immediately.</p>
+
+  <h2>Connection host and SNI name are not always the same</h2>
+  <p>A client may connect to <code>10.20.4.8:9093</code> but verify <code>broker-1.example.internal</code>. SNI tells a server which DNS identity the client wants and is especially important when one address hosts multiple certificates.</p>
+  <pre><code># Connect to an explicit address while sending a DNS SNI name
+openssl s_client \
+  -connect 10.20.4.8:9093 \
+  -servername broker-1.example.internal \
+  -showcerts</code></pre>
+  <p>If the client genuinely verifies an IP address, that address must appear as an IP Subject Alternative Name. A DNS SAN containing the textual IP is not equivalent. Likewise, a PTR hostname discovered from reverse DNS is a clue, not automatic permission to substitute a different identity.</p>
+
+  <h2>Read SANs before the Common Name</h2>
+  <p>Modern hostname verification uses Subject Alternative Names. For a DNS name, an exact SAN is simplest. A wildcard such as <code>*.example.com</code> covers one leftmost label such as <code>api.example.com</code>; it does not cover <code>example.com</code> or <code>v2.api.example.com</code>.</p>
+  <ul>
+    <li><code>DNS:api.example.com</code> matches that hostname.</li>
+    <li><code>DNS:*.example.com</code> matches <code>api.example.com</code>.</li>
+    <li><code>DNS:*.example.com</code> does not match <code>deep.api.example.com</code>.</li>
+    <li><code>IP:10.20.4.8</code> can match a client that verifies that IP directly.</li>
+  </ul>
+
+  <h2>Check expiry across the entire chain</h2>
+  <p>The leaf’s expiration date gets the most attention, but an expired intermediate can also break validation. Record the not-before and not-after dates for every presented certificate. Alert thresholds often begin at 30 days, but the right renewal margin depends on automation, change windows, and how widely a certificate is deployed.</p>
+  <p>A “not yet valid” result can indicate a newly issued certificate deployed too early or a bad system clock. Treat those causes separately.</p>
+
+  <h2>Recognize an incomplete or misordered chain</h2>
+  <p>Servers normally present the leaf followed by intermediate certificates. They usually omit the root because clients already carry trust anchors. The issuer of certificate 1 should match the subject of certificate 2, and so on.</p>
+  <ul>
+    <li><strong>One leaf and unknown issuer:</strong> a missing intermediate is a strong possibility.</li>
+    <li><strong>Issuer does not match the next subject:</strong> the chain may be misordered or unrelated certificates may have been bundled.</li>
+    <li><strong>Root included:</strong> usually unnecessary, though not automatically the cause of failure.</li>
+    <li><strong>Private CA:</strong> the chain may be correct but absent from the device trust store.</li>
+  </ul>
+
+  <h2>Separate chain trust from service identity</h2>
+  <p>A certificate can chain to a trusted root and still fail because the requested hostname is missing from SAN. It can cover the right hostname and still fail because an intermediate is absent. It can pass both checks and still be rejected by an application using a different trust store, Java runtime, container image, or certificate policy.</p>
+  <p>The Bug Days report captures the server-presented chain even when the trust pass fails, then shows the device trust result beside independent SAN and expiry analysis. Exporting the full chain table makes those separate findings easier to hand off.</p>
+
+  <h2>Kafka TLS troubleshooting checklist</h2>
+  <ol>
+    <li>Inspect every broker address clients receive from <code>advertised.listeners</code>, not only the bootstrap address.</li>
+    <li>Use the same DNS name as the client’s endpoint-identification setting.</li>
+    <li>If connecting by IP, provide the intended broker DNS name as SNI when that reflects the real client configuration.</li>
+    <li>Confirm the leaf SAN covers each advertised broker name.</li>
+    <li>Confirm every broker presents the required intermediate certificates.</li>
+    <li>Compare the trust result with the actual JVM or application trust store when they differ from the operating system.</li>
+  </ol>
+
+  <h2>Export evidence another engineer can reproduce</h2>
+  <p>A useful certificate incident report includes the connection target, port, SNI name, peer address, TLS version, cipher suite, presented chain order, expiry dates, SAN result, trust error, and SHA-256 fingerprints. Share a Bug Days snapshot when the public certificate data is suitable for sharing, or export CSV, Excel, JSON, PEM, and a printable PDF for a ticket.</p>
+
+  <div class="guide-note"><p><strong>Scope:</strong> the checker diagnoses direct TLS handshakes. It does not perform STARTTLS negotiation, client-certificate authentication, revocation checks, or Certificate Transparency monitoring.</p></div>
+
+  <a slot="related" href="/guides/dns-lookup-public-vs-system-resolver" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Compare DNS before testing TLS</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Check public, device, VPN, PTR, and forward-confirmed DNS answers.</span></a>
+  <a slot="related" href="/guides/pem-vs-der-vs-cer-vs-p7b-certificate-formats" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Understand certificate file formats</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Identify and convert PEM, DER, CER, CRT, and P7B correctly.</span></a>
+</GuideLayout>

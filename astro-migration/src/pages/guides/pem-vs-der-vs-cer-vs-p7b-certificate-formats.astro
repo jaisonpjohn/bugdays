@@ -57,7 +57,7 @@ openssl pkcs7 -inform DER -in chain.p7b -print_certs -out chain.pem</code></pre>
 
   <h2>Certificate validity is not the same as trust</h2>
   <p>A file decoder can establish what a certificate says: names, dates, key usage, extensions, fingerprints, and signatures within a supplied bundle. It cannot establish how a remote server presents the chain, whether hostname verification succeeds, whether revocation is enforced, or whether a specific machine trusts the root.</p>
-  <p>For a live endpoint, inspect the handshake from the relevant network and runtime. For a local file, use the certificate inspector to answer the narrower—and still valuable—question: “What exactly is in this file?”</p>
+  <p>For a live endpoint, <a href="/guides/check-tls-certificate-chain-any-port">inspect the certificate chain, expiry, SAN, and SNI from the relevant network</a>. For a local file, use the certificate inspector to answer the narrower—and still valuable—question: “What exactly is in this file?”</p>
 
   <h2>Avoid the dangerous conversion mistake</h2>
   <p>Certificates contain public keys and are normally safe to inspect. Private keys are secrets. A PEM private key has a label such as <code>BEGIN PRIVATE KEY</code>, <code>BEGIN ENCRYPTED PRIVATE KEY</code>, or an algorithm-specific private-key label. Do not paste one into a public site, support ticket, chat, or certificate-only converter.</p>

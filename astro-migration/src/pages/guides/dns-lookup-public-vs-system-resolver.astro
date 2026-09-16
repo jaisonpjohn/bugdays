@@ -1,0 +1,82 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+const guide = guideBySlug('dns-lookup-public-vs-system-resolver');
+---
+
+<GuideLayout guide={guide} keywords="DNS lookup guide, DNS checker, reverse DNS lookup, PTR lookup, forward confirmed reverse DNS, system DNS resolver, VPN DNS, private DNS, split horizon DNS, A AAAA MX TXT CNAME records">
+  <p>A hostname can resolve correctly in a browser, fail inside a container, and return a third answer on a VPN. That does not automatically mean DNS is random. It usually means the clients are asking different resolvers or reaching different views of the same zone.</p>
+
+  <blockquote><strong>Start by naming the vantage point:</strong> a public DNS lookup answers “what does an internet resolver see?” A system DNS lookup answers “what does this device—or the local bridge environment—see?” Comparing the two turns a vague resolution problem into evidence.</blockquote>
+
+  <h2>Public DNS versus system and VPN DNS</h2>
+  <p>Public DNS resolvers can inspect records published on the internet. They cannot see a private corporate zone unless that zone is deliberately reachable and delegated. Your operating system resolver may use a router, a VPN-provided nameserver, a cloud private zone, a search suffix, or a local hosts file.</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Lookup source</th><th>Useful for</th><th>Why its answer may differ</th></tr></thead>
+    <tbody>
+      <tr><td>Public resolver</td><td>Internet-visible records, delegation, and published mail or verification data</td><td>Resolver cache and propagation timing</td></tr>
+      <tr><td>Device resolver</td><td>What applications on the computer are likely to resolve</td><td>Router DNS, hosts file, search domains, and OS configuration</td></tr>
+      <tr><td>VPN / corporate resolver</td><td>Private services and split-horizon zones</td><td>Conditional forwarding and private DNS views</td></tr>
+      <tr><td>Container resolver</td><td>What an application inside that container sees</td><td>Container runtime DNS and network namespace</td></tr>
+    </tbody>
+  </table></div>
+
+  <p>The Bug Days <a href="/dns-lookup">DNS lookup and reverse DNS checker</a> queries public DNS in the browser. For the device or VPN view, Holy CORS runs locally and uses its environment’s configured resolver. A native Holy CORS binary follows the host configuration; a Docker container follows Docker’s DNS configuration.</p>
+
+  <h2>Choose the record type that answers your question</h2>
+  <ul>
+    <li><strong>A and AAAA:</strong> IPv4 and IPv6 addresses for a hostname.</li>
+    <li><strong>CNAME:</strong> an alias that points at another DNS name.</li>
+    <li><strong>MX:</strong> mail exchangers, including their priorities.</li>
+    <li><strong>TXT:</strong> SPF, domain verification, and other text policies. Long TXT values may be split into several quoted segments on the wire.</li>
+    <li><strong>NS and SOA:</strong> zone delegation and administrative metadata.</li>
+    <li><strong>SRV:</strong> host and port discovery for a named service.</li>
+    <li><strong>CAA:</strong> which certificate authorities may issue for a domain.</li>
+    <li><strong>PTR:</strong> a reverse mapping from an IP address to a hostname.</li>
+  </ul>
+
+  <h2>Run an IPv4 or IPv6 reverse DNS lookup</h2>
+  <p>Reverse DNS stores PTR records under a special name. IPv4 uses reversed octets beneath <code>in-addr.arpa</code>; IPv6 uses reversed hexadecimal nibbles beneath <code>ip6.arpa</code>. A checker can build that query for you when you enter an IP address.</p>
+  <pre><code># IPv4 PTR lookup
+dig -x 8.8.8.8
+
+# Ask a specific public resolver
+dig @1.1.1.1 -x 8.8.8.8</code></pre>
+  <p>No PTR record is common and should be reported as “not published,” not as proof that an address is broken. More than one PTR hostname is also legal, though many operational conventions prefer one stable canonical name.</p>
+
+  <h2>Forward-confirm the PTR hostname</h2>
+  <p>A PTR record says an address maps to a name. Forward-confirmed reverse DNS performs the second half: resolve that name’s A and AAAA records and check whether the original address appears. This is often called FCrDNS.</p>
+  <ol>
+    <li>Query PTR for the IP address.</li>
+    <li>Collect the returned hostname or hostnames.</li>
+    <li>Resolve each hostname to A and AAAA.</li>
+    <li>Check whether the original normalized IP is in the forward result.</li>
+  </ol>
+  <p>A match shows consistent forward and reverse configuration. It does not prove who controls the machine, whether traffic is benign, or whether the TLS certificate matches that name. Use the <a href="/ip-lookup">IP, ISP, ASN, and cloud lookup</a> for network context and the <a href="/certificate-inspector">TLS certificate checker</a> for service identity.</p>
+
+  <h2>Interpret NXDOMAIN, NOERROR with no data, and SERVFAIL</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Status</th><th>Meaning</th><th>Next check</th></tr></thead>
+    <tbody>
+      <tr><td><code>NXDOMAIN</code></td><td>The resolver says the queried name does not exist</td><td>Spelling, search suffix, zone view, and delegation</td></tr>
+      <tr><td><code>NOERROR</code> with no answers</td><td>The name may exist, but no record of that type is published</td><td>Try the intended type; an A record and MX record are independent</td></tr>
+      <tr><td><code>SERVFAIL</code></td><td>The resolver could not produce a usable answer</td><td>DNSSEC validation, upstream availability, authoritative servers, and resolver logs</td></tr>
+      <tr><td><code>REFUSED</code></td><td>The server declined the query</td><td>Access policy, network source, recursion policy, or VPN connection</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>A practical split-DNS investigation</h2>
+  <ol>
+    <li>Record the exact hostname and whether the failing client is on the VPN.</li>
+    <li>Compare public DNS with the system or VPN resolver.</li>
+    <li>Compare record data and status—not only whether a command printed output.</li>
+    <li>Capture TTLs and resolver latency to separate stale cache from connectivity.</li>
+    <li>If an address is returned, test the service and its TLS identity independently.</li>
+    <li>Share or export the snapshot so another engineer can compare the same evidence.</li>
+  </ol>
+
+  <div class="guide-note"><p><strong>Useful habit:</strong> include the resolver source in a DNS ticket. “It resolves to 10.20.4.8 through the VPN resolver but NXDOMAIN through public DNS” is far more actionable than “DNS is broken.”</p></div>
+
+  <a slot="related" href="/guides/check-tls-certificate-chain-any-port" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Check the service certificate next</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Verify the chain, expiry, SAN, SNI, and trust on any direct-TLS port.</span></a>
+  <a slot="related" href="/guides/ip-address-lookup-isp-asn-reverse-dns" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Put an IP address in context</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Review ISP, ASN, approximate location, cloud evidence, and PTR data.</span></a>
+</GuideLayout>
