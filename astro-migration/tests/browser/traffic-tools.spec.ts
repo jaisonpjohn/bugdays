@@ -75,20 +75,42 @@ test('single IP lookup loads live ISP, ASN, location and reverse DNS into a shar
   await page.goto('/ip-lookup/');
   await page.locator('#traffic-input').fill('8.8.8.8');
   await expect(page.locator('#traffic-report')).toBeVisible();
-  await expect(page.locator('#traffic-ip-rows')).toContainText('AS15169');
-  await expect(page.locator('#traffic-ip-rows')).toContainText('San Jose');
-  await page.getByRole('button', { name: '8.8.8.8', exact: true }).click();
+  await expect(page.locator('#traffic-single')).toBeVisible();
+  await expect(page.locator('#traffic-report-heading')).toBeHidden();
+  await expect(page.locator('#traffic-summary')).toBeHidden();
+  await expect(page.locator('#traffic-charts')).toBeHidden();
+  await expect(page.locator('#traffic-explorer')).toBeHidden();
+  await expect(page.locator('#traffic-single-body')).toContainText('AS15169');
+  await expect(page.locator('#traffic-single-body')).toContainText('Google Public DNS');
+  await expect(page.locator('#traffic-single-body')).toContainText('San Jose');
+  await expect(page.locator('#traffic-single-body')).toContainText('dns.google');
+  await page.locator('[data-single-action="copy"]').click();
+  await expect.poll(() => page.evaluate(() => (window as any).__copied)).toBe('8.8.8.8');
+  await page.screenshot({ path: testInfo.outputPath('single-ip-result.png'), fullPage: true });
+  await page.locator('#traffic-single-details').click();
   await expect(page.locator('#traffic-detail-body')).toContainText('Google Public DNS');
   await expect(page.locator('#traffic-detail-body')).toContainText('dns.google');
   await expect(page.locator('#traffic-detail-body')).toContainText('approximate network context');
-  await page.screenshot({ path: testInfo.outputPath('ip-enrichment-detail.png'), fullPage: true });
-  await page.locator('#traffic-share-ip').click();
+  await page.locator('#traffic-detail-close').click();
+  await page.locator('#traffic-single-share').click();
   const url = await shareUrl(page);
   const state = JSON.parse(LZString.decompressFromEncodedURIComponent(url.split('#lz:')[1])!);
   expect(state.d.report.ips[0].enrichment.network.asn).toBe(15169);
   expect(state.d.report.ips[0].enrichment.reverseDns).toEqual(['dns.google']);
   expect(fallbackBodies).toEqual([]);
   expect(directUrls).toHaveLength(2);
+});
+
+test('single special-use IP gets a focused local result without external enrichment', async ({ page }) => {
+  const external: string[] = [];
+  page.on('request', request => { if (/ipwho\.is|cloudflare-dns\.com|\/api\/ip-enrich/.test(request.url())) external.push(request.url()); });
+  await page.goto('/ip-lookup/');
+  await page.locator('#traffic-input').fill('10.0.0.24');
+  await expect(page.locator('#traffic-single')).toBeVisible();
+  await expect(page.locator('#traffic-single-body')).toContainText('Private network');
+  await expect(page.locator('#traffic-single-body')).toContainText('services were not contacted');
+  await expect(page.locator('#traffic-summary')).toBeHidden();
+  expect(external).toEqual([]);
 });
 
 test('IP report sends only IPs for matching and shares its filtered snapshot', async ({ page }) => {
@@ -240,7 +262,9 @@ test('shared strings render as text and malformed reports show an error', async 
   const link = '/ip-lookup/#lz:' + LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'ip-lookup', d: { report, title: '<script>alert(1)</script>' } }));
   await page.goto(link);
   await expect(page.locator('#traffic-report')).toBeVisible();
-  await page.getByRole('button', { name: '3.5.140.1', exact: true }).click();
+  await expect(page.locator('#traffic-single-body')).toContainText('<img src=x onerror=alert(1)>');
+  await expect(page.locator('#traffic-single-body img')).toHaveCount(0);
+  await page.locator('#traffic-single-details').click();
   await expect(page.locator('#traffic-detail-body')).toContainText('<img src=x onerror=alert(1)>');
   await expect(page.locator('#traffic-detail-body img')).toHaveCount(0);
   await page.goto('/ip-lookup/#lz:' + LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'ip-lookup', d: { report: { v: 99 } } })));

@@ -132,6 +132,7 @@ export function initTrafficWorkbench() {
     finally {
       enrichmentRequests.delete(row.address);
       if (report?.ips.includes(row)) renderRows();
+      if (mode === 'ip' && report?.ips.length === 1 && report.ips[0] === row) renderSingle();
       if (activeIp === row && detail.open) renderDetail();
     }
   }
@@ -179,6 +180,10 @@ export function initTrafficWorkbench() {
   function render() {
     if (!report) return;
     get('empty').hidden = true; get('report').hidden = false;
+    const single = mode === 'ip' && report.ips.length === 1;
+    get('single').hidden = !single;
+    for (const id of ['report-heading', 'summary', 'charts', 'explorer']) get(id).hidden = single;
+    if (single) renderSingle();
     const s = report.summary;
     get('report-meta').textContent = `${date(report.createdAt)} · Range snapshot: ${date(report.dataset.fetchedAt)}`;
     if (report.shared) notice(`Shared report snapshot: ${report.shared.scope}. Raw input is not included.`);
@@ -223,6 +228,32 @@ export function initTrafficWorkbench() {
     if (mode === 'ip' && report.ips.length === 1 && !report.ips[0].enrichment && report.ips[0].category !== 'special') void loadEnrichment(report.ips[0]);
   }
 
+  function renderSingle() {
+    if (!report || mode !== 'ip' || report.ips.length !== 1) return;
+    const row = report.ips[0], enrichment = row.enrichment, network = enrichment?.network, location = enrichment?.location;
+    const providers = [...new Set([...row.matches.map(match => sourceName(match.source)), network?.organization || '', network?.isp || ''].filter(Boolean))];
+    const place = [location?.city, location?.region, location?.country].filter(Boolean).join(', ');
+    const coordinates = location?.latitude !== undefined && location.longitude !== undefined ? `${location.latitude.toFixed(4)}, ${location.longitude.toFixed(4)}` : '';
+    const sourceLinks = [
+      enrichment?.sources.includes('ipwhois') ? '<a href="https://ipwhois.io/" target="_blank" rel="noopener noreferrer">IPWhois.io</a>' : '',
+      enrichment?.sources.includes('cloudflare-dns') ? '<a href="https://developers.cloudflare.com/1.1.1.1/encryption/dns-over-https/" target="_blank" rel="noopener noreferrer">Cloudflare DNS</a>' : '',
+    ].filter(Boolean).join(' · ');
+    const live = row.category === 'special'
+      ? `<div class="traffic-single-loading"><strong>${escapeHtml(row.label || categoryLabel(row.category))}</strong><p>This is a recognized special-use address, so public ISP, location, and reverse-DNS services were not contacted.</p></div>`
+      : !enrichment
+        ? `<div class="traffic-single-loading"><p>${enrichmentErrors.get(row.address) ? escapeHtml(enrichmentErrors.get(row.address)) : 'Checking the network operator, ASN, approximate location, time zone, and reverse DNS…'}</p>${enrichmentErrors.has(row.address) ? '<button type="button" class="traffic-button" data-single-action="retry">Retry live lookup</button>' : '<div class="traffic-enrichment-loading" aria-label="Loading live IP details"></div>'}</div>`
+        : `<div class="traffic-single-live">
+            <article class="traffic-single-panel"><span>Network identity</span><strong>${escapeHtml(network?.organization || network?.isp || 'Network details unavailable')}</strong><dl><dt>ASN</dt><dd>${network?.asn ? `AS${network.asn}` : 'Not returned'}</dd><dt>ISP</dt><dd>${escapeHtml(network?.isp || 'Not returned')}</dd><dt>Domain</dt><dd>${escapeHtml(network?.domain || 'Not returned')}</dd></dl></article>
+            <article class="traffic-single-panel"><span>Approximate location</span><strong>${escapeHtml(`${location?.flagEmoji ? `${location.flagEmoji} ` : ''}${place || 'Not returned'}`)}</strong><dl><dt>Time zone</dt><dd>${escapeHtml([location?.timezone, location?.utcOffset].filter(Boolean).join(' · ') || 'Not returned')}</dd><dt>Coordinates</dt><dd>${escapeHtml(coordinates || 'Not returned')}</dd></dl></article>
+            <article class="traffic-single-panel"><span>Reverse DNS</span><strong>${escapeHtml(enrichment.reverseDns[0] || 'No PTR record published')}</strong><dl><dt>Checked</dt><dd>${escapeHtml(date(enrichment.lookedUpAt))}</dd><dt>Sources</dt><dd>${sourceLinks || 'No live source responded'}</dd></dl>${network ? '' : '<button type="button" class="traffic-button" data-single-action="retry">Retry live lookup</button>'}</article>
+          </div>`;
+    const evidence = row.matches.length
+      ? row.matches.map(match => `<div class="traffic-single-match"><div><span>Provider</span><strong>${escapeHtml(sourceName(match.source))}</strong></div><div><span>Matched range</span><code>${escapeHtml(match.cidr)}</code></div><div><span>Service / evidence</span><strong>${escapeHtml([match.service, match.region, match.method === 'bgp' ? 'Current BGP origin' : 'Official provider feed'].filter(Boolean).join(' · '))}</strong></div></div>`).join('')
+      : `<p class="traffic-small">${row.category === 'special' ? 'Public provider-range evidence does not apply to this special-use address.' : 'No match in the checked cloud, hosting, CDN, service, or crawler ranges.'}</p>`;
+    const warnings = enrichment?.warnings.length ? ` ${escapeHtml(enrichment.warnings.join(' '))}` : '';
+    get('single-body').innerHTML = `<div class="traffic-single-head"><div><span class="traffic-step">IP ADDRESS RESULT</span><h2 class="traffic-single-address">${escapeHtml(row.address)}</h2><div class="traffic-single-meta"><span class="traffic-badge traffic-badge-${escapeHtml(row.category)}">${escapeHtml(row.label || categoryLabel(row.category))}</span><span>IPv${row.version}</span>${network?.asn ? `<span>AS${network.asn}</span>` : ''}${providers[0] ? `<span>${escapeHtml(providers[0])}</span>` : ''}</div></div><div class="traffic-single-actions"><button id="traffic-single-share" type="button" class="traffic-button traffic-primary" data-single-action="share">Share this IP ↗</button><button type="button" class="traffic-button" data-single-action="copy">Copy IP</button><button id="traffic-single-details" type="button" class="traffic-button" data-single-action="details">Full evidence</button></div></div>${live}<section class="traffic-single-evidence"><div class="traffic-single-evidence-head"><h3>Published range evidence</h3><span>Snapshot ${escapeHtml(date(report.dataset.fetchedAt))}</span></div>${evidence}</section>${enrichment ? `<p class="traffic-single-note">IP geolocation is approximate network context—not a street address or proof of a person’s location.${warnings}</p>` : ''}`;
+  }
+
   function rowHtml(row: IpRow) {
     const providers = [...new Set([...row.matches.map(m => sourceName(m.source)), row.enrichment?.network?.organization || '', row.enrichment?.network?.isp || ''].filter(Boolean))];
     const regions = [...new Set(row.matches.map(m => m.region).filter(Boolean))];
@@ -241,7 +272,9 @@ export function initTrafficWorkbench() {
     get('page-label').textContent = rows.length ? `${number(page * PAGE_SIZE + 1)}–${number(Math.min(rows.length, (page + 1) * PAGE_SIZE))} of ${number(rows.length)}` : '0 addresses';
     get<HTMLButtonElement>('prev').disabled = page === 0; get<HTMLButtonElement>('next').disabled = (page + 1) * PAGE_SIZE >= rows.length;
     const shareCount = reportShareSnapshot(report, rows).ips.length;
-    get('share-description').textContent = `Sharing includes the report title, full-analysis totals, ${shareCount} filtered IPs (up to 200 within the link size limit), saved live details for addresses you inspected, and the top 50 paths. IPs and paths are visible to recipients; raw lines and query strings are excluded. CSV/Excel use all filtered rows.`;
+    get('share-description').textContent = mode === 'ip' && report.ips.length === 1
+      ? 'Download this IP profile as CSV, Excel, or report JSON, copy it as a table, or print it to PDF. The Share this IP button creates a link with the network evidence shown above.'
+      : `Sharing includes the report title, full-analysis totals, ${shareCount} filtered IPs (up to 200 within the link size limit), saved live details for addresses you inspected, and the top 50 paths. IPs and paths are visible to recipients; raw lines and query strings are excluded. CSV/Excel use all filtered rows.`;
     get<HTMLButtonElement>('share').disabled = !rows.length;
     for (const id of ['csv', 'xlsx', 'copy']) get<HTMLButtonElement>(id).disabled = !rows.length;
   }
@@ -289,6 +322,14 @@ export function initTrafficWorkbench() {
     renderDetail();
     detail.showModal();
     if (!activeIp.enrichment && activeIp.category !== 'special') void loadEnrichment(activeIp);
+  }
+
+  function shareOneIp(row: IpRow) {
+    if (!report) return;
+    const selected: TrafficReport = { ...report, summary: { ...report.summary, lines: row.count, accepted: row.count, skipped: 0, uniqueIps: 1, matchedIps: row.matches.length ? 1 : 0, matchedEvents: row.matches.length ? row.count : 0, errors: row.errors, bytes: row.bytes, timedRequests: 0, p50: null, p95: null, first: null, last: null }, ips: [row], paths: [], statuses: [], timeline: [], issues: [] };
+    shareOverride = reportShareSnapshot(selected, [row], 'Selected IP only');
+    if (detail.open) detail.close();
+    document.getElementById('share-btn')?.click();
   }
 
   function download(blob: Blob, extension: string) {
@@ -348,14 +389,23 @@ export function initTrafficWorkbench() {
   get('reset-filters').addEventListener('click', () => { search.value = source.value = category.value = ''; sort.value = 'count'; page = 0; renderRows(); });
   get('prev').addEventListener('click', () => { page--; renderRows(); }); get('next').addEventListener('click', () => { page++; renderRows(); });
   get('ip-rows').addEventListener('click', event => { const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-ip]'); if (button?.dataset.ip) showDetail(button.dataset.ip); });
+  get('single').addEventListener('click', async event => {
+    const action = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-single-action]')?.dataset.singleAction;
+    const row = report?.ips.length === 1 ? report.ips[0] : null;
+    if (!action || !row) return;
+    if (action === 'share') shareOneIp(row);
+    else if (action === 'details') showDetail(row.address);
+    else if (action === 'retry') { void loadEnrichment(row, true); renderSingle(); }
+    else if (action === 'copy') {
+      try { await navigator.clipboard.writeText(row.address); toast('IP address copied.'); }
+      catch { toast('Clipboard unavailable. Select and copy the address instead.'); }
+    }
+  });
   get('detail-body').addEventListener('click', event => { if ((event.target as HTMLElement).closest('[data-enrichment-retry]') && activeIp) { void loadEnrichment(activeIp, true); renderDetail(); } });
   get('detail-close').addEventListener('click', () => detail.close());
   get('share').addEventListener('click', () => document.getElementById('share-btn')?.click());
   get('share-ip').addEventListener('click', () => {
-    if (!report || !activeIp) return;
-    const row = activeIp;
-    const selected: TrafficReport = { ...report, summary: { ...report.summary, lines: row.count, accepted: row.count, skipped: 0, uniqueIps: 1, matchedIps: row.matches.length ? 1 : 0, matchedEvents: row.matches.length ? row.count : 0, errors: row.errors, bytes: row.bytes, timedRequests: 0, p50: null, p95: null, first: null, last: null }, ips: [row], paths: [], statuses: [], timeline: [], issues: [] };
-    shareOverride = reportShareSnapshot(selected, [row], 'Selected IP only'); detail.close(); document.getElementById('share-btn')?.click();
+    if (activeIp) shareOneIp(activeIp);
   });
   get('csv').addEventListener('click', () => { if (report) download(new Blob(['\ufeff' + csvTable(ipTableRows(report, currentRows()))], { type: 'text/csv;charset=utf-8' }), 'csv'); });
   get('xlsx').addEventListener('click', () => { if (report) download(createXlsxBlob(ipTableRows(report, currentRows()), { sheetName: 'IP analysis', headerRow: true }), 'xlsx'); });
