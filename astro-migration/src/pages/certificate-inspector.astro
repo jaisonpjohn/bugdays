@@ -357,11 +357,13 @@ const jsonLd = [
     type CertificateReport,
   } from '../lib/certificate-inspector';
   import { ShareManager } from '../lib/share';
+  import { parseIp } from '../lib/ip-address';
   import { createLocalBridgeAccessGuard } from '../lib/local-bridge-access';
   import { createXlsxBlob, tableToDelimited } from '../lib/spreadsheet-export';
   import {
     analyzeTlsConnection,
     inspectTlsService,
+    tlsInspectionErrorMessage,
     tlsReportRows,
     tlsShareSnapshot,
     validateTlsInspectResult,
@@ -646,16 +648,25 @@ const jsonLd = [
     liveTlsAnalysis = analyzeTlsConnection(result, reports);
     element('live-tls-summary').classList.remove('hidden');
     element('live-endpoint').textContent = `${result.host}:${result.port}`;
-    element('live-connection-meta').textContent = `SNI / checked name: ${result.serverName} · Connected to ${result.peerAddress} · ${new Date(result.connectedAt).toLocaleString()}`;
+    const separateServerName = result.host.toLowerCase() !== result.serverName.toLowerCase();
+    element('live-connection-meta').textContent = separateServerName
+      ? `Connected to ${result.peerAddress} · SNI / verified name: ${result.serverName} · ${new Date(result.connectedAt).toLocaleString()}`
+      : `Checked name: ${result.serverName} · Connected to ${result.peerAddress} · ${new Date(result.connectedAt).toLocaleString()}`;
     const statusGrid = element('live-status-grid');
     statusGrid.replaceChildren();
     const leaf = reports[0];
-    const statuses = [
-      ['Name match', liveTlsAnalysis.identityMatches ? 'Pass' : 'Mismatch', liveTlsAnalysis.matchedIdentity || result.serverName, liveTlsAnalysis.identityMatches],
+    const statuses: Array<readonly [string, string, string, boolean]> = [
+      [separateServerName ? 'SNI name match' : 'Name match', liveTlsAnalysis.identityMatches ? 'Pass' : 'Mismatch', liveTlsAnalysis.matchedIdentity || result.serverName, liveTlsAnalysis.identityMatches],
+      ...(liveTlsAnalysis.connectionTargetMatches === undefined ? [] : [[
+        parseIp(result.host) ? 'IP SAN match' : 'Target name match',
+        liveTlsAnalysis.connectionTargetMatches ? 'Pass' : 'Mismatch',
+        liveTlsAnalysis.matchedConnectionTarget || result.host,
+        liveTlsAnalysis.connectionTargetMatches,
+      ] as const]),
       ['Device trust', result.validation.trusted ? 'Trusted' : 'Not trusted', result.validation.trusted ? 'Root store + dates + name' : 'See finding below', result.validation.trusted],
       ['Leaf expiry', leaf?.statusLabel || 'Unknown', leaf ? leaf.notAfter.toLocaleDateString() : 'No leaf certificate', leaf?.status === 'valid' && leaf.daysRemaining > 30],
       ['Connection', result.tlsVersion || 'TLS', `${result.cipherSuite || 'Cipher unavailable'}${result.alpn ? ` · ${result.alpn}` : ''}`, true],
-    ] as const;
+    ];
     statuses.forEach(([label, value, detail, pass]) => {
       const card = document.createElement('div');
       card.className = `p-3 rounded-lg border ${pass ? 'border-emerald-200 dark:border-emerald-800 bg-emerald-50/60 dark:bg-emerald-950/20' : 'border-red-200 dark:border-red-800 bg-red-50/60 dark:bg-red-950/20'}`;
@@ -695,9 +706,11 @@ const jsonLd = [
     const button = document.getElementById('tls-inspect-btn') as HTMLButtonElement;
     const liveError = element('tls-error-box');
     liveError.classList.add('hidden'); liveError.textContent = '';
+    clearError();
     button.disabled = true; button.textContent = 'Connecting…';
+    let request: ReturnType<typeof normalizeLiveTarget> | null = null;
     try {
-      const request = normalizeLiveTarget();
+      request = normalizeLiveTarget();
       const bridge = (document.getElementById('tls-bridge-url') as HTMLInputElement).value;
       if (!await confirmLocalBridgeAccess(bridge)) return;
       const response = await inspectTlsService(request.host, request.port, request.serverName, bridge);
@@ -712,7 +725,9 @@ const jsonLd = [
       results.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
       liveTlsResult = null; liveTlsAnalysis = null;
-      liveError.textContent = error instanceof Error ? error.message : 'Could not inspect that TLS service.';
+      liveError.textContent = request
+        ? tlsInspectionErrorMessage(error, request.host, request.serverName)
+        : error instanceof Error ? error.message : 'Could not inspect that TLS service.';
       liveError.classList.remove('hidden');
     } finally {
       button.disabled = false; button.textContent = 'Inspect service ↗';

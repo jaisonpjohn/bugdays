@@ -94,8 +94,10 @@ test('live TLS inspection analyzes a server chain on a Kafka port and restores i
   await page.locator('#bridge-access-continue').click();
   await expect(page.locator('#live-tls-summary')).toBeVisible();
   await expect(page.locator('#live-endpoint')).toHaveText('10.20.4.8:9093');
-  await expect(page.locator('#live-status-grid')).toContainText('Name match');
+  await expect(page.locator('#live-status-grid')).toContainText('SNI name match');
   await expect(page.locator('#live-status-grid')).toContainText('Pass');
+  await expect(page.locator('#live-status-grid')).toContainText('IP SAN match');
+  await expect(page.locator('#live-status-grid')).toContainText('Mismatch');
   await expect(page.locator('#certificate-list button')).toHaveCount(1);
   const shared = await copyShareUrl(page, page.getByRole('button', { name: 'Share certificate report' }));
   await page.goto(shared);
@@ -111,6 +113,25 @@ test('certificate sample button loads and inspects the bundled PEM certificate',
   await expect(page.locator('#results')).toBeVisible();
   await expect(page.locator('#certificate-list button')).toHaveCount(1);
   await expect(page.locator('#certificate-heading')).toHaveText('example.test');
+});
+
+test('bare IP TLS failure requests SNI without leaving a certificate parser error', async ({ page }) => {
+  await page.route('http://127.0.0.1:2345/api/v1/capabilities', route => route.fulfill({ json: { version: '0.3.0', capabilities: { dnsLookup: true, tlsInspection: true } } }));
+  await page.route('http://127.0.0.1:2345/api/v1/tls/inspect', route => route.fulfill({
+    status: 502,
+    json: { error: 'TLS handshake failed for 104.21.96.82:443: received fatal alert: HandshakeFailure' },
+  }));
+  await page.goto('/certificate-inspector/');
+  await page.locator('#certificate-input').fill('not a certificate');
+  await page.locator('#inspect-btn').click();
+  await expect(page.locator('#error-box')).toContainText('supported X.509 certificate');
+  await page.locator('#tls-host').fill('104.21.96.82');
+  await page.locator('#tls-server-name').fill('');
+  await page.locator('#tls-inspect-btn').click();
+  await page.locator('#bridge-access-continue').click();
+  await expect(page.locator('#error-box')).toBeHidden();
+  await expect(page.locator('#tls-error-box')).toContainText('require a hostname (SNI)');
+  await expect(page.locator('#tls-error-box')).toContainText('SNI / name to verify');
 });
 
 test('new DNS and TLS guides are crawlable and internally linked', async ({ page, request }) => {

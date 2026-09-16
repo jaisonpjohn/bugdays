@@ -25,6 +25,8 @@ export interface TlsIssue {
 export interface TlsAnalysis {
   identityMatches: boolean;
   matchedIdentity?: string;
+  connectionTargetMatches?: boolean;
+  matchedConnectionTarget?: string;
   issues: TlsIssue[];
 }
 
@@ -69,6 +71,15 @@ export function analyzeTlsConnection(result: TlsInspectResult, reports: Certific
     ? { severity: 'pass', title: 'Name matches', detail: `${result.serverName} is covered by ${identity.matched}.` }
     : { severity: 'error', title: 'Name mismatch', detail: `The leaf certificate does not cover ${result.serverName} in its Subject Alternative Names.` });
 
+  const connectionTargetDiffers = normalizedHost(result.host) !== normalizedHost(result.serverName);
+  const connectionTarget = connectionTargetDiffers ? certificateMatchesIdentity(leaf, result.host) : undefined;
+  if (connectionTarget) {
+    const targetKind = parseIp(result.host) ? 'IP address' : 'connection hostname';
+    issues.push(connectionTarget.matches
+      ? { severity: 'pass', title: `${targetKind} is covered`, detail: `${result.host} is also covered by ${connectionTarget.matched}.` }
+      : { severity: 'error', title: `${targetKind} is not covered`, detail: `TLS succeeded using ${result.serverName} as SNI, but the certificate does not cover ${result.host}. A client validating the certificate directly against ${result.host} would reject it.` });
+  }
+
   issues.push(result.validation.trusted
     ? { severity: 'pass', title: 'Chain trusted', detail: 'The chain passed this device’s root-store, validity, and name checks.' }
     : { severity: 'error', title: 'Trust check failed', detail: result.validation.error || 'The chain was presented but did not pass this device’s trust check.' });
@@ -89,7 +100,15 @@ export function analyzeTlsConnection(result: TlsInspectResult, reports: Certific
     if (reports[index].issuer !== reports[index + 1].subject) issues.push({ severity: 'warning', title: 'Chain order or intermediate may be wrong', detail: `Certificate ${index + 1} names an issuer that is not certificate ${index + 2}.` });
   }
   if (reports.length === 1 && !leaf.selfSigned && !result.validation.trusted) issues.push({ severity: 'warning', title: 'Intermediate certificate may be missing', detail: 'The server sent only the leaf certificate and the trust check failed.' });
-  return { identityMatches: identity.matches, matchedIdentity: identity.matched, issues };
+  return {
+    identityMatches: identity.matches,
+    matchedIdentity: identity.matched,
+    ...(connectionTarget ? {
+      connectionTargetMatches: connectionTarget.matches,
+      matchedConnectionTarget: connectionTarget.matched,
+    } : {}),
+    issues,
+  };
 }
 
 function commonName(subject: string): string {
@@ -120,6 +139,16 @@ export async function inspectTlsService(host: string, port: number, serverName: 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(typeof (payload as any).error === 'string' ? (payload as any).error : `TLS inspection failed with HTTP ${response.status}.`);
   return validateTlsInspectResult(payload);
+}
+
+export function tlsInspectionErrorMessage(error: unknown, host: string, serverName: string): string {
+  const message = error instanceof Error ? error.message : 'Could not inspect that TLS service.';
+  const targetIsIp = Boolean(parseIp(normalizedHost(host)));
+  const checkingIpDirectly = targetIsIp && normalizedHost(host) === normalizedHost(serverName);
+  if (checkingIpDirectly && /(?:handshake|fatal alert|unrecognized.?name)/i.test(message)) {
+    return 'The service ended the TLS handshake before presenting a certificate. Shared and CDN addresses often require a hostname (SNI) to choose the certificate. Enter the service hostname in “SNI / name to verify” and retry.';
+  }
+  return message;
 }
 
 export function validateTlsInspectResult(input: unknown): TlsInspectResult {

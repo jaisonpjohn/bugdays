@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { dnsReportRows, dnsReportsDiffer, normalizeDnsTarget, selectedDnsTypes, validateDnsSource } from '../src/lib/dns-lookup.ts';
-import { analyzeTlsConnection, certificateMatchesIdentity, dnsPatternMatches, validateTlsInspectResult } from '../src/lib/tls-certificate-check.ts';
+import { analyzeTlsConnection, certificateMatchesIdentity, dnsPatternMatches, tlsInspectionErrorMessage, validateTlsInspectResult } from '../src/lib/tls-certificate-check.ts';
 
 test('DNS targets accept URLs and ports while IPs select PTR', () => {
   assert.equal(normalizeDnsTarget('https://Api.Example.com:8443/path'), 'api.example.com');
@@ -52,6 +52,26 @@ test('TLS analysis flags a mismatched, untrusted, expiring chain', () => {
   assert.ok(analysis.issues.some(issue => issue.title === 'Name mismatch'));
   assert.ok(analysis.issues.some(issue => issue.title === 'Leaf certificate expires soon'));
   assert.ok(analysis.issues.some(issue => issue.title === 'Intermediate certificate may be missing'));
+});
+
+test('TLS analysis separates SNI coverage from direct IP SAN coverage', () => {
+  const leaf = {
+    subject: 'CN=bugdays.com', issuer: 'CN=Example CA', status: 'valid', statusLabel: 'Valid', daysRemaining: 60,
+    notBefore: new Date('2026-01-01T00:00:00Z'), notAfter: new Date('2027-01-01T00:00:00Z'), selfSigned: false,
+    signatureAlgorithm: 'ECDSA with SHA-256', publicKey: 'EC · P-256', subjectAlternativeNames: [{ type: 'dns', value: 'bugdays.com' }],
+    isCertificateAuthority: false, extendedKeyUsages: ['TLS web server authentication'],
+  };
+  const result = { host: '104.21.96.82', port: 443, serverName: 'bugdays.com', peerAddress: '104.21.96.82:443', validation: { trusted: true }, certificates: [{ position: 0, derBase64: 'MA==' }], connectedAt: Date.now(), elapsedMs: 10 };
+  const analysis = analyzeTlsConnection(result, [leaf]);
+  assert.equal(analysis.identityMatches, true);
+  assert.equal(analysis.connectionTargetMatches, false);
+  assert.ok(analysis.issues.some(issue => issue.title === 'IP address is not covered'));
+});
+
+test('TLS handshake failures by bare IP explain when SNI is required', () => {
+  const message = tlsInspectionErrorMessage(new Error('TLS handshake failed: received fatal alert: HandshakeFailure'), '104.21.96.82', '104.21.96.82');
+  assert.match(message, /require a hostname \(SNI\)/);
+  assert.equal(tlsInspectionErrorMessage(new Error('Connection refused'), '104.21.96.82', '104.21.96.82'), 'Connection refused');
 });
 
 test('TLS bridge snapshots are strictly validated before rendering', () => {
