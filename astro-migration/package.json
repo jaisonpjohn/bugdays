@@ -10,6 +10,8 @@
     "test:gzip-seo": "node scripts/check-gzip-seo.mjs",
     "refresh:ip-ranges": "node scripts/refresh-ip-ranges.mjs",
     "generate:ip-database": "node scripts/generate-ip-range-sql.mjs",
+    "accept:ip-database-snapshot": "node scripts/accept-ip-range-snapshot.mjs",
+    "test:ip-database": "node --test tests/ip-range-delta.test.mjs",
     "test:traffic": "node --test tests/traffic-analysis.test.mjs",
     "test:traffic:browser": "playwright test",
     "preview": "astro preview",

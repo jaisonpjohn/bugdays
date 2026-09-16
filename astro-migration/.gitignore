@@ -31,3 +31,4 @@ playwright-report/
 
 # Generated from public provider/BGP feeds and imported into D1; never shipped as a static asset.
 data/ip-ranges.json
+data/ip-ranges.baseline.next.json.gz

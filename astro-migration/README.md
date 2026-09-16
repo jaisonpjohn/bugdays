@@ -23,11 +23,13 @@ To refresh the database snapshot:
 ```sh
 npm run refresh:ip-ranges
 npm run generate:ip-database
-npx wrangler d1 migrations apply bugdays-ip-intelligence --remote
-npx wrangler d1 execute bugdays-ip-intelligence --remote --file=/tmp/bugdays-ip-intelligence.sql
+npx wrangler d1 execute bugdays-ip-intelligence --remote --file=/tmp/bugdays-ip-intelligence-delta.sql
+npm run accept:ip-database-snapshot
 ```
 
-The generated `data/ip-ranges.json` is intentionally ignored. Data comes from official operator feeds and RIPEstat BGP-origin prefixes defined in `src/lib/ip-datasets.ts`.
+Commit the updated `data/ip-ranges.baseline.json.gz` after the remote SQL succeeds. The generator compares fresh data with that compressed baseline, writes only the delta, and aborts above 80,000 projected D1 row writes so a refresh cannot casually consume the 100,000-row free daily allowance. Do not accept the candidate baseline before D1 confirms the import.
+
+The generated `data/ip-ranges.json` is intentionally ignored and never deployed. Data comes from official operator feeds and RIPEstat BGP-origin prefixes defined in `src/lib/ip-datasets.ts`.
 
 ## Deployment
 
