@@ -29,6 +29,9 @@ test-results/
 playwright-report/
 .wrangler/
 
+# Local product and growth planning; do not publish.
+GROWTH.md
+
 # Generated from public provider/BGP feeds and imported into D1; never shipped as a static asset.
 data/ip-ranges.json
 data/ip-ranges.baseline.next.json.gz
