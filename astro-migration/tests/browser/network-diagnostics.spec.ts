@@ -42,6 +42,7 @@ test('public PTR lookup forward-confirms the hostname and shares a restorable sn
     return route.fulfill({ json: { Status: 0 } });
   });
   await page.goto('/dns-lookup/');
+  expect(await page.locator('.dns-segments').evaluate(element => getComputedStyle(element).gridTemplateColumns.split(' ').length)).toBe(3);
   await page.locator('input[name="dns-mode"][value="public"]').check();
   await page.locator('#dns-target').fill('8.8.8.8');
   await page.locator('#dns-run').click();
