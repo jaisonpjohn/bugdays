@@ -103,6 +103,16 @@ test('live TLS inspection analyzes a server chain on a Kafka port and restores i
   await expect(page.locator('#live-endpoint')).toHaveText('10.20.4.8:9093');
 });
 
+test('certificate sample button loads and inspects the bundled PEM certificate', async ({ page }) => {
+  await page.goto('/certificate-inspector/');
+  await page.locator('#sample-btn').click();
+  await expect(page.locator('#certificate-input')).toHaveValue(/^-----BEGIN CERTIFICATE-----/);
+  await expect(page.locator('#certificate-input')).not.toHaveValue('{sampleCertificate}');
+  await expect(page.locator('#results')).toBeVisible();
+  await expect(page.locator('#certificate-list button')).toHaveCount(1);
+  await expect(page.locator('#certificate-heading')).toHaveText('example.test');
+});
+
 test('new DNS and TLS guides are crawlable and internally linked', async ({ page, request }) => {
   for (const slug of ['dns-lookup-public-vs-system-resolver', 'check-tls-certificate-chain-any-port']) {
     await page.goto(`/guides/${slug}/`);
