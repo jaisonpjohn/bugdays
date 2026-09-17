@@ -1,9 +1,10 @@
 // Run after `npm run build`. Guards the rule that a public URL never breaks:
-// every URL in the live sitemap must still be a built page or a 301 in public/_redirects,
-// and every redirect must land directly on a real page.
+// every URL in the live sitemap or ever linked in git history must still be a built page or a
+// 301 in public/_redirects, and every redirect must land directly on a real page.
 // Set SKIP_LIVE_SITEMAP=1 to skip the network comparison against https://bugdays.com.
 import assert from 'node:assert/strict';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 
 const DIST = 'dist';
@@ -71,6 +72,22 @@ for (const file of htmlFiles(DIST)) {
   }
 }
 assert.equal(brokenLinks.size, 0, `Internal link problems:\n${[...brokenLinks].join('\n')}`);
+
+// --- every internal URL this repo has ever linked may have been crawled, so it must still resolve ---
+// Fixing a broken link does not retire the URL it pointed at; that URL needs a 301 too.
+const history = execFileSync('git', ['log', '-p', '--format=', '--', 'src', 'public', ':!public/data'], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
+const linkPattern = /(?:href\s*[=:]\s*\{?\s*["'`]|Astro\.redirect\(\s*["'`]|https:\/\/(?:www\.)?bugdays\.com)(\/[A-Za-z0-9][A-Za-z0-9/_.-]*)/g;
+const everLinked = new Set();
+for (const line of history.split('\n')) {
+  if (!line.startsWith('+') || line.startsWith('+++')) continue;
+  for (const [, path] of line.matchAll(linkPattern)) everLinked.add(path);
+}
+const resolves = (path) => {
+  const bare = path.replace(/\/+$/, '') || '/';
+  return builtTarget(bare) || builtTarget(`${bare}/`) || redirects.has(bare) || redirects.has(`${bare}/`);
+};
+const unresolved = [...everLinked].filter((path) => !path.startsWith('/api/') && !path.startsWith('/_astro/') && !resolves(path));
+assert.deepEqual(unresolved, [], `Previously linked URLs with no page and no 301 in public/_redirects:\n${unresolved.join('\n')}`);
 
 // --- nothing currently published may disappear ---
 if (process.env.SKIP_LIVE_SITEMAP === '1') {

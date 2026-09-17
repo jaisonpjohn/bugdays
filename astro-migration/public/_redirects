@@ -41,6 +41,12 @@
 /line-set-ops/                            /list-compare/                      301
 /line-tools                               /join-lines/                        301
 /line-tools/                              /join-lines/                        301
+/diff-tool                                /text-diff/                         301
+/diff-tool/                               /text-diff/                         301
+
+# URLs the site once linked to that never had a page (they served the homepage before 404s existed)
+/data-tools                               /converter-tools/                   301
+/data-tools/                              /converter-tools/                   301
 
 # Conventional locations crawlers probe
 /sitemap.xml                              /sitemap-index.xml                  301

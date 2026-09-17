@@ -28,9 +28,10 @@ Apply these requirements whenever implementing or materially changing a Bug Days
    - Do not rename, move, or delete a page, and do not change a route's slug or trailing-slash form, unless the same change adds a permanent redirect for the old URL.
    - Redirects live only in `public/_redirects` as real edge `301`s: list both the slash and no-slash source, and point straight at the closest equivalent tool with its trailing slash. Never point at the homepage or a category page when a matching tool exists, never chain redirects, and never use meta-refresh or `Astro.redirect` stub pages.
    - Never delete or repoint a line in `public/_redirects` unless the user explicitly asks. Retired URLs keep receiving traffic indefinitely.
+   - Fixing a broken internal link does not retire the URL it pointed at. If a deployed page ever linked to a path, even one that never existed, crawlers may have indexed it, so add a 301 for that path in the same change.
    - Unknown paths must return the real `404` page (`src/pages/404.astro`). Never add a catch-all or SPA fallback that answers missing URLs with `200`.
    - Link internally only to canonical URLs, never to a redirect source. Keep canonicals, sitemap entries, and share links pointing at live pages.
-   - Before every deploy that touches routes, pages, or `public/_redirects`, run `npm run build && npm run test:urls`. It fails if any URL in the live sitemap has no page and no redirect, a redirect misses or chains, or an internal link breaks. Treat a failure as blocking and do not bypass it with `SKIP_LIVE_SITEMAP=1`.
+   - Before every deploy that touches routes, pages, or `public/_redirects`, run `npm run build && npm run test:urls`. It fails if any URL in the live sitemap or ever linked in git history has no page and no redirect, a redirect misses or chains, or an internal link breaks. Treat a failure as blocking and do not bypass it with `SKIP_LIVE_SITEMAP=1`.
    - After deploying, verify each changed or retired URL in production with `curl -sI https://bugdays.com/<path>`: expect a single `301` to the final page, which returns `200`.
 
 6. Treat Core Web Vitals and loading performance as SEO requirements.
