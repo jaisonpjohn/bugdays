@@ -25,6 +25,13 @@
     </div>
   </div>
 </div>
+<script is:inline>
+  // Reveal synchronously so the banner paints with the page. Showing it later (it used to wait 1s)
+  // made it the Largest Contentful Paint on short tool pages for every first-time visitor.
+  try {
+    if (!localStorage.getItem('cookie-notice-dismissed')) document.getElementById('cookie-notice').classList.remove('hidden');
+  } catch (e) { /* storage blocked: leave hidden */ }
+</script>
 
 <script>
   function initCookieNotice() {
@@ -33,19 +40,9 @@
 
     if (!notice || !dismissBtn) return;
 
-    // Check if already dismissed (persists forever in localStorage)
-    const dismissed = localStorage.getItem('cookie-notice-dismissed');
-
-    if (!dismissed) {
-      // Show notice after a short delay for better UX
-      setTimeout(() => {
-        notice.classList.remove('hidden');
-      }, 1000);
-    }
-
     dismissBtn.addEventListener('click', () => {
       notice.classList.add('hidden');
-      localStorage.setItem('cookie-notice-dismissed', 'true');
+      try { localStorage.setItem('cookie-notice-dismissed', 'true'); } catch { /* storage blocked */ }
     });
   }
 

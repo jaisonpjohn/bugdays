@@ -121,21 +121,34 @@ const allJsonLd = breadcrumbSchema ? [breadcrumbSchema, ...jsonLd] : jsonLd;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2" />
 
-    <!-- Preconnect for performance -->
-    <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-    <link rel="dns-prefetch" href="//www.googletagmanager.com" />
-
-    <!-- Google Analytics (GA4) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-5TTSCZHJZD"></script>
+    <!-- Google Analytics (GA4) + AdSense. The ~400 KB of third-party script loads only after the page
+         has rendered and the browser is idle, so it never competes with the tool for first paint.
+         gtag calls made earlier queue in dataLayer and are sent once gtag.js arrives. -->
     <script is:inline>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-5TTSCZHJZD');
+      (function () {
+        function inject(src, crossOrigin) {
+          var s = document.createElement('script');
+          s.async = true;
+          s.src = src;
+          if (crossOrigin) s.crossOrigin = crossOrigin;
+          document.head.appendChild(s);
+        }
+        function loadThirdParty() {
+          inject('https://www.googletagmanager.com/gtag/js?id=G-5TTSCZHJZD');
+          inject('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6990853945034806', 'anonymous');
+        }
+        function whenIdle() {
+          if ('requestIdleCallback' in window) requestIdleCallback(loadThirdParty, { timeout: 2000 });
+          else setTimeout(loadThirdParty, 1000);
+        }
+        if (document.readyState === 'complete') whenIdle();
+        else addEventListener('load', whenIdle, { once: true });
+      })();
     </script>
-
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6990853945034806" crossorigin="anonymous"></script>
 
     <!-- Prevent FOUC (Flash of Unstyled Content) for dark mode -->
     <script is:inline>
