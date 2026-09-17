@@ -1,0 +1,46 @@
+# Permanent redirects for retired public URLs. Served at the Cloudflare edge as real 301s,
+# ahead of any static file at the same path.
+#
+# NEVER delete a line: search engines, bookmarks, and old backlinks keep requesting these URLs
+# for years. Point each one straight at the closest equivalent tool (never a generic page), with
+# the trailing slash so there is no second hop. `npm run test:urls` enforces this after a build.
+# Both slash forms are listed explicitly so neither depends on path normalization.
+
+# Angular-era routes (2019–2026)
+/home                                     /                                   301
+/home/                                    /                                   301
+/dedupe                                   /remove-duplicate-lines/            301
+/dedupe/                                  /remove-duplicate-lines/            301
+/line-dedupe                              /remove-duplicate-lines/            301
+/line-dedupe/                             /remove-duplicate-lines/            301
+/line-duplicate-counter                   /remove-duplicate-lines/            301
+/line-duplicate-counter/                  /remove-duplicate-lines/            301
+/line-count                               /remove-duplicate-lines/            301
+/line-count/                              /remove-duplicate-lines/            301
+/text-set-ops                             /list-compare/                      301
+/text-set-ops/                            /list-compare/                      301
+/line-set-intersection-union-differences  /list-compare/                      301
+/line-set-intersection-union-differences/ /list-compare/                      301
+/json-compare                             /json-diff/                         301
+/json-compare/                            /json-diff/                         301
+/json-to-xml                              /xml-json-converter/                301
+/json-to-xml/                             /xml-json-converter/                301
+/json-snake-case-to-camel-case            /case-converter/                    301
+/json-snake-case-to-camel-case/           /case-converter/                    301
+/url-decoder                              /url-encoder/                       301
+/url-decoder/                             /url-encoder/                       301
+/webservice-batch-caller                  /bulk-api-invoker/                  301
+/webservice-batch-caller/                 /bulk-api-invoker/                  301
+/yaml-validator                           /yaml-formatter/                    301
+/yaml-validator/                          /yaml-formatter/                    301
+/epoch-to-time                            /datetime-converter/                301
+/epoch-to-time/                           /datetime-converter/                301
+
+# Astro-era renames
+/line-set-ops                             /list-compare/                      301
+/line-set-ops/                            /list-compare/                      301
+/line-tools                               /join-lines/                        301
+/line-tools/                              /join-lines/                        301
+
+# Conventional locations crawlers probe
+/sitemap.xml                              /sitemap-index.xml                  301

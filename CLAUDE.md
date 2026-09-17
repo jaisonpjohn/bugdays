@@ -48,7 +48,7 @@ Astro 5 + Tailwind 4, fully static, no frontend framework: each tool page carrie
 1. Create `src/pages/<tool-name>.astro` — copy the shape of an existing tool (e.g. `json-formatter.astro`): `<Layout>` with `title`/`description`/`keywords`/`breadcrumb`/`toolId`/`jsonLd` (WebApplication + FAQPage schemas), then markup + inline script.
 2. Register it in `src/lib/tools.ts` — the **single registry** that drives the sidebar, the ⌘K command palette (names/keywords/descriptions are its search index), and dedup for "Popular".
 3. Add internal links: the category page in `src/pages/*-tools.astro`, plus `index.astro` and `developer-tools.astro` if it deserves homepage placement. The sitemap picks it up automatically.
-4. SEO-sensitive URLs: renamed tools keep a 301 stub page (`return Astro.redirect('/new-url', 301)` — see `line-dedupe.astro`). Always link canonical URLs internally, never the redirect stubs.
+4. SEO-sensitive URLs: a public URL must never break (strict rule in `astro-migration/AGENTS.md` #5). Renamed or retired tools get edge 301s in `public/_redirects` (both slash forms, straight to the new trailing-slash URL). `Astro.redirect` stubs only emit a 200 meta-refresh in this static build, so don't use them. Run `npm run build && npm run test:urls` before deploying. Always link canonical URLs internally.
 
 ### Share-state system (`src/lib/share.ts`) — powers three features
 

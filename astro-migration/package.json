@@ -8,6 +8,7 @@
     "test:grpc-client": "node scripts/check-grpc-client.mjs",
     "test:api-guides": "node scripts/check-api-guides.mjs",
     "test:gzip-seo": "node scripts/check-gzip-seo.mjs",
+    "test:urls": "node scripts/check-url-preservation.mjs",
     "refresh:ip-ranges": "node scripts/refresh-ip-ranges.mjs",
     "generate:ip-database": "node scripts/generate-ip-range-sql.mjs",
     "accept:ip-database-snapshot": "node scripts/accept-ip-range-snapshot.mjs",

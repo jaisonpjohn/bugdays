@@ -28,6 +28,8 @@ interface Props {
   ogType?: 'website' | 'article';
   articlePublished?: string;
   articleModified?: string;
+  /** Error pages: keep out of the index and omit the canonical (it would name the wrong URL). */
+  noindex?: boolean;
 }
 
 const {
@@ -43,7 +45,8 @@ const {
   imageHeight = 630,
   ogType = 'website',
   articlePublished,
-  articleModified
+  articleModified,
+  noindex = false
 } = Astro.props;
 
 const currentPath = Astro.url.pathname;
@@ -88,8 +91,8 @@ const allJsonLd = breadcrumbSchema ? [breadcrumbSchema, ...jsonLd] : jsonLd;
     <meta name="description" content={description} />
     <meta name="keywords" content={keywords} />
     <meta name="author" content="Bug Days" />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-    <link rel="canonical" href={canonicalURL} />
+    <meta name="robots" content={noindex ? "noindex, follow" : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"} />
+    {!noindex && <link rel="canonical" href={canonicalURL} />}
     <link rel="alternate" type="application/rss+xml" title="Bug Days Developer Guides" href="/guides/rss.xml" />
 
     <!-- Open Graph / Facebook -->

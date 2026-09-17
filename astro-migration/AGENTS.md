@@ -23,9 +23,15 @@ Apply these requirements whenever implementing or materially changing a Bug Days
    - Add automated unit/integration and real-browser coverage proportional to the feature.
    - Verify desktop and mobile behavior, accessibility basics, and the production build before publishing.
 
-5. Preserve existing URLs and accumulated search value.
-   - Do not rename, remove, or break an existing public route casually.
-   - When a URL must change, add and verify a permanent redirect, update canonicals and internal links, and retain the old URL as an entry point.
+5. NEVER break a URL that has ever been public. This rule is strict and has no exceptions.
+   - Assume any URL that was ever deployed, listed in a sitemap, linked, or shared has been crawled and indexed, even years ago and even if it looks unused. Bug Days has lost Angular-era URLs to a silent homepage fallback before; do not repeat it.
+   - Do not rename, move, or delete a page, and do not change a route's slug or trailing-slash form, unless the same change adds a permanent redirect for the old URL.
+   - Redirects live only in `public/_redirects` as real edge `301`s: list both the slash and no-slash source, and point straight at the closest equivalent tool with its trailing slash. Never point at the homepage or a category page when a matching tool exists, never chain redirects, and never use meta-refresh or `Astro.redirect` stub pages.
+   - Never delete or repoint a line in `public/_redirects` unless the user explicitly asks. Retired URLs keep receiving traffic indefinitely.
+   - Unknown paths must return the real `404` page (`src/pages/404.astro`). Never add a catch-all or SPA fallback that answers missing URLs with `200`.
+   - Link internally only to canonical URLs, never to a redirect source. Keep canonicals, sitemap entries, and share links pointing at live pages.
+   - Before every deploy that touches routes, pages, or `public/_redirects`, run `npm run build && npm run test:urls`. It fails if any URL in the live sitemap has no page and no redirect, a redirect misses or chains, or an internal link breaks. Treat a failure as blocking and do not bypass it with `SKIP_LIVE_SITEMAP=1`.
+   - After deploying, verify each changed or retired URL in production with `curl -sI https://bugdays.com/<path>`: expect a single `301` to the final page, which returns `200`.
 
 6. Treat Core Web Vitals and loading performance as SEO requirements.
    - Keep initial JavaScript and asset weight low, avoid unnecessary dependencies, reserve layout space to prevent shifts, and defer non-critical work.
