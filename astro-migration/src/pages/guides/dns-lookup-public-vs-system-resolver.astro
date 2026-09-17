@@ -21,7 +21,7 @@ const guide = guideBySlug('dns-lookup-public-vs-system-resolver');
     </tbody>
   </table></div>
 
-  <p>The Bug Days <a href="/dns-lookup">DNS lookup and reverse DNS checker</a> queries public DNS in the browser. For the device or VPN view, Holy CORS runs locally and uses its environment’s configured resolver. A native Holy CORS binary follows the host configuration; a Docker container follows Docker’s DNS configuration.</p>
+  <p>The Bug Days <a href="/dns-lookup/">DNS lookup and reverse DNS checker</a> queries public DNS in the browser. For the device or VPN view, Holy CORS runs locally and uses its environment’s configured resolver. A native Holy CORS binary follows the host configuration; a Docker container follows Docker’s DNS configuration.</p>
 
   <h2>Choose the record type that answers your question</h2>
   <ul>
@@ -52,7 +52,7 @@ dig @1.1.1.1 -x 8.8.8.8</code></pre>
     <li>Resolve each hostname to A and AAAA.</li>
     <li>Check whether the original normalized IP is in the forward result.</li>
   </ol>
-  <p>A match shows consistent forward and reverse configuration. It does not prove who controls the machine, whether traffic is benign, or whether the TLS certificate matches that name. Use the <a href="/ip-lookup">IP, ISP, ASN, and cloud lookup</a> for network context and the <a href="/certificate-inspector">TLS certificate checker</a> for service identity.</p>
+  <p>A match shows consistent forward and reverse configuration. It does not prove who controls the machine, whether traffic is benign, or whether the TLS certificate matches that name. Use the <a href="/ip-lookup/">IP, ISP, ASN, and cloud lookup</a> for network context and the <a href="/certificate-inspector/">TLS certificate checker</a> for service identity.</p>
 
   <h2>Interpret NXDOMAIN, NOERROR with no data, and SERVFAIL</h2>
   <div class="table-scroll"><table>
@@ -77,6 +77,6 @@ dig @1.1.1.1 -x 8.8.8.8</code></pre>
 
   <div class="guide-note"><p><strong>Useful habit:</strong> include the resolver source in a DNS ticket. “It resolves to 10.20.4.8 through the VPN resolver but NXDOMAIN through public DNS” is far more actionable than “DNS is broken.”</p></div>
 
-  <a slot="related" href="/guides/check-tls-certificate-chain-any-port" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Check the service certificate next</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Verify the chain, expiry, SAN, SNI, and trust on any direct-TLS port.</span></a>
-  <a slot="related" href="/guides/ip-address-lookup-isp-asn-reverse-dns" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Put an IP address in context</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Review ISP, ASN, approximate location, cloud evidence, and PTR data.</span></a>
+  <a slot="related" href="/guides/check-tls-certificate-chain-any-port/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Check the service certificate next</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Verify the chain, expiry, SAN, SNI, and trust on any direct-TLS port.</span></a>
+  <a slot="related" href="/guides/ip-address-lookup-isp-asn-reverse-dns/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Put an IP address in context</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Review ISP, ASN, approximate location, cloud evidence, and PTR data.</span></a>
 </GuideLayout>

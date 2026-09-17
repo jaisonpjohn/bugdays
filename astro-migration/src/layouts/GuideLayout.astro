@@ -51,7 +51,7 @@ const jsonLd = [{
   title={guide.title}
   description={guide.description}
   keywords={keywords}
-  breadcrumb={[{ name: 'Developer Guides', href: '/guides' }, { name: guide.shortTitle }]}
+  breadcrumb={[{ name: 'Developer Guides', href: '/guides/' }, { name: guide.shortTitle }]}
   jsonLd={jsonLd}
   image={guide.image}
   imageAlt={guide.imageAlt}
@@ -63,11 +63,11 @@ const jsonLd = [{
 >
   <article class="guide-article max-w-4xl mx-auto">
     <header class="mb-7">
-      <a href="/guides" class="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Developer guide</a>
+      <a href="/guides/" class="inline-flex items-center gap-1 text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Developer guide</a>
       <h1 class="mt-3 text-3xl md:text-5xl leading-tight font-bold tracking-tight text-slate-950 dark:text-white">{guide.title}</h1>
       <p class="mt-4 text-lg md:text-xl leading-8 text-slate-600 dark:text-slate-300">{guide.description}</p>
       <div class="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500 dark:text-slate-400">
-        <a href="/about" rel="author" class="font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400">Bug Days</a>
+        <a href="/about/" rel="author" class="font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400">Bug Days</a>
         <span aria-hidden="true">·</span>
         <time datetime={guide.published}>{formatDate(guide.published)}</time>
         <span aria-hidden="true">·</span>

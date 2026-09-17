@@ -2,11 +2,11 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const guides = [
-  { slug: 'test-grpc-api-proto-metadata-streaming', phrase: 'How to Test a gRPC API', tool: '/grpc-client', source: 'https://grpc.io/docs/guides/metadata/' },
-  { slug: 'grpc-web-vs-native-grpc-browser-testing', phrase: 'gRPC-Web vs Native gRPC', tool: '/grpc-client', source: 'https://grpc.io/docs/platforms/web/basics/' },
-  { slug: 'soap-api-authentication-basic-ws-security-mtls', phrase: 'SOAP API Authentication', tool: '/soap-client', source: 'https://docs.oasis-open.org/' },
-  { slug: 'identify-cloud-hosting-ips-in-access-logs', phrase: 'How to Identify Cloud, Hosting, and Crawler IPs', tool: '/ip-lookup', source: 'https://data.stat.ripe.net/docs/data-api/api-endpoints/ris-prefixes', published: '2026-09-15' },
-  { slug: 'ip-address-lookup-isp-asn-reverse-dns', phrase: 'How to Look Up an IP Address', tool: '/ip-lookup', source: 'https://ipwhois.io/documentation', published: '2026-09-15' },
+  { slug: 'test-grpc-api-proto-metadata-streaming', phrase: 'How to Test a gRPC API', tool: '/grpc-client/', source: 'https://grpc.io/docs/guides/metadata/' },
+  { slug: 'grpc-web-vs-native-grpc-browser-testing', phrase: 'gRPC-Web vs Native gRPC', tool: '/grpc-client/', source: 'https://grpc.io/docs/platforms/web/basics/' },
+  { slug: 'soap-api-authentication-basic-ws-security-mtls', phrase: 'SOAP API Authentication', tool: '/soap-client/', source: 'https://docs.oasis-open.org/' },
+  { slug: 'identify-cloud-hosting-ips-in-access-logs', phrase: 'How to Identify Cloud, Hosting, and Crawler IPs', tool: '/ip-lookup/', source: 'https://data.stat.ripe.net/docs/data-api/api-endpoints/ris-prefixes', published: '2026-09-15' },
+  { slug: 'ip-address-lookup-isp-asn-reverse-dns', phrase: 'How to Look Up an IP Address', tool: '/ip-lookup/', source: 'https://ipwhois.io/documentation', published: '2026-09-15' },
 ];
 
 const read = path => readFile(new URL(`../dist/${path}`, import.meta.url), 'utf8');
@@ -39,10 +39,10 @@ for (const guide of guides) {
 
 const grpcClient = await read('grpc-client/index.html');
 const soapClient = await read('soap-client/index.html');
-assert.ok(grpcClient.includes('/guides/test-grpc-api-proto-metadata-streaming'));
-assert.ok(grpcClient.includes('/guides/grpc-web-vs-native-grpc-browser-testing'));
-assert.ok(soapClient.includes('/guides/soap-api-authentication-basic-ws-security-mtls'));
+assert.ok(grpcClient.includes('/guides/test-grpc-api-proto-metadata-streaming/'));
+assert.ok(grpcClient.includes('/guides/grpc-web-vs-native-grpc-browser-testing/'));
+assert.ok(soapClient.includes('/guides/soap-api-authentication-basic-ws-security-mtls/'));
 const ipLookup = await read('ip-lookup/index.html');
-assert.ok(ipLookup.includes('/guides/identify-cloud-hosting-ips-in-access-logs'));
-assert.ok(ipLookup.includes('/guides/ip-address-lookup-isp-asn-reverse-dns'));
+assert.ok(ipLookup.includes('/guides/identify-cloud-hosting-ips-in-access-logs/'));
+assert.ok(ipLookup.includes('/guides/ip-address-lookup-isp-asn-reverse-dns/'));
 console.log('API guide index, RSS, sitemap, structured data, sources, and tool links passed.');

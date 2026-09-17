@@ -10,7 +10,7 @@ const guide = guideBySlug('check-tls-certificate-chain-any-port');
   <blockquote><strong>Check three separate claims:</strong> the certificate is within its validity window, its SAN covers the name the client verifies, and the presented chain reaches a root trusted by that client environment.</blockquote>
 
   <h2>Inspect the live certificate chain, not only port 443</h2>
-  <p>TLS protects more than HTTPS. Kafka brokers, LDAP directories, mail servers, databases, and custom TCP protocols can begin a TLS handshake immediately on their configured port. Enter the connection host, port, and optional SNI name in the <a href="/certificate-inspector">TLS certificate chain checker</a>.</p>
+  <p>TLS protects more than HTTPS. Kafka brokers, LDAP directories, mail servers, databases, and custom TCP protocols can begin a TLS handshake immediately on their configured port. Enter the connection host, port, and optional SNI name in the <a href="/certificate-inspector/">TLS certificate chain checker</a>.</p>
   <div class="table-scroll"><table>
     <thead><tr><th>Service example</th><th>Common direct-TLS port</th><th>What to verify</th></tr></thead>
     <tbody>
@@ -73,6 +73,6 @@ openssl s_client \
 
   <div class="guide-note"><p><strong>Scope:</strong> the checker diagnoses direct TLS handshakes. It does not perform STARTTLS negotiation, client-certificate authentication, revocation checks, or Certificate Transparency monitoring.</p></div>
 
-  <a slot="related" href="/guides/dns-lookup-public-vs-system-resolver" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Compare DNS before testing TLS</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Check public, device, VPN, PTR, and forward-confirmed DNS answers.</span></a>
-  <a slot="related" href="/guides/pem-vs-der-vs-cer-vs-p7b-certificate-formats" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Understand certificate file formats</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Identify and convert PEM, DER, CER, CRT, and P7B correctly.</span></a>
+  <a slot="related" href="/guides/dns-lookup-public-vs-system-resolver/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Compare DNS before testing TLS</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Check public, device, VPN, PTR, and forward-confirmed DNS answers.</span></a>
+  <a slot="related" href="/guides/pem-vs-der-vs-cer-vs-p7b-certificate-formats/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Understand certificate file formats</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Identify and convert PEM, DER, CER, CRT, and P7B correctly.</span></a>
 </GuideLayout>

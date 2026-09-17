@@ -80,16 +80,16 @@ const clip = (s: string, n = 400) => (s.length > n ? s.slice(0, n) + '…' : s);
 function innerKind(s: string): { label: string; tool?: ToolAction } | null {
   const t = s.trim();
   if (tryJson(t) !== undefined) {
-    return { label: 'JSON', tool: { label: 'Format the JSON', toolId: 'json-formatter', href: '/json-formatter', data: { json: t }, action: 'prettify' } };
+    return { label: 'JSON', tool: { label: 'Format the JSON', toolId: 'json-formatter', href: '/json-formatter/', data: { json: t }, action: 'prettify' } };
   }
   if (/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*$/.test(t) && t.split('.').length === 3) {
     const header = b64UrlDecode(t.split('.')[0]);
     if (header && tryJson(header)?.alg) {
-      return { label: 'JWT', tool: { label: 'Decode the JWT', toolId: 'jwt-decoder', href: '/jwt-decoder', data: { jwt: t } } };
+      return { label: 'JWT', tool: { label: 'Decode the JWT', toolId: 'jwt-decoder', href: '/jwt-decoder/', data: { jwt: t } } };
     }
   }
   if (/^\s*</.test(t) && /<\/|\/>/.test(t)) {
-    return { label: 'XML', tool: { label: 'Format the XML', toolId: 'xml-formatter', href: '/xml-formatter', data: { xml: t }, action: 'format' } };
+    return { label: 'XML', tool: { label: 'Format the XML', toolId: 'xml-formatter', href: '/xml-formatter/', data: { xml: t }, action: 'format' } };
   }
   return null;
 }
@@ -121,7 +121,7 @@ const detectJwt: Detector = (input) => {
     id: 'jwt', title: 'JWT token', confidence: 98,
     note: `Signed with ${headerObj.alg}${headerObj.typ ? ` · type ${headerObj.typ}` : ''}`,
     preview: clip(preview),
-    primary: { label: 'Open in JWT Decoder', toolId: 'jwt-decoder', href: '/jwt-decoder', data: { jwt: t } },
+    primary: { label: 'Open in JWT Decoder', toolId: 'jwt-decoder', href: '/jwt-decoder/', data: { jwt: t } },
   };
 };
 
@@ -134,16 +134,16 @@ const detectJson: Detector = (input) => {
     return {
       id: 'json', title: 'JSON', confidence: 96,
       note: `Valid JSON — ${kind}`,
-      primary: { label: 'Open in JSON Formatter', toolId: 'json-formatter', href: '/json-formatter', data: { json: t }, action: 'prettify' },
+      primary: { label: 'Open in JSON Formatter', toolId: 'json-formatter', href: '/json-formatter/', data: { json: t }, action: 'prettify' },
       secondary: Array.isArray(parsed)
-        ? { label: 'Generate an ASCII table', toolId: 'ascii-table-generator', href: '/ascii-table-generator', data: { input: t, format: 'json' }, action: 'generate' }
+        ? { label: 'Generate an ASCII table', toolId: 'ascii-table-generator', href: '/ascii-table-generator/', data: { input: t, format: 'json' }, action: 'generate' }
         : undefined,
     };
   }
   return {
     id: 'json-broken', title: 'JSON (invalid)', confidence: 45,
     note: 'Looks like JSON but does not parse — the formatter will pinpoint the error',
-    primary: { label: 'Find the error in JSON Formatter', toolId: 'json-formatter', href: '/json-formatter', data: { json: t }, action: 'prettify' },
+    primary: { label: 'Find the error in JSON Formatter', toolId: 'json-formatter', href: '/json-formatter/', data: { json: t }, action: 'prettify' },
   };
 };
 
@@ -160,7 +160,7 @@ const detectCertificate: Detector = (input) => {
     primary: {
       label: 'Inspect and convert certificate',
       toolId: 'certificate-inspector',
-      href: '/certificate-inspector',
+      href: '/certificate-inspector/',
       data: { certificate: input },
       action: 'inspect',
     },
@@ -190,7 +190,7 @@ const detectThreadDump: Detector = (input) => {
     primary: {
       label: 'Open in Thread Dump Analyzer',
       toolId: 'thread-dump-analyzer',
-      href: '/thread-dump-analyzer',
+      href: '/thread-dump-analyzer/',
       data: canDeepLink ? { dump: input } : {},
       action: canDeepLink ? 'analyze' : undefined,
     },
@@ -203,7 +203,7 @@ const detectDataUriImage: Detector = (input) => {
   return {
     id: 'data-uri', title: 'Image (data URI)', confidence: 98,
     note: `${t.match(/^data:(image\/[a-z+.-]+)/i)?.[1]} · ~${Math.round((t.length * 3) / 4 / 1024)} KB`,
-    primary: { label: 'View in Image ↔ Base64', toolId: 'image-base64', href: '/image-base64', data: { base64: t } },
+    primary: { label: 'View in Image ↔ Base64', toolId: 'image-base64', href: '/image-base64/', data: { base64: t } },
   };
 };
 
@@ -227,7 +227,7 @@ const detectBase64: Detector = async (input) => {
         id: 'gzip-b64', title: 'GZip compressed, Base64 encoded', confidence: 97,
         chain,
         preview: clip(text),
-        primary: { label: 'Open in GZip & Base64', toolId: 'gzip-base64', href: '/gzip-base64', data: { input: t }, action: 'decompress' },
+        primary: { label: 'Open in GZip & Base64', toolId: 'gzip-base64', href: '/gzip-base64/', data: { input: t }, action: 'decompress' },
         secondary: inner?.tool,
       };
     }
@@ -235,7 +235,7 @@ const detectBase64: Detector = async (input) => {
       id: 'gzip-b64', title: 'GZip data, Base64 encoded', confidence: 90,
       chain: ['Base64', 'GZip'],
       note: 'Decompression not supported in this browser',
-      primary: { label: 'Open in GZip & Base64', toolId: 'gzip-base64', href: '/gzip-base64', data: { input: t }, action: 'decompress' },
+      primary: { label: 'Open in GZip & Base64', toolId: 'gzip-base64', href: '/gzip-base64/', data: { input: t }, action: 'decompress' },
     };
   }
 
@@ -247,7 +247,7 @@ const detectBase64: Detector = async (input) => {
     return {
       id: 'b64-image', title: `Base64-encoded ${isPng ? 'PNG' : isJpg ? 'JPEG' : 'GIF'} image`, confidence: 97,
       chain: ['Base64', 'Image'],
-      primary: { label: 'View in Image ↔ Base64', toolId: 'image-base64', href: '/image-base64', data: { base64: t } },
+      primary: { label: 'View in Image ↔ Base64', toolId: 'image-base64', href: '/image-base64/', data: { base64: t } },
     };
   }
 
@@ -262,14 +262,14 @@ const detectBase64: Detector = async (input) => {
       id: 'base64', title: 'Base64-encoded text', confidence,
       chain: ['Base64', inner?.label ?? 'Text'],
       preview: clip(text),
-      primary: { label: 'Open in Base64 Decoder', toolId: 'base64', href: '/base64-encoder-decoder', data: { input: t }, action: 'decode' },
+      primary: { label: 'Open in Base64 Decoder', toolId: 'base64', href: '/base64-encoder-decoder/', data: { input: t }, action: 'decode' },
       secondary: inner?.tool,
     };
   }
   return {
     id: 'base64-bin', title: 'Base64 (binary payload)', confidence: 30,
     note: `Decodes to ${bytes.length} bytes of binary data`,
-    primary: { label: 'Open in Base64 Decoder', toolId: 'base64', href: '/base64-encoder-decoder', data: { input: t }, action: 'decode' },
+    primary: { label: 'Open in Base64 Decoder', toolId: 'base64', href: '/base64-encoder-decoder/', data: { input: t }, action: 'decode' },
   };
 };
 
@@ -284,7 +284,7 @@ const detectUrlEncoded: Detector = (input) => {
     id: 'urlencoded', title: 'URL-encoded text', confidence: inner ? 90 : 80,
     chain: ['URL encoding', inner?.label ?? 'Text'],
     preview: clip(decoded),
-    primary: { label: 'Open in URL Decoder', toolId: 'url-encoder', href: '/url-encoder', data: { input: t }, action: 'decode' },
+    primary: { label: 'Open in URL Decoder', toolId: 'url-encoder', href: '/url-encoder/', data: { input: t }, action: 'decode' },
     secondary: inner?.tool,
   };
 };
@@ -298,7 +298,7 @@ const detectUrl: Detector = (input) => {
     return {
       id: 'url', title: 'URL', confidence: 85,
       note: `${u.hostname}${u.pathname !== '/' ? ' · ' + u.pathname : ''}${params.length ? ` · ${params.length} query param${params.length > 1 ? 's' : ''}` : ''}`,
-      primary: { label: 'Decode in URL Encoder', toolId: 'url-encoder', href: '/url-encoder', data: { input: t }, action: 'decode' },
+      primary: { label: 'Decode in URL Encoder', toolId: 'url-encoder', href: '/url-encoder/', data: { input: t }, action: 'decode' },
     };
   } catch { return null; }
 };
@@ -309,7 +309,7 @@ const detectQueryString: Detector = (input) => {
   return {
     id: 'querystring', title: 'Query string', confidence: 75,
     note: `${t.split('&').length} parameters`,
-    primary: { label: 'Decode in URL Encoder', toolId: 'url-encoder', href: '/url-encoder', data: { input: t }, action: 'decode' },
+    primary: { label: 'Decode in URL Encoder', toolId: 'url-encoder', href: '/url-encoder/', data: { input: t }, action: 'decode' },
   };
 };
 
@@ -323,7 +323,7 @@ const detectEpoch: Detector = (input) => {
   return {
     id: 'epoch', title: `Unix timestamp (${unit})`, confidence: 92,
     preview: `UTC:   ${date.toISOString()}\nLocal: ${date.toString()}`,
-    primary: { label: 'Open in DateTime Converter', toolId: 'datetime-converter', href: '/datetime-converter', data: { unixSec: String(sec) } },
+    primary: { label: 'Open in DateTime Converter', toolId: 'datetime-converter', href: '/datetime-converter/', data: { unixSec: String(sec) } },
   };
 };
 
@@ -335,7 +335,7 @@ const detectIsoDate: Detector = (input) => {
   return {
     id: 'isodate', title: 'ISO 8601 date/time', confidence: 90,
     preview: `Epoch seconds: ${Math.floor(ms / 1000)}\nLocal: ${new Date(ms).toString()}`,
-    primary: { label: 'Open in DateTime Converter', toolId: 'datetime-converter', href: '/datetime-converter', data: { unixSec: String(Math.floor(ms / 1000)) } },
+    primary: { label: 'Open in DateTime Converter', toolId: 'datetime-converter', href: '/datetime-converter/', data: { unixSec: String(Math.floor(ms / 1000)) } },
   };
 };
 
@@ -359,7 +359,7 @@ const detectDdl: Detector = (input) => {
   return {
     id: 'ddl', title: 'SQL schema (DDL)', confidence: 96,
     note: `${tableCount} CREATE TABLE statement${tableCount > 1 ? 's' : ''} — view relationships as an ER diagram`,
-    primary: { label: 'Open in Schema Explorer', toolId: 'schema-explorer', href: '/schema-explorer', data: { ddl: input }, action: 'explore' },
+    primary: { label: 'Open in Schema Explorer', toolId: 'schema-explorer', href: '/schema-explorer/', data: { ddl: input }, action: 'explore' },
   };
 };
 
@@ -370,7 +370,7 @@ const detectXml: Detector = (input) => {
   const isHtml = /^<!doctype html|<html[\s>]/i.test(t);
   return {
     id: 'xml', title: isHtml ? 'HTML' : 'XML', confidence: isHtml ? 70 : 90,
-    primary: { label: 'Open in XML Formatter', toolId: 'xml-formatter', href: '/xml-formatter', data: { xml: t }, action: 'format' },
+    primary: { label: 'Open in XML Formatter', toolId: 'xml-formatter', href: '/xml-formatter/', data: { xml: t }, action: 'format' },
   };
 };
 
@@ -383,8 +383,8 @@ const detectYaml: Detector = (input) => {
   if (kvLines.length / lines.length < 0.6) return null;
   return {
     id: 'yaml', title: 'YAML', confidence: 65,
-    primary: { label: 'Open in YAML Viewer', toolId: 'yaml-formatter', href: '/yaml-formatter', data: { yaml: t }, action: 'parse' },
-    secondary: { label: 'Convert to JSON', toolId: 'yaml-json-converter', href: '/yaml-json-converter', data: { yaml: t } },
+    primary: { label: 'Open in YAML Viewer', toolId: 'yaml-formatter', href: '/yaml-formatter/', data: { yaml: t }, action: 'parse' },
+    secondary: { label: 'Convert to JSON', toolId: 'yaml-json-converter', href: '/yaml-json-converter/', data: { yaml: t } },
   };
 };
 
@@ -393,7 +393,7 @@ const detectToml: Detector = (input) => {
   if (!/^\s*\[[\w."-]+\]\s*$/m.test(t) || !/^\s*[\w."-]+\s*=\s*\S/m.test(t)) return null;
   return {
     id: 'toml', title: 'TOML', confidence: 78,
-    primary: { label: 'Open in TOML Viewer', toolId: 'toml-viewer', href: '/toml-viewer', data: { toml: t } },
+    primary: { label: 'Open in TOML Viewer', toolId: 'toml-viewer', href: '/toml-viewer/', data: { toml: t } },
   };
 };
 
@@ -406,8 +406,8 @@ const detectCsv: Detector = (input) => {
       return {
         id: 'csv', title: sep === '\t' ? 'TSV (tab-separated)' : 'CSV', confidence: 60,
         note: `${lines.length} rows × ${counts[0] + 1} columns`,
-        primary: { label: 'Convert to JSON', toolId: 'csv-json-converter', href: '/csv-json-converter', data: { input: input.trim() }, action: 'csvToJson' },
-        secondary: { label: 'Generate an ASCII table', toolId: 'ascii-table-generator', href: '/ascii-table-generator', data: { input: input.trim(), format: sep === '\t' ? 'tsv' : 'csv' }, action: 'generate' },
+        primary: { label: 'Convert to JSON', toolId: 'csv-json-converter', href: '/csv-json-converter/', data: { input: input.trim() }, action: 'csvToJson' },
+        secondary: { label: 'Generate an ASCII table', toolId: 'ascii-table-generator', href: '/ascii-table-generator/', data: { input: input.trim(), format: sep === '\t' ? 'tsv' : 'csv' }, action: 'generate' },
       };
     }
   }
@@ -454,7 +454,7 @@ const detectAsciiTable: Detector = (input) => {
       primary: {
         label: 'Open in ASCII Table Converter',
         toolId: 'ascii-table-converter',
-        href: '/ascii-table-converter',
+        href: '/ascii-table-converter/',
         data: { table: input },
         action: 'convert',
       },
@@ -472,7 +472,7 @@ const detectCron: Detector = (input) => {
   if (!t.includes('*') && !/\d/.test(t)) return null;
   return {
     id: 'cron', title: 'Cron expression', confidence: 82,
-    primary: { label: 'Explain in Cron Parser', toolId: 'cron-parser', href: '/cron-parser', data: { cron: t } },
+    primary: { label: 'Explain in Cron Parser', toolId: 'cron-parser', href: '/cron-parser/', data: { cron: t } },
   };
 };
 
@@ -483,7 +483,7 @@ const detectColor: Detector = (input) => {
   if (!isHex && !isFn) return null;
   return {
     id: 'color', title: 'Color', confidence: isHex && t.startsWith('#') ? 95 : 75,
-    primary: { label: 'Open in Color Converter', toolId: 'color-converter', href: '/color-converter', data: { hex: t.startsWith('#') || isFn ? t : '#' + t } },
+    primary: { label: 'Open in Color Converter', toolId: 'color-converter', href: '/color-converter/', data: { hex: t.startsWith('#') || isFn ? t : '#' + t } },
   };
 };
 
@@ -494,21 +494,21 @@ const detectIpCidr: Detector = (input) => {
   if ([m[1], m[2], m[3], m[4]].some(o => Number(o) > 255)) return null;
   return {
     id: 'cidr', title: m[5] ? 'CIDR range' : 'IPv4 address', confidence: 94,
-    primary: { label: 'Open in CIDR Calculator', toolId: 'cidr-calculator', href: '/cidr-calculator', data: { cidr: m[5] ? t : t + '/32' } },
+    primary: { label: 'Open in CIDR Calculator', toolId: 'cidr-calculator', href: '/cidr-calculator/', data: { cidr: m[5] ? t : t + '/32' } },
   };
 };
 
 const detectTraffic: Detector = (input) => {
   const sample = input.trim().split('\n').filter(line => line.trim()).slice(0, 20);
   if (sample.length && sample.filter(line => parseLogLine(line.trim())).length >= Math.max(1, sample.length / 2)) {
-    return { id: 'access-log', title: 'Web access log', confidence: 97, primary: { label: 'Analyze traffic and client IPs', toolId: 'access-log-analyzer', href: '/access-log-analyzer', data: { input } } };
+    return { id: 'access-log', title: 'Web access log', confidence: 97, primary: { label: 'Analyze traffic and client IPs', toolId: 'access-log-analyzer', href: '/access-log-analyzer/', data: { input } } };
   }
   const tokens = input.trim().split(/[\s,;]+/);
   if (!tokens.length || !tokens.slice(0, 100).every(token => parseIp(token))) return null;
   const first = parseIp(tokens[0])!;
   return { id: 'ip-addresses', title: tokens.length === 1 ? `IPv${first.version} address` : 'IP address list', confidence: 95,
-    primary: { label: 'Look up cloud providers and crawler ranges', toolId: 'ip-lookup', href: '/ip-lookup', data: { input } },
-    ...(tokens.length === 1 && first.version === 4 ? { secondary: { label: 'Open in CIDR Calculator', toolId: 'cidr-calculator', href: '/cidr-calculator', data: { cidr: first.address + '/32' } } } : {}),
+    primary: { label: 'Look up cloud providers and crawler ranges', toolId: 'ip-lookup', href: '/ip-lookup/', data: { input } },
+    ...(tokens.length === 1 && first.version === 4 ? { secondary: { label: 'Open in CIDR Calculator', toolId: 'cidr-calculator', href: '/cidr-calculator/', data: { cidr: first.address + '/32' } } } : {}),
   };
 };
 
@@ -519,7 +519,7 @@ const detectUnixPerms: Detector = (input) => {
   if (!octal && !symbolic) return null;
   return {
     id: 'perms', title: 'Unix file permissions', confidence: octal ? 60 : 92,
-    primary: { label: 'Open in Unix Permissions', toolId: 'unix-permissions', href: '/unix-permissions', data: { perms: symbolic ? t.slice(1) : t } },
+    primary: { label: 'Open in Unix Permissions', toolId: 'unix-permissions', href: '/unix-permissions/', data: { perms: symbolic ? t.slice(1) : t } },
   };
 };
 
@@ -539,7 +539,7 @@ const detectHex: Detector = (input) => {
     return {
       id: 'hash', title: `Hash digest (${hashGuess}-sized)`, confidence: 70,
       note: `${t.length} hex chars = ${t.length / 2} bytes — matches ${hashGuess}`,
-      primary: { label: 'Open Hash Generator', toolId: 'hash-generator', href: '/hash-generator', data: {} },
+      primary: { label: 'Open Hash Generator', toolId: 'hash-generator', href: '/hash-generator/', data: {} },
     };
   }
   return { id: 'hex-bin', title: 'Hex string', confidence: 40, note: `${t.length / 2} bytes of binary data` };
@@ -576,7 +576,7 @@ export async function detect(input: string): Promise<Detection[]> {
     results.push({
       id: 'text', title: 'Plain text', confidence: 20,
       note: `${lines} line${lines > 1 ? 's' : ''}, ${trimmed.length} characters`,
-      primary: { label: 'Diff against another text', toolId: 'text-diff', href: '/text-diff', data: { text1: trimmed } },
+      primary: { label: 'Diff against another text', toolId: 'text-diff', href: '/text-diff/', data: { text1: trimmed } },
     });
   }
   return results;

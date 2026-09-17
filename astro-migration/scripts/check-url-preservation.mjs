@@ -68,7 +68,9 @@ for (const file of htmlFiles(DIST)) {
   for (const [, href] of readFileSync(file, 'utf8').matchAll(/\shref="(\/(?!\/)[^"#?]*)/g)) {
     const path = href.endsWith('/') || /\.[a-z0-9]+$/i.test(href) ? href : `${href}/`;
     if (redirects.has(href) || redirects.has(path)) brokenLinks.add(`${file}: links to retired URL ${href}`);
-    else if (!builtTarget(path) && !href.startsWith('/api/')) brokenLinks.add(`${file}: broken link ${href}`);
+    else if (href.startsWith('/api/')) continue;
+    else if (!builtTarget(path)) brokenLinks.add(`${file}: broken link ${href}`);
+    else if (path !== href) brokenLinks.add(`${file}: link ${href} redirects; use the canonical ${path}`);
   }
 }
 assert.equal(brokenLinks.size, 0, `Internal link problems:\n${[...brokenLinks].join('\n')}`);

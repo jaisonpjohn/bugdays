@@ -67,7 +67,8 @@
     try {
       const hrefs: string[] = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
       return hrefs
-        .map(h => allTools.find(t => t.href === h))
+        // Recents saved before tool links gained trailing slashes are stored without one.
+        .map(h => allTools.find(t => t.href === (h.endsWith('/') ? h : `${h}/`)))
         .filter((t): t is Entry => !!t);
     } catch { return []; }
   }
@@ -75,7 +76,7 @@
   function pushRecent(href: string) {
     try {
       const hrefs: string[] = JSON.parse(localStorage.getItem(RECENTS_KEY) || '[]');
-      const next = [href, ...hrefs.filter(h => h !== href)].slice(0, MAX_RECENTS);
+      const next = [href, ...hrefs.filter(h => h !== href && `${h}/` !== href)].slice(0, MAX_RECENTS);
       localStorage.setItem(RECENTS_KEY, JSON.stringify(next));
     } catch { /* private mode etc. */ }
   }

@@ -142,7 +142,7 @@ test('new DNS and TLS guides are crawlable and internally linked', async ({ page
     expect((await page.locator('.guide-body').innerText()).split(/\s+/).length).toBeGreaterThan(650);
   }
   await page.goto('/network-tools/');
-  await expect(page.locator('a[href="/dns-lookup"]').first()).toBeVisible();
+  await expect(page.locator('a[href="/dns-lookup/"]').first()).toBeVisible();
   const rss = await (await request.get('/guides/rss.xml')).text();
   expect(rss).toContain('/guides/dns-lookup-public-vs-system-resolver/');
 });

@@ -25,7 +25,7 @@ const jsonLd = [
   title="DNS Lookup & Reverse DNS Checker – A, MX, TXT, PTR"
   description="Free DNS lookup and reverse DNS checker for A, AAAA, CNAME, MX, TXT, NS, SOA, SRV, CAA, and PTR. Compare public DNS with your device, VPN, or private network resolver."
   keywords="DNS lookup, DNS checker, reverse DNS lookup, PTR lookup, DNS records checker, A record lookup, MX lookup, TXT lookup, private DNS lookup, split horizon DNS, DNS propagation checker"
-  breadcrumb={[{ name: 'Network Tools', href: '/network-tools' }, { name: 'DNS Lookup' }]}
+  breadcrumb={[{ name: 'Network Tools', href: '/network-tools/' }, { name: 'DNS Lookup' }]}
   toolId="dns-lookup"
   jsonLd={jsonLd}
 >
@@ -106,7 +106,7 @@ const jsonLd = [
       <div><h2>Public DNS and the resolver on your device answer different questions</h2><p>A public DNS lookup shows what an internet resolver sees. The device lookup follows the DNS configuration available to Holy CORS, which can include a VPN, a corporate DNS server, private zones, or split-horizon records. Compare them when a hostname works on one network but not another.</p></div>
       <div><h3>Reverse DNS and forward-confirmed PTR</h3><p>Enter an IP address to query its PTR record. The checker also resolves returned hostnames back to A or AAAA records. A matching forward result is useful evidence of consistent DNS configuration, though it is not proof of ownership or identity.</p></div>
       <div><h3>DNS record types in this checker</h3><p>Inspect A and AAAA addresses, CNAME aliases, MX mail exchangers, TXT policy and verification values, NS delegation, SOA zone data, SRV service locations, CAA certificate-authority policy, and PTR reverse mappings.</p></div>
-      <p class="dns-related">Need the full workflow? Read <a href="/guides/dns-lookup-public-vs-system-resolver">how to compare public, system, VPN, and reverse DNS</a>. Investigating an address? Open the <a href="/ip-lookup">IP, ISP, ASN, and cloud lookup</a>. Checking the service identity next? Use the <a href="/certificate-inspector">TLS certificate chain checker</a>.</p>
+      <p class="dns-related">Need the full workflow? Read <a href="/guides/dns-lookup-public-vs-system-resolver/">how to compare public, system, VPN, and reverse DNS</a>. Investigating an address? Open the <a href="/ip-lookup/">IP, ISP, ASN, and cloud lookup</a>. Checking the service identity next? Use the <a href="/certificate-inspector/">TLS certificate chain checker</a>.</p>
     </section>
 
     <LocalBridgeAccessDialog directOption="Choose Public DNS if you do not need the resolver on this device or VPN." />

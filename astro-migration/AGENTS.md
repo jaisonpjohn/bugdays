@@ -30,7 +30,7 @@ Apply these requirements whenever implementing or materially changing a Bug Days
    - Never delete or repoint a line in `public/_redirects` unless the user explicitly asks. Retired URLs keep receiving traffic indefinitely.
    - Fixing a broken internal link does not retire the URL it pointed at. If a deployed page ever linked to a path, even one that never existed, crawlers may have indexed it, so add a 301 for that path in the same change.
    - Unknown paths must return the real `404` page (`src/pages/404.astro`). Never add a catch-all or SPA fallback that answers missing URLs with `200`.
-   - Link internally only to canonical URLs, never to a redirect source. Keep canonicals, sitemap entries, and share links pointing at live pages.
+   - Link internally only to canonical URLs, never to a redirect source. Page URLs end with a trailing slash (`/json-formatter/`), matching canonicals and the sitemap; a slashless link costs every visitor and crawler a redirect. Keep canonicals, sitemap entries, and share links pointing at live pages.
    - Before every deploy that touches routes, pages, or `public/_redirects`, run `npm run build && npm run test:urls`. It fails if any URL in the live sitemap or ever linked in git history has no page and no redirect, a redirect misses or chains, or an internal link breaks. Treat a failure as blocking and do not bypass it with `SKIP_LIVE_SITEMAP=1`.
    - After deploying, verify each changed or retired URL in production with `curl -sI https://bugdays.com/<path>`: expect a single `301` to the final page, which returns `200`.
 

@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 const guides = [
-  { slug: 'test-grpc-api-proto-metadata-streaming', title: 'How to Test a gRPC API: Proto Files, Metadata, and Streaming', tool: '/grpc-client' },
-  { slug: 'grpc-web-vs-native-grpc-browser-testing', title: 'gRPC-Web vs Native gRPC: How Browser Testing Actually Works', tool: '/grpc-client' },
-  { slug: 'soap-api-authentication-basic-ws-security-mtls', title: 'SOAP API Authentication: Basic Auth, WS-Security, and mTLS', tool: '/soap-client' },
-  { slug: 'identify-cloud-hosting-ips-in-access-logs', title: 'How to Identify Cloud, Hosting, and Crawler IPs in Access Logs', tool: '/ip-lookup' },
+  { slug: 'test-grpc-api-proto-metadata-streaming', title: 'How to Test a gRPC API: Proto Files, Metadata, and Streaming', tool: '/grpc-client/' },
+  { slug: 'grpc-web-vs-native-grpc-browser-testing', title: 'gRPC-Web vs Native gRPC: How Browser Testing Actually Works', tool: '/grpc-client/' },
+  { slug: 'soap-api-authentication-basic-ws-security-mtls', title: 'SOAP API Authentication: Basic Auth, WS-Security, and mTLS', tool: '/soap-client/' },
+  { slug: 'identify-cloud-hosting-ips-in-access-logs', title: 'How to Identify Cloud, Hosting, and Crawler IPs in Access Logs', tool: '/ip-lookup/' },
 ];
 
 test.beforeEach(async ({ page }) => {
@@ -45,7 +45,7 @@ test('gRPC examples and SOAP capability boundaries survive rendering', async ({ 
 
 test('guide discovery and RSS surface the complete API testing cluster', async ({ page, request }) => {
   await page.goto('/guides/');
-  for (const guide of guides) await expect(page.locator(`a[href="/guides/${guide.slug}"]`).first()).toBeVisible();
+  for (const guide of guides) await expect(page.locator(`a[href="/guides/${guide.slug}/"]`).first()).toBeVisible();
   const rss = await (await request.get('/guides/rss.xml')).text();
   for (const guide of guides) {
     expect(rss).toContain(`/guides/${guide.slug}/`);

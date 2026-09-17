@@ -25,7 +25,7 @@ export const guides: Guide[] = [
     readingMinutes: 9,
     image: '/og/certificate-inspector.png',
     imageAlt: 'TLS certificate chain checker reporting expiry, SAN hostname match, SNI, trust, and every certificate presented by a service',
-    toolHref: '/certificate-inspector',
+    toolHref: '/certificate-inspector/',
     toolName: 'TLS Certificate Chain Checker',
   },
   {
@@ -39,7 +39,7 @@ export const guides: Guide[] = [
     readingMinutes: 8,
     image: '/og-image.png',
     imageAlt: 'DNS lookup report comparing public resolver answers with device and VPN DNS plus a PTR reverse lookup',
-    toolHref: '/dns-lookup',
+    toolHref: '/dns-lookup/',
     toolName: 'DNS Lookup and Reverse DNS Checker',
   },
   {
@@ -53,7 +53,7 @@ export const guides: Guide[] = [
     readingMinutes: 8,
     image: '/og-image.png',
     imageAlt: 'Bug Days IP address lookup report showing ISP, ASN, approximate location, reverse DNS, and cloud provider evidence',
-    toolHref: '/ip-lookup',
+    toolHref: '/ip-lookup/',
     toolName: 'IP Address, ISP and Cloud Lookup',
   },
   {
@@ -67,7 +67,7 @@ export const guides: Guide[] = [
     readingMinutes: 8,
     image: '/og-image.png',
     imageAlt: 'Bug Days network investigation workflow for matching access-log addresses to cloud, hosting, CDN, and crawler ranges',
-    toolHref: '/ip-lookup',
+    toolHref: '/ip-lookup/',
     toolName: 'IP Address, ISP and Cloud Lookup',
   },
   {
@@ -81,7 +81,7 @@ export const guides: Guide[] = [
     readingMinutes: 9,
     image: '/og/grpc-client.png',
     imageAlt: 'gRPC API client showing a proto service, JSON request, decoded response messages, metadata, and trailers',
-    toolHref: '/grpc-client',
+    toolHref: '/grpc-client/',
     toolName: 'gRPC API Client',
   },
   {
@@ -95,7 +95,7 @@ export const guides: Guide[] = [
     readingMinutes: 7,
     image: '/og/grpc-client.png',
     imageAlt: 'Browser gRPC client offering native gRPC through a local bridge and direct gRPC-Web transport',
-    toolHref: '/grpc-client',
+    toolHref: '/grpc-client/',
     toolName: 'Native gRPC and gRPC-Web Client',
   },
   {
@@ -109,7 +109,7 @@ export const guides: Guide[] = [
     readingMinutes: 8,
     image: '/og/soap-client.png',
     imageAlt: 'SOAP API client with authentication controls, SOAPAction, XML request editor, and response inspection',
-    toolHref: '/soap-client',
+    toolHref: '/soap-client/',
     toolName: 'SOAP API Client',
   },
   {
@@ -123,7 +123,7 @@ export const guides: Guide[] = [
     readingMinutes: 4,
     image: '/og/gzip-base64.png',
     imageAlt: 'GZip Base64 decoder with a compressed sample and its readable JSON output',
-    toolHref: '/gzip-base64',
+    toolHref: '/gzip-base64/',
     toolName: 'GZip Base64 Encoder and Decoder',
   },
   {
@@ -137,7 +137,7 @@ export const guides: Guide[] = [
     readingMinutes: 8,
     image: '/og/thread-dump-analyzer.png',
     imageAlt: 'Java thread dump analyzer showing blocked threads, lock owners, and a deadlock cycle',
-    toolHref: '/thread-dump-analyzer',
+    toolHref: '/thread-dump-analyzer/',
     toolName: 'Java Thread Dump Analyzer',
   },
   {
@@ -151,7 +151,7 @@ export const guides: Guide[] = [
     readingMinutes: 7,
     image: '/og/certificate-inspector.png',
     imageAlt: 'X.509 certificate inspector showing identity, validity, fingerprints, and conversion options',
-    toolHref: '/certificate-inspector',
+    toolHref: '/certificate-inspector/',
     toolName: 'X.509 Certificate Inspector',
   },
   {
@@ -165,7 +165,7 @@ export const guides: Guide[] = [
     readingMinutes: 8,
     image: '/og/soap-client.png',
     imageAlt: 'SOAP client with WSDL operation browser, XML request editor, and response inspector',
-    toolHref: '/soap-client',
+    toolHref: '/soap-client/',
     toolName: 'SOAP and WSDL Client',
   },
   {
@@ -179,7 +179,7 @@ export const guides: Guide[] = [
     readingMinutes: 7,
     image: '/og/schema-explorer.png',
     imageAlt: 'Interactive entity relationship diagram generated from SQL DDL',
-    toolHref: '/schema-explorer',
+    toolHref: '/schema-explorer/',
     toolName: 'Database Schema Explorer',
   },
   {
@@ -193,7 +193,7 @@ export const guides: Guide[] = [
     readingMinutes: 6,
     image: '/og/ascii-table-converter.png',
     imageAlt: 'Terminal ASCII table converted into editable spreadsheet rows and columns',
-    toolHref: '/ascii-table-converter',
+    toolHref: '/ascii-table-converter/',
     toolName: 'Terminal Table Converter',
   },
   {
@@ -207,7 +207,7 @@ export const guides: Guide[] = [
     readingMinutes: 5,
     image: '/og/gzip-base64.png',
     imageAlt: 'Browser GZip Base64 tool for checking compressed payloads from Python and Node.js',
-    toolHref: '/gzip-base64',
+    toolHref: '/gzip-base64/',
     toolName: 'GZip Base64 Encoder and Decoder',
   },
   {
@@ -221,7 +221,7 @@ export const guides: Guide[] = [
     readingMinutes: 5,
     image: '/og/gzip-base64.png',
     imageAlt: 'A known-good Base64 GZip sample decoded into readable text in Bug Days',
-    toolHref: '/gzip-base64',
+    toolHref: '/gzip-base64/',
     toolName: 'GZip Base64 Encoder and Decoder',
   },
 ];

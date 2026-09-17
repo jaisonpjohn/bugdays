@@ -57,7 +57,7 @@ openssl pkcs7 -inform DER -in chain.p7b -print_certs -out chain.pem</code></pre>
 
   <h2>Certificate validity is not the same as trust</h2>
   <p>A file decoder can establish what a certificate says: names, dates, key usage, extensions, fingerprints, and signatures within a supplied bundle. It cannot establish how a remote server presents the chain, whether hostname verification succeeds, whether revocation is enforced, or whether a specific machine trusts the root.</p>
-  <p>For a live endpoint, <a href="/guides/check-tls-certificate-chain-any-port">inspect the certificate chain, expiry, SAN, and SNI from the relevant network</a>. For a local file, use the certificate inspector to answer the narrower—and still valuable—question: “What exactly is in this file?”</p>
+  <p>For a live endpoint, <a href="/guides/check-tls-certificate-chain-any-port/">inspect the certificate chain, expiry, SAN, and SNI from the relevant network</a>. For a local file, use the certificate inspector to answer the narrower—and still valuable—question: “What exactly is in this file?”</p>
 
   <h2>Avoid the dangerous conversion mistake</h2>
   <p>Certificates contain public keys and are normally safe to inspect. Private keys are secrets. A PEM private key has a label such as <code>BEGIN PRIVATE KEY</code>, <code>BEGIN ENCRYPTED PRIVATE KEY</code>, or an algorithm-specific private-key label. Do not paste one into a public site, support ticket, chat, or certificate-only converter.</p>
@@ -74,6 +74,6 @@ openssl pkcs7 -inform DER -in chain.p7b -print_certs -out chain.pem</code></pre>
 
   <div class="guide-note"><p><strong>Tool boundary:</strong> Bug Days inspects public certificate material locally in the browser. It intentionally does not accept PKCS#12/PFX private-key archives.</p></div>
 
-  <a slot="related" href="/guides/test-soap-api-from-wsdl-soap-11-vs-12" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Test a SOAP service</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Build a request from WSDL and interpret version errors.</span></a>
-  <a slot="related" href="/guides/read-java-thread-dump-find-deadlock" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Read a Java thread dump</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Trace monitor owners and confirm a deadlock cycle.</span></a>
+  <a slot="related" href="/guides/test-soap-api-from-wsdl-soap-11-vs-12/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Test a SOAP service</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Build a request from WSDL and interpret version errors.</span></a>
+  <a slot="related" href="/guides/read-java-thread-dump-find-deadlock/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Read a Java thread dump</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Trace monitor owners and confirm a deadlock cycle.</span></a>
 </GuideLayout>

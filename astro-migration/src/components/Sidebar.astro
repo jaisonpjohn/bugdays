@@ -5,10 +5,11 @@ interface Props {
   currentPath: string;
 }
 const { currentPath: rawPath } = Astro.props;
-const currentPath = rawPath === '/' ? '/' : rawPath.replace(/\/$/, '');
+const withSlash = (path: string) => (path.endsWith('/') ? path : `${path}/`);
+const currentPath = withSlash(rawPath);
 
 function isActive(href: string): boolean {
-  return currentPath === href;
+  return currentPath === withSlash(href);
 }
 
 function groupHasActiveItem(items: { href: string }[]): boolean {

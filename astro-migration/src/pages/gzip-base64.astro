@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import { gzipExamples } from '../lib/gzip-examples';
 import { guides } from '../lib/guides';
 
-const gzipGuides = guides.filter((guide) => guide.toolHref === '/gzip-base64');
+const gzipGuides = guides.filter((guide) => guide.toolHref === '/gzip-base64/');
 const jsonLd = [{
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
@@ -23,7 +23,7 @@ const jsonLd = [{
   title="GZip Base64 Encoder & Decoder Online"
   description="Decode Base64 GZip to text or compress text to Base64 online. Inspect JSON and XML payloads in your browser, with working examples and shareable links."
   keywords="gzip base64, base64 gzip, gzip base64 decoder, base64 gzip decompress, gzip base64 encoder, H4sI decode, gzip to text"
-  breadcrumb={[{ name: "Encoding Tools", href: "/encoding-tools" }, { name: "GZip & Base64" }]}
+  breadcrumb={[{ name: "Encoding Tools", href: "/encoding-tools/" }, { name: "GZip & Base64" }]}
   toolId="gzip-base64"
   jsonLd={jsonLd}
   image="/og/gzip-base64.png"
@@ -74,7 +74,7 @@ const jsonLd = [{
         <ol class="list-decimal pl-5 space-y-1">
           <li>Paste the encoded payload into Input. Copy the string value itself, without surrounding JSON quotes.</li>
           <li>Select <strong>Decode & Decompress</strong>. The tool decodes Base64 into bytes, then decompresses the GZip data.</li>
-          <li>Read the UTF-8 text in Output and use <strong>Copy Output</strong>. For JSON, continue in the <a href="/json-formatter" class="text-indigo-600 dark:text-indigo-400 underline">JSON formatter</a>; for XML, use the <a href="/xml-formatter" class="text-indigo-600 dark:text-indigo-400 underline">XML formatter</a>.</li>
+          <li>Read the UTF-8 text in Output and use <strong>Copy Output</strong>. For JSON, continue in the <a href="/json-formatter/" class="text-indigo-600 dark:text-indigo-400 underline">JSON formatter</a>; for XML, use the <a href="/xml-formatter/" class="text-indigo-600 dark:text-indigo-400 underline">XML formatter</a>.</li>
         </ol>
         <p class="mt-3">To go the other way, paste ordinary text and select <strong>Compress (GZip + Base64)</strong>. The output is a Base64 string containing compressed bytes, ready for a text field that expects this format.</p>
       </section>
@@ -107,7 +107,7 @@ const jsonLd = [{
         <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">Common Base64 GZip questions</h2>
         <div class="space-y-3">
           <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">Why does my encoded string start with H4sI?</summary><p class="mt-2">The usual GZip header starts with bytes <code>1f 8b 08</code>, which encode as <code>H4sI</code> in Base64. It is a useful clue, not a guarantee that the entire payload is intact. Try the <a href="/guides/decode-base64-gzip-to-json/" class="text-indigo-600 dark:text-indigo-400 underline">worked decoding example</a>.</p></details>
-          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">Why does Base64 decoding alone produce unreadable text?</summary><p class="mt-2">You may be looking at compressed bytes rather than text. If the producer used GZip, those bytes must be decompressed before being decoded as UTF-8. Ordinary uncompressed Base64 belongs in the <a href="/base64-encoder-decoder" class="text-indigo-600 dark:text-indigo-400 underline">Base64 decoder</a>.</p></details>
+          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">Why does Base64 decoding alone produce unreadable text?</summary><p class="mt-2">You may be looking at compressed bytes rather than text. If the producer used GZip, those bytes must be decompressed before being decoded as UTF-8. Ordinary uncompressed Base64 belongs in the <a href="/base64-encoder-decoder/" class="text-indigo-600 dark:text-indigo-400 underline">Base64 decoder</a>.</p></details>
           <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">Can this open ZIP files or raw .gz uploads?</summary><p class="mt-2">This page accepts text and Base64-encoded GZip, not file uploads. ZIP archives, zlib-wrapped data, and raw DEFLATE are different formats. Check the producer's format before choosing a decoder.</p></details>
           <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">What should I check when decompression fails?</summary><p class="mt-2">Check that you copied the whole payload, selected only the Base64 string, and are using GZip rather than another compression format. Follow the <a href="/guides/fix-base64-gzip-decode-errors/" class="text-indigo-600 dark:text-indigo-400 underline">padding, header, and truncation troubleshooting guide</a> to isolate the failing step.</p></details>
         </div>
