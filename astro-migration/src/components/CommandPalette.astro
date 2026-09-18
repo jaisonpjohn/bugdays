@@ -57,6 +57,7 @@
 
 <script>
   import { allTools } from '../lib/tools';
+  import { track } from '../lib/analytics';
 
   const RECENTS_KEY = 'bd-recent-tools';
   const MAX_RECENTS = 5;
@@ -176,6 +177,7 @@
     }
 
     function open() {
+      track('palette_used', { action: 'opened' });
       modal!.classList.remove('hidden');
       input!.value = '';
       render('');
@@ -191,6 +193,7 @@
     function go(index: number) {
       const tool = items[index];
       if (!tool) return;
+      track('palette_used', { action: 'navigated', tool: tool.href.replace(/\//g, '') || 'home' });
       pushRecent(tool.href);
       close();
       window.location.href = tool.href;

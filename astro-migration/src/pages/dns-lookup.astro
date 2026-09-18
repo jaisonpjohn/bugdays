@@ -115,6 +115,7 @@ const jsonLd = [
 </Layout>
 
 <script>
+  import { track } from '../lib/analytics';
   import { BridgeUnavailableError, DNS_RECORD_TYPES, dnsReportRows, dnsReportsDiffer, normalizeDnsTarget, queryPublicDns, querySystemDns, selectedDnsTypes, validateDnsSource, type DnsMode, type DnsReport, type DnsSourceReport } from '../lib/dns-lookup';
   import { parseIp } from '../lib/ip-address';
   import { createLocalBridgeAccessGuard } from '../lib/local-bridge-access';
@@ -227,7 +228,7 @@ const jsonLd = [
     finally { runButton.disabled = false; runButton.innerHTML = 'Check DNS records <span aria-hidden="true">↗</span>'; }
   }
 
-  function download(data: BlobPart, name: string, type: string) { const url = URL.createObjectURL(new Blob([data], { type })); const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+  function download(data: BlobPart, name: string, type: string) { track('export_used', { tool: 'dns-lookup', format: name.split('.').pop() || 'file' }); const url = URL.createObjectURL(new Blob([data], { type })); const link = document.createElement('a'); link.href = url; link.download = name; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
   function exportRows(): string[][] { if (!report) throw new Error('Run a lookup first.'); return dnsReportRows(report); }
   function exportName(): string { return `dns-${(report?.target || 'lookup').replace(/[^a-z0-9.-]+/gi, '-')}`; }
 

@@ -337,6 +337,7 @@ CREATE TABLE orders (
 </style>
 
 <script>
+  import { track } from '../lib/analytics';
   import { parseSchema, type ParsedSchema, type ParsedTable } from '../lib/schema-parser';
   import {
     toMarkdown, toMermaid, toCommentSql, toJson,
@@ -1173,6 +1174,7 @@ CREATE TABLE orders (
 
   $('export-download').addEventListener('click', () => {
     const ext = exportFormat === 'markdown' ? 'md' : exportFormat === 'mermaid' ? 'mmd' : exportFormat === 'sql' ? 'sql' : 'json';
+    track('export_used', { tool: 'schema-explorer', format: ext });
     const blob = new Blob([exportOutput.textContent || ''], { type: 'text/plain' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);

@@ -115,6 +115,7 @@ import Layout from '../layouts/Layout.astro';
 </Layout>
 
 <script>
+  import { track } from '../lib/analytics';
   import QRCode from 'qrcode';
   import jsQR from 'jsqr';
   import { ShareManager } from '../lib/share';
@@ -221,6 +222,7 @@ import Layout from '../layouts/Layout.astro';
   qrError.addEventListener('change', generateQR);
 
   document.getElementById('download-png-btn')!.addEventListener('click', () => {
+    track('export_used', { tool: 'qr-code', format: 'png' });
     const link = document.createElement('a');
     link.download = 'qrcode.png';
     link.href = qrCanvas.toDataURL('image/png');

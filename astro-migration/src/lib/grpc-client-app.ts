@@ -13,6 +13,7 @@ import {
   parseTrailerFrame,
   redactMetadata,
 } from './grpc-web.mjs';
+import { track } from './analytics';
 
 type ProtoSource = { name: string; content: string };
 type Metadata = Record<string, string>;
@@ -75,6 +76,7 @@ function setJson(key: string, value: unknown) {
 }
 
 function download(name: string, content: string, type = 'application/json') {
+  track('export_used', { tool: 'grpc-client', format: name.split('.').pop() || 'file' });
   const url = URL.createObjectURL(new Blob([content], { type: `${type};charset=utf-8` }));
   const link = document.createElement('a');
   link.href = url;
@@ -495,7 +497,7 @@ export function initGrpcClient() {
         setJson(HISTORY_KEY, history.slice(0, 30));
         renderHistory();
       }
-      (window as any).gtag?.('event', 'grpc_request', { transport: transportInput.value, rpc_type: methodKind(rpcMethod), grpc_status: String(grpcStatus) });
+      track('grpc_request', { transport: transportInput.value, rpc_type: methodKind(rpcMethod), grpc_status: String(grpcStatus) });
     } catch (error) {
       const aborted = activeController?.signal.aborted;
       const message = aborted ? 'Request cancelled or deadline exceeded.' : (error instanceof Error ? error.message : 'Request failed.');

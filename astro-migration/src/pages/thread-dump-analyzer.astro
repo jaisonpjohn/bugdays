@@ -299,6 +299,7 @@ const jsonLd = [
 </style>
 
 <script>
+  import { track } from '../lib/analytics';
   import { analyzeThreadDump, snapshotReportJson, threadReportCsv, type JavaThread, type JavaThreadState, type ThreadCategory, type ThreadDumpAnalysis, type ThreadDumpSnapshot } from '../lib/thread-dump';
   import { ShareManager } from '../lib/share';
 
@@ -739,6 +740,7 @@ const jsonLd = [
 
   function safeName(value: string): string { return value.replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '') || 'thread-dump'; }
   function download(value: string, extension: string, type: string): void {
+    track('export_used', { tool: 'thread-dump-analyzer', format: extension });
     const url = URL.createObjectURL(new Blob([value], { type }));
     const link = document.createElement('a');
     link.href = url;

@@ -321,6 +321,7 @@ SKU003,WH-A</pre>
 </Layout>
 
 <script>
+  import { track } from '../lib/analytics';
   import { ShareManager } from '../lib/share';
 
   // DOM Elements
@@ -760,6 +761,7 @@ SKU003,WH-A</pre>
       ].join(','))
     ].join('\n');
 
+    track('export_used', { tool: 'bulk-api-invoker', format: 'csv' });
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

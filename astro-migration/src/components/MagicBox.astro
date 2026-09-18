@@ -31,6 +31,7 @@
 <script>
   import { detect, type Detection, type ToolAction } from '../lib/detect';
   import LZString from 'lz-string';
+  import { track } from '../lib/analytics';
 
   const input = document.getElementById('magic-input') as HTMLTextAreaElement;
   const results = document.getElementById('magic-results')!;
@@ -75,6 +76,7 @@
           if (!action) continue;
           const a = document.createElement('a');
           a.href = toolUrl(action);
+          a.addEventListener('click', () => track('magic_box_routed', { tool: action.toolId, action: action.action ?? undefined }));
           a.className = `px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${style}`;
           a.textContent = action.label + ' →';
           row.appendChild(a);

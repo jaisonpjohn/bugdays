@@ -316,6 +316,7 @@ const jsonLd = [
 </style>
 
 <script>
+  import { track } from '../lib/analytics';
   import { ShareManager } from '../lib/share';
   import { createLocalBridgeAccessGuard } from '../lib/local-bridge-access';
 
@@ -805,6 +806,7 @@ const jsonLd = [
   byId<HTMLButtonElement>('copy-response-btn').addEventListener('click', async () => { try { await navigator.clipboard.writeText(responseBody.textContent || ''); showToast('Response copied.'); } catch { showToast('Clipboard access was blocked.', true); } });
   byId<HTMLButtonElement>('download-response-btn').addEventListener('click', () => {
     if (!lastResponseText) { showToast('Send a request before downloading.', true); return; }
+    track('export_used', { tool: 'soap-client', format: 'xml' });
     const blob = new Blob([lastResponseText], { type: 'application/xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

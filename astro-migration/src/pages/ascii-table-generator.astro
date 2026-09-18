@@ -208,6 +208,7 @@ const jsonLd = [
 </Layout>
 
 <script>
+  import { track } from '../lib/analytics';
   import { parseStructuredTable, renderAsciiTable, type AsciiTableStyle, type CellOverflow, type StructuredTableFormat } from '../lib/ascii-table-generator';
   import { ShareManager } from '../lib/share';
 
@@ -328,6 +329,7 @@ const jsonLd = [
   });
   document.getElementById('download-btn')?.addEventListener('click', () => {
     if (!output.value) return;
+    track('export_used', { tool: 'ascii-table-generator', format: 'txt' });
     const url = URL.createObjectURL(new Blob([output.value, '\n'], { type: 'text/plain;charset=utf-8' }));
     const link = document.createElement('a');
     link.href = url;

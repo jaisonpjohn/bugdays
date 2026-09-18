@@ -299,6 +299,7 @@ const jsonLd = [
 </style>
 
 <script>
+  import { track } from '../lib/analytics';
   import { parseTerminalTable } from '../lib/ascii-table';
   import { createXlsxBlob, safeDownloadName, tableToDelimited } from '../lib/spreadsheet-export';
   import { ShareManager } from '../lib/share';
@@ -486,6 +487,7 @@ const jsonLd = [
   }
 
   function download(blob: Blob, extension: string): void {
+    track('export_used', { tool: 'ascii-table-converter', format: extension });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;

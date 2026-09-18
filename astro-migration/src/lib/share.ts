@@ -1,4 +1,5 @@
 import LZString from 'lz-string';
+import { track, sizeBucket } from './analytics';
 
 // ========== Types ==========
 interface ShareState {
@@ -42,6 +43,7 @@ export function init(toolId: string) {
   document.querySelectorAll('[data-share-action]').forEach(btn => {
     btn.addEventListener('click', () => {
       lastAction = (btn as HTMLElement).dataset.shareAction || null;
+      track('tool_used', { tool: toolId, action: lastAction ?? undefined });
     });
   });
 }
@@ -216,6 +218,7 @@ export function prepareShare(): PrepareResult {
 export async function shareViaUrl(prepared: SharePrepared): Promise<{ success: boolean; message: string }> {
   try {
     await navigator.clipboard.writeText(prepared.url);
+    track('share_created', { tool: currentToolId ?? undefined, method: 'link', size: sizeBucket(prepared.rawBytes) });
     return { success: true, message: 'Link copied!' };
   } catch (e) {
     return { success: false, message: 'Could not copy - try again' };
@@ -239,6 +242,7 @@ export async function shareViaServer(stateJson: string): Promise<{ success: bool
     const url = `${location.origin}${location.pathname}#kv:${id}`;
     await navigator.clipboard.writeText(url);
 
+    track('share_created', { tool: currentToolId ?? undefined, method: 'stored', size: sizeBucket(new TextEncoder().encode(stateJson).length) });
     return { success: true, message: 'Link copied!' };
   } catch (e) {
     return { success: false, message: 'Share failed - try again' };
@@ -277,6 +281,7 @@ export async function loadFromUrl(): Promise<boolean> {
   if (location.hash.slice(1) !== hash) return false;
 
   if (expired) {
+    track('share_opened', { tool: currentToolId ?? undefined, method: 'stored', status: 'expired' });
     showExpiredNotice();
     // Clean up URL
     history.replaceState(null, '', location.pathname);
@@ -302,6 +307,7 @@ export async function loadFromUrl(): Promise<boolean> {
 
     // Restore the state
     restoreState(state.d);
+    track('share_opened', { tool: currentToolId ?? undefined, method: hash.startsWith('kv:') ? 'stored' : 'link', status: 'ok' });
 
     // Trigger action if specified
     if (state.a) {

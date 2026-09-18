@@ -7,6 +7,7 @@ import type { TrafficReport, IpRow, CountRow, TrafficMode } from './traffic-anal
 import { normalizeIpWhois, normalizePtrResponse, reverseDnsName, validateIpEnrichment } from './ip-enrichment';
 import type { IpEnrichment } from './ip-enrichment';
 import { createXlsxBlob } from './spreadsheet-export';
+import { track } from './analytics';
 
 const escapeHtml = (value: unknown) => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
 const number = (value: number) => value.toLocaleString();
@@ -333,6 +334,7 @@ export function initTrafficWorkbench() {
   }
 
   function download(blob: Blob, extension: string) {
+    track('export_used', { tool: toolId, format: extension });
     const slug = title.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || toolId;
     const url = URL.createObjectURL(blob), link = document.createElement('a'); link.href = url; link.download = `${slug}.${extension}`; link.click(); window.setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
