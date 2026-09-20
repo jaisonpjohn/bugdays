@@ -50,3 +50,7 @@
 
 # Conventional locations crawlers probe
 /sitemap.xml                              /sitemap-index.xml                  301
+
+# Links mangled by chat and Markdown parsers elsewhere on the web. Cloudflare logs show real
+# browsers arriving on these daily, so they are worth catching rather than 404ing.
+/gzip-base64/)                            /gzip-base64/                       301

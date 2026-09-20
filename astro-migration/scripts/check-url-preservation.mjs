@@ -37,7 +37,9 @@ for (const [source, destination] of redirects) {
   assert.ok(!redirects.has(destination), `${source} -> ${destination}: redirect chain`);
   assert.ok(destination.endsWith('/') || /\.[a-z0-9]+$/i.test(destination), `${source} -> ${destination}: add the trailing slash to avoid a second hop`);
   assert.ok(!builtTarget(source), `${source}: a built page exists here but the redirect hides it`);
-  if (!/\.[a-z0-9]+$/i.test(source) && source !== '/') {
+  // Ordinary page paths need both slash forms. Paths with odd characters (mangled links) are
+  // caught verbatim, so a twin would be meaningless.
+  if (/^\/[a-z0-9/-]*$/.test(source) && source !== '/') {
     const twin = source.endsWith('/') ? source.slice(0, -1) : `${source}/`;
     assert.ok(redirects.has(twin), `${source}: also redirect ${twin}`);
   }
