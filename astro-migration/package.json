@@ -14,6 +14,7 @@
     "generate:ip-database": "node scripts/generate-ip-range-sql.mjs",
     "accept:ip-database-snapshot": "node scripts/accept-ip-range-snapshot.mjs",
     "test:ip-database": "node --test tests/ip-range-delta.test.mjs",
+    "test:ip-datasets": "node --test tests/ip-datasets.test.mjs",
     "test:ip-enrichment": "node --test tests/ip-enrichment.test.mjs",
     "test:traffic": "node --test tests/traffic-analysis.test.mjs",
     "test:network-diagnostics": "node --test tests/network-diagnostics.test.mjs",

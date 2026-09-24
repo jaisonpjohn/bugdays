@@ -13,7 +13,7 @@ export interface IpSource {
 export type IpRange = [cidr: string, source: string, service: string, region: string];
 export interface IpDataset { version: 1; fetchedAt: string; sources: IpSource[]; ranges: IpRange[]; failures: string[] }
 
-type OfficialParser = 'aws' | 'azure' | 'gcp' | 'prefixes' | 'cloudflare' | 'oracle' | 'fastly' | 'github';
+type OfficialParser = 'aws' | 'azure' | 'gcp' | 'prefixes' | 'cloudflare' | 'oracle' | 'fastly' | 'github' | 'zscaler';
 interface OfficialFeedDefinition {
   id: string;
   name: string;
@@ -41,6 +41,7 @@ export const officialFeedDefinitions: readonly OfficialFeedDefinition[] = [
   { id: 'cloudflare', name: 'Cloudflare', kind: 'cdn', method: 'official', parser: 'cloudflare', url: 'https://api.cloudflare.com/client/v4/ips' },
   { id: 'fastly', name: 'Fastly', kind: 'cdn', method: 'official', parser: 'fastly', url: 'https://api.fastly.com/public-ip-list' },
   { id: 'github', name: 'GitHub', kind: 'service', method: 'official', parser: 'github', url: 'https://api.github.com/meta' },
+  { id: 'zscaler', name: 'Zscaler', kind: 'service', method: 'official', parser: 'zscaler', url: 'https://config.zscaler.com/api/zscaler.net/cenr/json' },
   { id: 'googlebot', name: 'Google common crawlers', kind: 'crawler', method: 'official', parser: 'prefixes', service: 'Common crawler range', url: 'https://developers.google.com/crawling/ipranges/common-crawlers.json' },
   { id: 'google-special', name: 'Google special crawlers', kind: 'crawler', method: 'official', parser: 'prefixes', service: 'Special crawler range', url: 'https://developers.google.com/crawling/ipranges/special-crawlers.json' },
   { id: 'google-fetchers', name: 'Google user-triggered fetchers', kind: 'crawler', method: 'official', parser: 'prefixes', service: 'User-triggered fetcher range', url: 'https://developers.google.com/crawling/ipranges/user-triggered-fetchers-google.json' },
@@ -81,7 +82,42 @@ async function fetchJson(fetcher: typeof fetch, name: string, url: string) {
   return response.json() as Promise<any>;
 }
 
+/**
+ * Zscaler publishes one Cloud Enforcement Node list per cloud; customers sit on exactly one of
+ * them, so all are needed to recognise a corporate proxy egress. A cloud that is unreachable is
+ * skipped rather than failing the feed, since the others remain valid evidence.
+ */
+const zscalerClouds = ['zscaler.net', 'zscalerone.net', 'zscalertwo.net', 'zscalerthree.net', 'zscloud.net', 'zscalerbeta.net', 'zscalergov.net', 'zscalerten.net'] as const;
+
+async function fetchZscalerFeed(feed: OfficialFeedDefinition, fetcher: typeof fetch) {
+  const ranges: IpRange[] = [];
+  const seen = new Set<string>();
+  const reached: string[] = [];
+  const strip = (value: string) => value.split(' : ').slice(1).join(' : ').trim() || value.trim();
+  for (const cloud of zscalerClouds) {
+    let data: any;
+    try { data = await fetchJson(fetcher, `${feed.name} ${cloud}`, `https://config.zscaler.com/api/${cloud}/cenr/json`); }
+    catch { continue; }
+    reached.push(cloud);
+    for (const [continent, cities] of Object.entries(data?.[cloud] || {})) {
+      for (const [city, entries] of Object.entries((cities || {}) as Record<string, unknown>)) {
+        for (const entry of (Array.isArray(entries) ? entries : []) as Array<{ range?: unknown }>) {
+          const cidr = entry?.range;
+          if (typeof cidr !== 'string' || !cidrPattern.test(cidr)) continue;
+          const key = `${cloud} ${cidr}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
+          ranges.push([cidr, feed.id, cloud, (strip(city) || strip(continent)).slice(0, 100)]);
+        }
+      }
+    }
+  }
+  if (!ranges.length) throw new Error(`${feed.name}: empty dataset`);
+  return { source: { id: feed.id, name: feed.name, kind: feed.kind, method: feed.method, url: `https://config.zscaler.com/api/{${reached.join(',')}}/cenr/json`, publishedAt: '', count: ranges.length } satisfies IpSource, ranges };
+}
+
 async function fetchOfficialFeed(feed: OfficialFeedDefinition, fetcher: typeof fetch) {
+  if (feed.parser === 'zscaler') return fetchZscalerFeed(feed, fetcher);
   let url = feed.url;
   if (feed.parser === 'azure') {
     const response = await fetcher(url, { signal: AbortSignal.timeout(20_000) });
