@@ -81,3 +81,55 @@ const specialRanges = [
 export function specialIpLabel(ip: IpAddress): string | null {
   return specialRanges.find(range => range.version === ip.version && (ip.value >> range.shift) << range.shift === range.network)?.label || null;
 }
+
+/**
+ * Collapse a list of CIDRs into the smallest equivalent set. Providers such as iCloud Private
+ * Relay publish hundreds of thousands of per-city /31s; merged they describe the same addresses
+ * in a fraction of the rows.
+ */
+export function mergeCidrs(cidrs: readonly string[]): string[] {
+  const spans: Record<4 | 6, Array<[bigint, bigint]>> = { 4: [], 6: [] };
+  for (const text of cidrs) {
+    const cidr = parseCidr(text);
+    if (!cidr) continue;
+    const size = 1n << cidr.shift;
+    spans[cidr.version].push([cidr.network, cidr.network + size - 1n]);
+  }
+  const merged: string[] = [];
+  for (const version of [4, 6] as const) {
+    const bits = BigInt(version === 4 ? 32 : 128);
+    const sorted = spans[version].sort((a, b) => (a[0] === b[0] ? (a[1] < b[1] ? -1 : 1) : a[0] < b[0] ? -1 : 1));
+    let current: [bigint, bigint] | null = null;
+    const flush = () => {
+      if (!current) return;
+      let [start, end] = current;
+      while (start <= end) {
+        // Largest block that starts here and does not overrun the span.
+        let shift = 0n;
+        while (shift < bits && ((start >> (shift + 1n)) << (shift + 1n)) === start && start + (1n << (shift + 1n)) - 1n <= end) shift += 1n;
+        merged.push(`${formatIp(start, version)}/${bits - shift}`);
+        start += 1n << shift;
+      }
+      current = null;
+    };
+    for (const span of sorted) {
+      if (!current) current = [span[0], span[1]];
+      else if (span[0] <= current[1] + 1n) current[1] = span[1] > current[1] ? span[1] : current[1];
+      else { flush(); current = [span[0], span[1]]; }
+    }
+    flush();
+  }
+  return merged;
+}
+
+/** Render a numeric address back to text, for ranges produced by merging. */
+export function formatIp(value: bigint, version: 4 | 6): string {
+  if (version === 4) return [24n, 16n, 8n, 0n].map(shift => Number((value >> shift) & 255n)).join('.');
+  const groups: string[] = [];
+  for (let index = 7n; index >= 0n; index -= 1n) groups.push(((value >> (index * 16n)) & 65535n).toString(16));
+  const text = groups.join(':');
+  const zeros = text.match(/(?:^|:)(0(?::0)+)(?::|$)/);
+  if (!zeros) return text;
+  const start = zeros.index + (zeros[0].startsWith(':') ? 1 : 0);
+  return `${text.slice(0, start)}::${text.slice(start + zeros[1].length + (text[start + zeros[1].length] === ':' ? 1 : 0))}`.replace(/:{3,}/, '::');
+}

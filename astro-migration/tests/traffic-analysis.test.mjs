@@ -186,10 +186,10 @@ test('large inputs are bounded and 200,000 repeated addresses remain responsive'
 });
 
 test('all advertised source IDs and evidence methods are valid and unique', () => {
-  assert.equal(feedDefinitions.length, 29);
-  assert.equal(new Set(feedDefinitions.map(source => source.id)).size, 29);
-  assert.equal(feedDefinitions.filter(source => source.method === 'official').length, 17);
-  assert.equal(feedDefinitions.filter(source => source.method === 'bgp').length, 12);
+  assert.equal(feedDefinitions.length, 32);
+  assert.equal(new Set(feedDefinitions.map(source => source.id)).size, 32);
+  assert.equal(feedDefinitions.filter(source => source.method === 'official').length, 19);
+  assert.equal(feedDefinitions.filter(source => source.method === 'bgp').length, 13);
   assert.ok(feedDefinitions.some(source => source.id === 'digitalocean' && source.method === 'bgp'));
   assert.ok(feedDefinitions.some(source => source.id === 'zscaler' && source.kind === 'service'));
 });

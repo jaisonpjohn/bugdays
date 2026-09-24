@@ -1,3 +1,5 @@
+import { mergeCidrs, parseIp } from './ip-address.ts';
+
 export type SourceKind = 'cloud' | 'hosting' | 'cdn' | 'crawler' | 'service';
 export type SourceMethod = 'official' | 'bgp';
 export interface IpSource {
@@ -13,7 +15,7 @@ export interface IpSource {
 export type IpRange = [cidr: string, source: string, service: string, region: string];
 export interface IpDataset { version: 1; fetchedAt: string; sources: IpSource[]; ranges: IpRange[]; failures: string[] }
 
-type OfficialParser = 'aws' | 'azure' | 'gcp' | 'prefixes' | 'cloudflare' | 'oracle' | 'fastly' | 'github' | 'zscaler';
+type OfficialParser = 'aws' | 'azure' | 'gcp' | 'prefixes' | 'cloudflare' | 'oracle' | 'fastly' | 'github' | 'zscaler' | 'private-relay' | 'ip-lines';
 interface OfficialFeedDefinition {
   id: string;
   name: string;
@@ -26,7 +28,7 @@ interface OfficialFeedDefinition {
 interface BgpFeedDefinition {
   id: string;
   name: string;
-  kind: 'hosting';
+  kind: 'hosting' | 'service';
   method: 'bgp';
   url: string;
   asns: readonly number[];
@@ -42,6 +44,8 @@ export const officialFeedDefinitions: readonly OfficialFeedDefinition[] = [
   { id: 'fastly', name: 'Fastly', kind: 'cdn', method: 'official', parser: 'fastly', url: 'https://api.fastly.com/public-ip-list' },
   { id: 'github', name: 'GitHub', kind: 'service', method: 'official', parser: 'github', url: 'https://api.github.com/meta' },
   { id: 'zscaler', name: 'Zscaler', kind: 'service', method: 'official', parser: 'zscaler', url: 'https://config.zscaler.com/api/zscaler.net/cenr/json' },
+  { id: 'icloud-private-relay', name: 'iCloud Private Relay', kind: 'service', method: 'official', parser: 'private-relay', service: 'Private Relay egress', url: 'https://mask-api.icloud.com/egress-ip-ranges.csv' },
+  { id: 'tor-exit', name: 'Tor exit nodes', kind: 'service', method: 'official', parser: 'ip-lines', service: 'Tor exit node', url: 'https://check.torproject.org/torbulkexitlist' },
   { id: 'googlebot', name: 'Google common crawlers', kind: 'crawler', method: 'official', parser: 'prefixes', service: 'Common crawler range', url: 'https://developers.google.com/crawling/ipranges/common-crawlers.json' },
   { id: 'google-special', name: 'Google special crawlers', kind: 'crawler', method: 'official', parser: 'prefixes', service: 'Special crawler range', url: 'https://developers.google.com/crawling/ipranges/special-crawlers.json' },
   { id: 'google-fetchers', name: 'Google user-triggered fetchers', kind: 'crawler', method: 'official', parser: 'prefixes', service: 'User-triggered fetcher range', url: 'https://developers.google.com/crawling/ipranges/user-triggered-fetchers-google.json' },
@@ -66,6 +70,8 @@ export const bgpFeedDefinitions: readonly BgpFeedDefinition[] = [
   { id: 'ionos', name: 'IONOS', kind: 'hosting', method: 'bgp', asns: [8560], url: 'https://stat.ripe.net/AS8560' },
   { id: 'leaseweb', name: 'Leaseweb', kind: 'hosting', method: 'bgp', asns: [60781], url: 'https://stat.ripe.net/AS60781' },
   { id: 'rackspace', name: 'Rackspace', kind: 'hosting', method: 'bgp', asns: [33070], url: 'https://stat.ripe.net/AS33070' },
+  // Satellite ISP rather than a datacenter: a match means consumer/enterprise access behind carrier NAT.
+  { id: 'starlink', name: 'Starlink', kind: 'service', method: 'bgp', asns: [14593], url: 'https://stat.ripe.net/AS14593' },
 ] as const;
 
 export const feedDefinitions: readonly FeedDefinition[] = [...officialFeedDefinitions, ...bgpFeedDefinitions];
@@ -116,8 +122,56 @@ async function fetchZscalerFeed(feed: OfficialFeedDefinition, fetcher: typeof fe
   return { source: { id: feed.id, name: feed.name, kind: feed.kind, method: feed.method, url: `https://config.zscaler.com/api/{${reached.join(',')}}/cenr/json`, publishedAt: '', count: ranges.length } satisfies IpSource, ranges };
 }
 
+async function fetchText(fetcher: typeof fetch, name: string, url: string) {
+  const response = await fetcher(url, {
+    headers: { 'User-Agent': 'BugDays-IP-Intelligence/1.0 (+https://bugdays.com/ip-lookup/)' },
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`${name}: HTTP ${response.status}`);
+  return response.text();
+}
+
+/**
+ * Apple publishes one row per city, currently about 285,000 of them, mostly /31s. Merging per
+ * country keeps the useful part (which country the relay exit sits in) at a twentieth of the rows.
+ */
+async function fetchPrivateRelayFeed(feed: OfficialFeedDefinition, fetcher: typeof fetch) {
+  const text = await fetchText(fetcher, feed.name, feed.url);
+  const byCountry = new Map<string, string[]>();
+  for (const line of text.split('\n')) {
+    const [cidr, country] = line.trim().split(',');
+    if (!cidr || !cidrPattern.test(cidr)) continue;
+    const key = /^[A-Z]{2}$/.test(country || '') ? country : '';
+    const bucket = byCountry.get(key);
+    if (bucket) bucket.push(cidr); else byCountry.set(key, [cidr]);
+  }
+  const ranges: IpRange[] = [];
+  for (const [country, cidrs] of byCountry) for (const cidr of mergeCidrs(cidrs)) ranges.push([cidr, feed.id, feed.service || '', country]);
+  if (!ranges.length) throw new Error(`${feed.name}: empty dataset`);
+  return { source: { id: feed.id, name: feed.name, kind: feed.kind, method: feed.method, url: feed.url, publishedAt: '', count: ranges.length } satisfies IpSource, ranges };
+}
+
+/** Plain-text lists of bare addresses, one per line (Tor publishes exits this way). */
+async function fetchIpListFeed(feed: OfficialFeedDefinition, fetcher: typeof fetch) {
+  const text = await fetchText(fetcher, feed.name, feed.url);
+  const ranges: IpRange[] = [];
+  const seen = new Set<string>();
+  for (const line of text.split('\n')) {
+    const ip = parseIp(line.trim());
+    if (!ip || ip.mapped) continue;
+    const cidr = `${ip.address}/${ip.version === 4 ? 32 : 128}`;
+    if (seen.has(cidr)) continue;
+    seen.add(cidr);
+    ranges.push([cidr, feed.id, feed.service || '', '']);
+  }
+  if (!ranges.length) throw new Error(`${feed.name}: empty dataset`);
+  return { source: { id: feed.id, name: feed.name, kind: feed.kind, method: feed.method, url: feed.url, publishedAt: '', count: ranges.length } satisfies IpSource, ranges };
+}
+
 async function fetchOfficialFeed(feed: OfficialFeedDefinition, fetcher: typeof fetch) {
   if (feed.parser === 'zscaler') return fetchZscalerFeed(feed, fetcher);
+  if (feed.parser === 'private-relay') return fetchPrivateRelayFeed(feed, fetcher);
+  if (feed.parser === 'ip-lines') return fetchIpListFeed(feed, fetcher);
   let url = feed.url;
   if (feed.parser === 'azure') {
     const response = await fetcher(url, { signal: AbortSignal.timeout(20_000) });
