@@ -1,0 +1,21 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+const guide = guideBySlug('diagnose-kafka-consumer-lag-stuck-partition');
+---
+<GuideLayout guide={guide} keywords="Kafka consumer lag per partition, stuck Kafka consumer, Kafka poison pill message, unexpected consumer group member, Kafka partition assignment imbalance, reset Kafka consumer group offset">
+  <p>Start with the group and topic, then look at every partition. A total lag number hides the useful shape: one partition can be stalled while the others are nearly caught up.</p>
+  <h2>Compare committed position, partition end, and owner</h2>
+  <p>In the <a href="/kafka-diagnostics/">Kafka consumer group analyzer</a>, take a snapshot and watch it for several samples. A committed offset is the <em>next position the group intends to read</em>. The lag shown here is the offset gap between that position and the current partition end. It is not always an exact count of live messages when retention, compaction, or aborted transactions leave gaps. The <a href="https://docs.confluent.io/kafka/design/consumer-design.html" rel="noopener noreferrer">Kafka consumer design guide</a> explains committed positions and group recovery.</p>
+  <h2>Tell a slow consumer from a stuck one</h2>
+  <p>If the commit advances but the end advances faster, the consumer is falling behind. Look at processing time, downstream dependencies, retry behavior, and partition distribution. If the commit stays unchanged while the end moves, inspect the next available record at the committed position and the previous retained record. A malformed or unexpected message may be a poison pill, but an unavailable database or a paused application can produce the same offset pattern.</p>
+  <p>The analyzer compares two snapshots and marks stalled or growing lag. Its <strong>Compare</strong> action reads nearby records through the local bridge. It does not claim to know the last message your application processed successfully.</p>
+  <h2>Check who joined the consumer group</h2>
+  <p>Group IDs are shared identifiers. Another deployment using the same ID can take some partitions. Enter expected client ID or host patterns, such as <code>checkout-processor*</code> or <code>10.4.*</code>, and compare the group’s members and assignments. A mismatch is a lead: verify deployment metadata before blaming an unfamiliar IP alone.</p>
+  <p>Check assignment balance and in-sync replicas too. One member owning more partitions can be legitimate when topic subscriptions differ; missing in-sync replicas point to a separate broker or network issue.</p>
+  <h2>Preview an offset reset before applying it</h2>
+  <p>Stop the group’s consumers first. Select exact offset, earliest, latest, current, shift, UTC time, duration, or a CSV file. The preview shows the old and proposed offset for each selected partition. Apply only after reviewing the data that will be reprocessed or skipped. The bridge checks the group again, verifies that offsets have not changed since preview, and reports the offsets Kafka stores. Apache Kafka’s <a href="https://kafka.apache.org/43/operations/basic-kafka-operations/" rel="noopener noreferrer">consumer group operations</a> document the same reset scenarios.</p>
+  <p>Export the partition table before a change. That gives you a record of the previous positions if you need to explain the intervention later. Share a redacted snapshot for collaboration; member hosts and connection credentials are omitted from the link.</p>
+  <a slot="related" href="/guides/browse-kafka-messages-by-offset-time/" class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"><strong>Browse the exact offset</strong><span class="mt-1 block text-sm">Inspect keys, headers, and binary values around a stalled partition.</span></a>
+  <a slot="related" href="/guides/replay-kafka-messages-between-topics/" class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"><strong>Replay a selected message</strong><span class="mt-1 block text-sm">Copy a record for another consumer or a retry topic.</span></a>
+</GuideLayout>

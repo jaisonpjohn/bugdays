@@ -1,0 +1,19 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+const guide = guideBySlug('replay-kafka-messages-between-topics');
+---
+<GuideLayout guide={guide} keywords="replay Kafka messages, copy Kafka topic records, Kafka dead letter topic replay, Kafka message key headers, Kafka cross cluster replay, Kafka offset range">
+  <p>Replaying is a write to a destination topic. Decide exactly which source records and destination you want before starting: source topic, partition, inclusive start offset, exclusive end offset, destination topic, and partition policy.</p>
+  <h2>Try one record first</h2>
+  <p>In the <a href="/kafka-client/">Kafka message browser</a>, open the source record, inspect its key, value, and headers, then set the replay range to that offset and the following one. For example, offset <code>9310</code> becomes <code>9310</code> through <code>9311</code>. The client can send it unchanged or use the single-record editor to alter UTF-8 key, value, and headers.</p>
+  <p>A null value is a tombstone in a compacted topic; an empty byte string is different. The JSON download retains Base64 bytes and nulls so you can verify what was sent.</p>
+  <h2>Copy a bounded range</h2>
+  <p>Use an exclusive end offset and confirm the destination topic. The client processes the selected partition in batches, preserving the order within that partition. It waits for broker delivery of each record and shows a running count. You can stop after the current batch. For a large range, keep the browser tab open until it finishes.</p>
+  <p>Choose <strong>Keep source partition</strong> only when the destination has that partition. <strong>Route by key</strong> lets Kafka choose a destination partition from the key. <strong>Choose partition</strong> sends every selected record to the same destination partition. Those policies can change ordering across partitions; order is meaningful within a partition, not across an entire topic.</p>
+  <h2>Replay across clusters</h2>
+  <p>Select <strong>Another cluster</strong> and enter its bootstrap servers and authentication. Holy CORS connects to both from your computer and keeps credentials in its local process for the session. The shared report never carries broker URLs, SASL secrets, or private keys.</p>
+  <p>A delivered write can still be repeated if you retry after a browser or network interruption. The producer uses idempotent delivery within its session, but a new replay session is not an exactly-once transfer. Check destination offsets and keys before retrying a partially completed range.</p>
+  <a slot="related" href="/guides/browse-kafka-messages-by-offset-time/" class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"><strong>Find source records</strong><span class="mt-1 block text-sm">Read by partition, offset, or timestamp first.</span></a>
+  <a slot="related" href="/guides/diagnose-kafka-consumer-lag-stuck-partition/" class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"><strong>Diagnose a stalled group</strong><span class="mt-1 block text-sm">Inspect lag and nearby records before moving offsets.</span></a>
+</GuideLayout>

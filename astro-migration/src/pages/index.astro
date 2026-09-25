@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import MagicBox from '../components/MagicBox.astro';
 import { guides } from '../lib/guides';
+const featuredGuides = [guides[0], ...guides.filter(guide => !guide.slug.includes('kafka')).slice(0, 2)];
 
 const jsonLd = [
   {
@@ -108,6 +109,8 @@ const categories = [
       { name: 'Access Log Analyzer', href: '/access-log-analyzer/', desc: 'Traffic, errors & client networks' },
       { name: 'CIDR Calculator', href: '/cidr-calculator/', desc: 'Subnet & IP ranges' },
       { name: 'Certificate Inspector', href: '/certificate-inspector/', desc: 'Inspect & convert X.509 certs' },
+      { name: 'Kafka Message Browser', href: '/kafka-client/', desc: 'Read & replay Kafka records' },
+      { name: 'Kafka Consumer Diagnostics', href: '/kafka-diagnostics/', desc: 'Lag, stuck offsets & group members' },
     ]
   },
 ];
@@ -140,7 +143,7 @@ const categories = [
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
-          100% Client-Side
+          Browser-first
         </div>
         <div class="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-full text-sm font-medium">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,6 +169,9 @@ const categories = [
         </a>
         <a href="/soap-client/" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
           SOAP & WSDL Client
+        </a>
+        <a href="/kafka-client/" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
+          Kafka Message Browser
         </a>
         <a href="/certificate-inspector/" class="px-4 py-2 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border border-gray-300 dark:border-slate-600 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium">
           X.509 Certificate Decoder
@@ -213,7 +219,7 @@ const categories = [
         <a href="/guides/" class="text-sm font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Browse all guides →</a>
       </div>
       <div class="grid md:grid-cols-3 gap-5">
-        {guides.slice(0, 3).map((guide) => (
+        {featuredGuides.map((guide) => (
           <article class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm group">
             <a href={`/guides/${guide.slug}/`} class="block overflow-hidden bg-slate-100 dark:bg-slate-900"><img src={guide.image} alt="" width="1280" height="720" loading="lazy" class="w-full aspect-video object-cover group-hover:scale-[1.02] transition-transform" /></a>
             <div class="p-5">
@@ -238,7 +244,7 @@ const categories = [
           </div>
           <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Privacy First</h3>
           <p class="text-sm text-gray-600 dark:text-slate-400">
-            All processing happens in your browser. Your data never leaves your machine unless you explicitly share it.
+            Most text tools run in your browser. Network tools contact the endpoints you choose, sometimes through a local bridge on your device.
           </p>
         </div>
         <div class="text-center">

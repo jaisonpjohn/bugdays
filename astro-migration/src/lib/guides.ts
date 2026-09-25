@@ -15,6 +15,33 @@ export interface Guide {
 
 export const guides: Guide[] = [
   {
+    slug: 'diagnose-kafka-consumer-lag-stuck-partition',
+    title: 'Diagnose Kafka Consumer Lag and a Stuck Partition',
+    shortTitle: 'Diagnose Kafka consumer lag',
+    description: 'Compare committed offsets with partition ends, inspect group members and assignments, and examine the records around a stuck position before changing offsets.',
+    topic: 'Kafka consumer diagnostics', published: '2026-09-24', updated: '2026-09-24', readingMinutes: 7,
+    image: '/og-image.png', imageAlt: 'Kafka consumer group diagnostic report with lag, member assignments, and a stuck partition',
+    toolHref: '/kafka-diagnostics/', toolName: 'Kafka Consumer Diagnostics',
+  },
+  {
+    slug: 'browse-kafka-messages-by-offset-time',
+    title: 'How to Browse Kafka Messages by Offset, Timestamp, and Partition',
+    shortTitle: 'Browse Kafka records by offset or time',
+    description: 'Read an exact Kafka offset range or start at a UTC timestamp, inspect key and headers, and understand retention and compaction gaps.',
+    topic: 'Kafka message inspection', published: '2026-09-24', updated: '2026-09-24', readingMinutes: 6,
+    image: '/og-image.png', imageAlt: 'Kafka message browser showing partition, offset, timestamp, key, value, and headers',
+    toolHref: '/kafka-client/', toolName: 'Kafka Message Browser',
+  },
+  {
+    slug: 'replay-kafka-messages-between-topics',
+    title: 'How to Replay Kafka Messages to Another Topic or Cluster',
+    shortTitle: 'Replay Kafka messages safely',
+    description: 'Copy a Kafka record or bounded offset range to the same or another cluster, preserving key, value, headers, and partition order where possible.',
+    topic: 'Kafka message replay', published: '2026-09-24', updated: '2026-09-24', readingMinutes: 7,
+    image: '/og-image.png', imageAlt: 'Kafka message replay form selecting a source offset range and destination topic',
+    toolHref: '/kafka-client/', toolName: 'Kafka Message Browser',
+  },
+  {
     slug: 'check-tls-certificate-chain-any-port',
     title: 'How to Check a TLS Certificate Chain, Expiry, SAN, and SNI on Any Port',
     shortTitle: 'Check a TLS certificate chain on any port',

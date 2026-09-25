@@ -160,6 +160,8 @@ export const toolGroups: ToolGroup[] = [
       { name: "Bulk API Invoker", href: "/bulk-api-invoker/", description: "Run templated API requests from CSV", keywords: ["batch", "http", "csv", "runner"] },
       { name: "SOAP Client", href: "/soap-client/", description: "Online WSDL tester & SOAP requests", keywords: ["wsdl", "xml", "web service", "soapui", "soap 1.1", "soap 1.2"] },
       { name: "gRPC Client", href: "/grpc-client/", description: "Call native gRPC and gRPC-Web services", keywords: ["proto", "protobuf", "rpc", "http2", "streaming", "grpc-web"] },
+      { name: "Kafka Client", href: "/kafka-client/", description: "Browse & replay Kafka messages by offset or time", keywords: ["kafka message browser", "topic", "partition", "offset", "timestamp", "replay", "headers", "key"] },
+      { name: "Kafka Diagnostics", href: "/kafka-diagnostics/", description: "Inspect consumer lag, stuck partitions & reset offsets", keywords: ["consumer group", "lag", "poison pill", "stuck", "offset reset", "rebalance"] },
       { name: "WebSocket", href: "/websocket-client/", description: "Test WebSocket connections", keywords: ["ws", "wss", "socket"] },
       { name: "SSE Client", href: "/sse-client/", description: "Test Server-Sent Events streams", keywords: ["eventsource", "stream"] },
       { name: "Cron Parser", href: "/cron-parser/", description: "Explain & preview cron expressions", keywords: ["crontab", "schedule", "quartz"] },

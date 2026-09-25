@@ -279,7 +279,7 @@ test('light/dark layouts fit the viewport and both pages have discoverable metad
     await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /IP|logs/);
     if (path === '/ip-lookup/') {
       await expect(page.locator('.traffic-hero h1')).toHaveText('IP Address Lookup: ISP, ASN, Location & Cloud Provider');
-      await expect(page.locator('.ip-lookup-faq details')).toHaveCount(7);
+      await expect(page.locator('.ip-lookup-faq details')).toHaveCount(9);
       const structuredData = await page.locator('script[type="application/ld+json"]').allTextContents();
       expect(structuredData.some(value => value.includes('FAQPage') && value.includes('cloud or hosting provider'))).toBeTruthy();
     }

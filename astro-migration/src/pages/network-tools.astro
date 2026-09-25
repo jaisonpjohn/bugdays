@@ -10,6 +10,8 @@ const tools = [
   { name: 'Bulk API Invoker', href: '/bulk-api-invoker/', description: 'Execute multiple API calls from CSV with URL templates' },
   { name: 'SOAP Client', href: '/soap-client/', description: 'Import WSDL or send direct SOAP requests with auth, headers, and response inspection' },
   { name: 'gRPC Client', href: '/grpc-client/', description: 'Test native gRPC and gRPC-Web with protobuf, streaming, metadata, and local history' },
+  { name: 'Kafka Message Browser', href: '/kafka-client/', description: 'Read exact records by offset or time; inspect bytes, keys, and headers; replay to a topic or cluster' },
+  { name: 'Kafka Consumer Diagnostics', href: '/kafka-diagnostics/', description: 'Inspect partition lag, stuck commits, unexpected members, and preview offset resets' },
   { name: 'WebSocket Client', href: '/websocket-client/', description: 'Test WebSocket connections with real-time message exchange' },
   { name: 'SSE Client', href: '/sse-client/', description: 'Connect to Server-Sent Events streams and view real-time events' },
   { name: 'Cron Parser', href: '/cron-parser/', description: 'Parse cron expressions to human readable schedules' },
@@ -18,8 +20,8 @@ const tools = [
 
 <Layout
   title="API Clients, WSDL Tester & Network Tools"
-  description="Run DNS and reverse DNS lookups, inspect cloud and hosting IPs, analyze access logs, and test REST, SOAP, gRPC, WebSocket, and SSE endpoints."
-  keywords="DNS lookup, reverse DNS lookup, PTR checker, private DNS checker, hosting IP lookup, cloud IP lookup, access log analyzer, CIDR calculator, API client, REST client, SOAP client, WSDL tester, gRPC client, network tools"
+  description="Run DNS and reverse DNS lookups, inspect cloud and hosting IPs, analyze access logs, and test REST, SOAP, gRPC, Kafka, WebSocket, and SSE endpoints."
+  keywords="DNS lookup, reverse DNS lookup, PTR checker, private DNS checker, hosting IP lookup, cloud IP lookup, access log analyzer, CIDR calculator, API client, REST client, SOAP client, WSDL tester, gRPC client, Kafka client, Kafka consumer lag, network tools"
   breadcrumb={[{ name: "Network Tools" }]}
 >
   <div class="max-w-6xl mx-auto">
@@ -42,7 +44,7 @@ const tools = [
       <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About Network Tools</h2>
       <p class="text-gray-600 dark:text-slate-300 text-sm">
         Compare public, system, VPN, and reverse DNS answers; investigate cloud, hosting, CDN, and crawler traffic with bulk IP lookup and access-log analysis. Plan subnets
-        with the CIDR calculator, or test REST APIs, SOAP web services, gRPC endpoints, WebSockets, and event streams.
+        with the CIDR calculator, or test REST APIs, SOAP web services, gRPC endpoints, Kafka topics and consumer groups, WebSockets, and event streams.
         Share focused reports when another developer needs the same evidence.
       </p>
     </div>

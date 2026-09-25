@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import KafkaWorkspace from '../components/KafkaWorkspace.astro';
+const jsonLd = [{
+  '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Bug Days Kafka Consumer Lag Analyzer',
+  description: 'Inspect consumer group lag per partition, compare snapshots, identify unexpected group members, and preview Kafka offset resets.',
+  url: 'https://bugdays.com/kafka-diagnostics/', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any',
+  isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  featureList: ['Kafka consumer group lag by partition', 'Stuck partition investigation', 'Unexpected consumer member detection', 'Offset reset preview and apply', 'Share a redacted diagnostic report'],
+}];
+---
+<Layout title="Kafka Consumer Lag & Offset Reset Diagnostics" description="Diagnose Kafka consumer lag by partition. Spot stuck offsets, uneven assignments, and unexpected group members; inspect nearby records and preview safe offset resets." keywords="Kafka consumer lag, Kafka consumer group lag, Kafka stuck partition, Kafka poison pill message, Kafka reset consumer offset, Kafka consumer group member, Kafka offset reset UI" breadcrumb={[{ name: 'Network Tools', href: '/network-tools/' }, { name: 'Kafka Diagnostics' }]} toolId="kafka-diagnostics" jsonLd={jsonLd}>
+  <KafkaWorkspace view="diagnostics" />
+</Layout>

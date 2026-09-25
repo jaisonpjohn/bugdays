@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import KafkaWorkspace from '../components/KafkaWorkspace.astro';
+const jsonLd = [{
+  '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Bug Days Kafka Message Browser',
+  description: 'Browse Kafka messages by partition, offset, or timestamp and replay records with keys and headers through a local bridge.',
+  url: 'https://bugdays.com/kafka-client/', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any',
+  isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+  featureList: ['Browse Kafka records by offset', 'Browse by timestamp and partition', 'Inspect key, value, and headers', 'Replay messages to the same or another cluster', 'Share a redacted report'],
+}];
+---
+<Layout title="Kafka Message Browser & Replay Tool" description="Browse Kafka messages by offset, time, and partition. Inspect JSON, text, and binary payloads, keys, and headers; replay records to another topic or cluster with a local bridge." keywords="Kafka message browser, Kafka client online, read Kafka messages by offset, Kafka messages by timestamp, Kafka replay messages, copy Kafka topic, Kafka record inspector" breadcrumb={[{ name: 'Network Tools', href: '/network-tools/' }, { name: 'Kafka Client' }]} toolId="kafka-client" jsonLd={jsonLd}>
+  <KafkaWorkspace view="client" />
+</Layout>

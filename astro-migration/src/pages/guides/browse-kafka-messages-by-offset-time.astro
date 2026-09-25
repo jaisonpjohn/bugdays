@@ -1,0 +1,22 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides';
+const guide = guideBySlug('browse-kafka-messages-by-offset-time');
+---
+<GuideLayout guide={guide} keywords="browse Kafka messages by offset, read Kafka topic from timestamp, Kafka message browser, Kafka partition offset range, Kafka record key headers, Kafka compacted topic gaps">
+  <p>When someone says “check the message at offset 9310,” a topic name is only half the address. Kafka offsets belong to <em>one partition</em>. Start with the topic, partition, and offset together: <code>orders.events / partition 2 / offset 9310</code>.</p>
+  <h2>Read an exact offset range</h2>
+  <p>Open the <a href="/kafka-client/">Kafka message browser</a>, connect through Holy CORS, choose a topic and partition, then select <strong>Exact offset</strong>. An interval from <code>9310</code> to <code>9320</code> includes offsets at or after 9310 and stops before 9320. The end is exclusive, so the interval is easy to use again as the next page’s start.</p>
+  <p>A compacted topic can have missing offsets. If you ask for 10 positions, you may receive fewer than 10 retained records. Do not infer that the client skipped data; compare the earliest and latest retained positions shown beside the results.</p>
+  <h2>Start from a UTC timestamp</h2>
+  <p>Choose <strong>Timestamp (UTC)</strong> and enter a time such as <code>2026-09-24T12:00</code>. Kafka looks for the first record in that partition whose timestamp is at or after the target. Add a UTC end time to stop before the first record at or after that moment. When no such record exists, the read starts at the partition end. See the <a href="https://kafka.apache.org/43/javadoc/org/apache/kafka/clients/consumer/KafkaConsumer.html" rel="noopener noreferrer">Apache Kafka consumer API</a> for the timestamp lookup semantics.</p>
+  <p>Check which timestamp policy the topic uses: producer creation time and broker append time can answer different questions. For a multi-partition window, repeat the time lookup per partition; each partition has its own offset sequence.</p>
+  <h2>Inspect the actual bytes</h2>
+  <p>Open a row to switch among JSON, text, hex, and Base64. The raw Base64 in the JSON download keeps binary keys, values, null tombstones, duplicate header names, and null header values distinct. A readable preview is convenient, but it is not a lossless export.</p>
+  <p>If the value uses Avro or Protobuf, inspect its bytes here, then use the <a href="/avro-converter/">Avro converter</a> or <a href="/protobuf-converter/">Protobuf converter</a> with the relevant schema or proto contract. Text rendering alone cannot decode an unknown binary schema.</p>
+  <p>To take every currently retained record, choose <strong>Export retained · JSONL</strong>. It exports the selected partition by default; check <strong>All partitions</strong> for the whole topic. The browser captures each partition’s end and reads through it in batches. On browsers with a streaming save picker, the file writes as it goes; elsewhere, the download is limited to 20 MB.</p>
+  <h2>Share the investigation</h2>
+  <p>The <strong>Share report</strong> button shares the selected offsets and record metadata. Message content stays out of the link unless you explicitly check the option in an opened record. A recipient sees a snapshot and can connect their own cluster to fetch fresh data. The share link never includes broker credentials.</p>
+  <a slot="related" href="/guides/diagnose-kafka-consumer-lag-stuck-partition/" class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"><strong>Investigate lag</strong><span class="mt-1 block text-sm">Find the committed position before reading nearby messages.</span></a>
+  <a slot="related" href="/guides/replay-kafka-messages-between-topics/" class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"><strong>Replay a record</strong><span class="mt-1 block text-sm">Copy one record or an offset range to a destination topic.</span></a>
+</GuideLayout>

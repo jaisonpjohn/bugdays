@@ -1,0 +1,161 @@
+---
+interface Props { view: 'client' | 'diagnostics' }
+const { view } = Astro.props;
+---
+
+<div id="kafka-workspace" data-view={view} class="kafka-workspace mx-auto max-w-[1500px] space-y-4">
+  <header class="flex flex-wrap items-start justify-between gap-3">
+    <div>
+      <p class="mb-1 text-xs font-bold uppercase tracking-[.16em] text-indigo-600 dark:text-indigo-400">Kafka · local bridge</p>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-950 dark:text-white">{view === 'client' ? 'Kafka message browser & replay' : 'Kafka consumer group diagnostics'}</h1>
+      <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{view === 'client' ? 'Read exact messages by offset, time, or partition. Inspect binary data and headers, then replay a record or a bounded range.' : 'Find growing lag, stuck partitions, uneven assignments, and unfamiliar consumers. Preview every offset change before applying it.'}</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="button" id="k-demo" class="k-btn k-btn-soft">Try sample</button>
+      <button type="button" class="share-trigger k-btn k-btn-primary">Share report ↗</button>
+    </div>
+  </header>
+
+  <nav aria-label="Kafka tools" class="flex gap-2 border-b border-slate-200 pb-2 text-sm font-semibold dark:border-slate-700">
+    <a href="/kafka-client/" aria-current={view === 'client' ? 'page' : undefined} class:list={['k-tab', view === 'client' && 'k-tab-active']}>Message browser</a>
+    <a href="/kafka-diagnostics/" aria-current={view === 'diagnostics' ? 'page' : undefined} class:list={['k-tab', view === 'diagnostics' && 'k-tab-active']}>Consumer groups & lag</a>
+    <span id="k-bridge-state" class="ml-auto hidden text-xs font-medium text-slate-500 sm:inline dark:text-slate-400">Checking local bridge…</span>
+  </nav>
+
+  <div id="k-message" role="status" aria-live="polite" class="k-notice" hidden></div>
+
+  <div class="grid items-start gap-4 xl:grid-cols-[310px_minmax(0,1fr)]">
+    <aside class="k-card xl:sticky xl:top-16">
+      <div class="flex items-center justify-between gap-2"><h2 class="text-base font-bold">Connect to Kafka</h2><span id="k-connection-badge" class="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">Not connected</span></div>
+      <form id="k-connect-form" class="mt-4 space-y-3">
+        <label class="k-label">Bootstrap servers<input id="k-brokers" class="k-input font-mono" autocomplete="off" spellcheck="false" placeholder="broker1.example.com:9092,broker2:9092" required /></label>
+        <label class="k-label">Connection security<select id="k-security" class="k-input"><option value="PLAINTEXT">Plaintext</option><option value="SSL">TLS</option><option value="SASL_PLAINTEXT">SASL plaintext</option><option value="SASL_SSL">SASL + TLS</option></select></label>
+        <div id="k-sasl" hidden class="space-y-3">
+          <label class="k-label">SASL mechanism<select id="k-mechanism" class="k-input"><option>PLAIN</option><option>SCRAM-SHA-256</option><option>SCRAM-SHA-512</option></select></label>
+          <label class="k-label">Username<input id="k-username" class="k-input" autocomplete="username" /></label>
+          <label class="k-label">Password<input id="k-password" class="k-input" type="password" autocomplete="off" /></label>
+        </div>
+        <details id="k-tls" class="rounded-lg border border-slate-200 p-2 text-sm dark:border-slate-700"><summary class="cursor-pointer font-semibold">Certificate options</summary><div class="mt-3 space-y-3">
+          <label class="k-label">CA certificate PEM<textarea id="k-ca" class="k-input h-20 font-mono text-xs" spellcheck="false" placeholder="Optional custom CA"></textarea></label>
+          <label class="k-label">Client certificate PEM<textarea id="k-cert" class="k-input h-20 font-mono text-xs" spellcheck="false"></textarea></label>
+          <label class="k-label">Client private key PEM<textarea id="k-key" class="k-input h-20 font-mono text-xs" spellcheck="false"></textarea></label>
+          <label class="k-label">Key password<input id="k-key-password" class="k-input" type="password" autocomplete="off" /></label>
+        </div></details>
+        <button type="submit" id="k-connect" class="k-btn k-btn-primary w-full">Connect cluster</button>
+      </form>
+      <button type="button" id="k-disconnect" class="mt-2 w-full text-xs font-semibold text-slate-500 hover:text-rose-600 dark:text-slate-400" hidden>Disconnect</button>
+      <div class="mt-4 border-t border-slate-200 pt-3 text-xs leading-5 text-slate-500 dark:border-slate-700 dark:text-slate-400">
+        <p>Kafka connections run through Holy CORS on your computer. If your browser asks to access local services, allow it to connect to the bridge.</p>
+        <details class="mt-2"><summary class="cursor-pointer font-semibold text-indigo-600 dark:text-indigo-400">How to start Holy CORS</summary>
+          <p class="mt-2">Run the bridge and keep it open while using Kafka.</p>
+          <code class="mt-1 block break-all rounded bg-slate-100 p-2 text-[11px] dark:bg-slate-900">brew install bugdays-com/tap/holy-cors &amp;&amp; holy-cors</code>
+          <code class="mt-1 block break-all rounded bg-slate-100 p-2 text-[11px] dark:bg-slate-900">docker run --rm -p 127.0.0.1:2345:2345 ghcr.io/bugdays-com/holy-cors:latest</code>
+          <a href="https://github.com/bugdays-com/holy-cors/releases/latest" rel="noopener noreferrer" target="_blank" class="mt-1 inline-block font-semibold text-indigo-600 dark:text-indigo-400">Download a binary ↗</a>
+        </details>
+      </div>
+    </aside>
+
+    <main class="min-w-0 space-y-4">
+      <section class="k-card">
+        <div class="flex flex-wrap items-end gap-3">
+          <label class="k-label min-w-[200px] flex-1">Topic<select id="k-topic" class="k-input"><option value="">Connect to list topics</option></select></label>
+          {view === 'diagnostics' && <label class="k-label min-w-[200px] flex-1">Consumer group<select id="k-group" class="k-input"><option value="">Connect to list groups</option></select></label>}
+          <button type="button" id="k-refresh" class="k-btn k-btn-soft">Refresh</button>
+        </div>
+        <div id="k-topic-info" class="mt-3 text-xs text-slate-500 dark:text-slate-400"></div>
+      </section>
+
+      {view === 'client' ? <>
+        <section class="k-card">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><div><h2 class="text-base font-bold">Read messages</h2><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Manual partition read. This does not join or commit a consumer group.</p></div><button type="button" id="k-read" class="k-btn k-btn-primary" data-share-action="browse">Read messages</button></div>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label class="k-label">Partition<select id="k-partition" class="k-input"><option value="0">0</option></select></label>
+            <label class="k-label">Start at<select id="k-read-mode" class="k-input"><option value="latest">Latest messages</option><option value="earliest">Earliest retained</option><option value="offset">Exact offset</option><option value="time">Timestamp (UTC)</option></select></label>
+            <label id="k-start-wrap" class="k-label" hidden>Starting offset / UTC time<input id="k-start" class="k-input font-mono" placeholder="0" /></label>
+            <label class="k-label">Page size<input id="k-limit" class="k-input" type="number" min="1" max="200" value="50" /></label>
+          </div>
+          <div class="mt-3 flex flex-wrap items-end gap-3"><label id="k-read-end-offset-wrap" class="k-label min-w-48">Stop before offset<input id="k-read-end" class="k-input font-mono" inputmode="numeric" placeholder="Optional exclusive end" /></label><label id="k-read-end-time-wrap" class="k-label min-w-48" hidden>Stop before UTC time<input id="k-read-end-time" class="k-input font-mono" placeholder="2026-09-24T14:00" /></label><button type="button" id="k-next" class="k-btn k-btn-soft" hidden>Next page →</button><button type="button" id="k-export-all" class="k-btn k-btn-soft">Export retained · JSONL</button><label class="flex items-center gap-2 pb-1 text-xs font-medium text-slate-600 dark:text-slate-300"><input id="k-export-all-partitions" type="checkbox" />All partitions</label><button type="button" id="k-export-stop" class="k-btn k-btn-soft" hidden>Stop export</button><span id="k-read-meta" class="text-xs text-slate-500 dark:text-slate-400"></span></div>
+        </section>
+        <section class="k-card">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 class="text-base font-bold">Messages <span id="k-record-count" class="text-sm font-normal text-slate-500">0</span></h2><div class="flex gap-2"><button type="button" id="k-copy-json" class="k-btn k-btn-soft">Copy JSON</button><button type="button" id="k-export-json" class="k-btn k-btn-soft">Download JSON</button><button type="button" id="k-export-csv" class="k-btn k-btn-soft">CSV</button></div></div>
+          <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700"><table class="w-full min-w-[600px] text-left text-xs"><thead class="bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th class="p-2">Offset</th><th class="p-2">Partition</th><th class="p-2">Time</th><th class="p-2">Key</th><th class="p-2">Value preview</th><th class="p-2">Open</th></tr></thead><tbody id="k-records" class="divide-y divide-slate-100 dark:divide-slate-700"></tbody></table></div>
+          <div id="k-record-detail" class="mt-3" hidden></div>
+        </section>
+        <section class="k-card">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><div><h2 class="text-base font-bold">Replay messages</h2><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Copies original bytes, key, and headers. Single-message edits are available after opening a record.</p></div><button type="button" id="k-replay" class="k-btn k-btn-primary">Replay selected range</button></div>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label class="k-label">Destination<select id="k-replay-destination" class="k-input"><option value="same">This cluster</option><option value="other">Another cluster</option></select></label>
+            <label class="k-label">Destination topic<input id="k-replay-topic" class="k-input" spellcheck="false" placeholder="orders.retry" /></label>
+            <label class="k-label">Partition policy<select id="k-replay-policy" class="k-input"><option value="original">Keep source partition</option><option value="key">Route by key</option><option value="fixed">Choose partition</option></select></label>
+            <label id="k-replay-fixed-wrap" class="k-label" hidden>Destination partition<input id="k-replay-fixed" class="k-input" type="number" min="0" value="0" /></label>
+            <label class="k-label">From offset (inclusive)<input id="k-replay-start" class="k-input font-mono" inputmode="numeric" placeholder="0" /></label>
+            <label class="k-label">To offset (exclusive)<input id="k-replay-end" class="k-input font-mono" inputmode="numeric" placeholder="1" /></label>
+          </div>
+          <label class="mt-3 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"><input id="k-replay-timestamp" type="checkbox" /> Preserve original timestamp when broker permits it</label>
+          <div id="k-other-cluster" class="mt-3 grid gap-3 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 dark:bg-slate-900" hidden>
+            <label class="k-label">Destination bootstrap servers<input id="k-other-brokers" class="k-input" spellcheck="false" placeholder="other-broker:9092" /></label>
+            <label class="k-label">Security<select id="k-other-security" class="k-input"><option value="PLAINTEXT">Plaintext</option><option value="SSL">TLS</option><option value="SASL_PLAINTEXT">SASL plaintext</option><option value="SASL_SSL">SASL + TLS</option></select></label>
+            <label class="k-label">Mechanism<select id="k-other-mechanism" class="k-input"><option>PLAIN</option><option>SCRAM-SHA-256</option><option>SCRAM-SHA-512</option></select></label>
+            <label class="k-label">Username<input id="k-other-username" class="k-input" autocomplete="off" /></label>
+            <label class="k-label">Password<input id="k-other-password" class="k-input" type="password" autocomplete="off" /></label>
+            <label class="k-label">CA PEM<textarea id="k-other-ca" class="k-input h-16 font-mono text-xs"></textarea></label>
+            <label class="k-label">Client certificate PEM<textarea id="k-other-cert" class="k-input h-16 font-mono text-xs"></textarea></label>
+            <label class="k-label">Client key PEM<textarea id="k-other-key" class="k-input h-16 font-mono text-xs"></textarea></label>
+          </div>
+          <div class="mt-3 flex flex-wrap items-center gap-3"><button type="button" id="k-replay-stop" class="k-btn k-btn-soft" hidden>Stop replay</button><span id="k-replay-progress" class="text-xs text-slate-500 dark:text-slate-400">Review the destination and offset range before sending.</span></div>
+        </section>
+      </> : <>
+        <section class="k-card">
+          <div class="flex flex-wrap items-end justify-between gap-3"><div><h2 class="text-base font-bold">Group health</h2><p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Refresh or sample every 5 seconds to see which offsets advance.</p></div><div class="flex gap-2"><button type="button" id="k-sample" class="k-btn k-btn-primary">Take snapshot</button><button type="button" id="k-watch" class="k-btn k-btn-soft">Watch live</button></div></div>
+          <label class="k-label mt-4">Expected member host / client ID patterns <span class="font-normal text-slate-500">(optional, comma separated; * suffix supported)</span><input id="k-expected" class="k-input" placeholder="checkout-processor*, 10.4.*" /></label>
+          <div id="k-summary" class="mt-4 grid gap-2 sm:grid-cols-4"></div>
+          <div id="k-findings" class="mt-4 space-y-2"></div>
+        </section>
+        <section class="k-card"><div class="mb-3 flex flex-wrap items-center justify-between gap-2"><h2 class="text-base font-bold">Partition lag</h2><div class="flex gap-2"><button type="button" id="k-export-group" class="k-btn k-btn-soft">Export CSV</button><button type="button" id="k-print" class="k-btn k-btn-soft">Print / PDF</button></div></div><div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700"><table class="w-full min-w-[620px] text-left text-xs"><thead class="bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th class="p-2">Partition</th><th class="p-2">Committed</th><th class="p-2">Latest</th><th class="p-2">Lag</th><th class="p-2">Owner</th><th class="p-2">Replication</th><th class="p-2">Inspect</th></tr></thead><tbody id="k-lag-rows" class="divide-y divide-slate-100 dark:divide-slate-700"></tbody></table></div><p id="k-lag-note" class="mt-2 text-xs text-slate-500 dark:text-slate-400">Lag is the offset gap. Compacted or aborted records can make it different from a message count.</p></section>
+        <section id="k-compare-card" class="k-card" hidden><h2 class="text-base font-bold">Around the committed position</h2><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">The previous retained record and the next available record are clues. They do not prove which message failed in your application.</p><div id="k-compare" class="mt-3 grid gap-3 lg:grid-cols-2"></div></section>
+        <section class="k-card">
+          <h2 class="text-base font-bold">Move group offsets</h2><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Stop the consumer group first. Preview shows every partition’s current and new position; Kafka rejects changes if the group becomes active.</p>
+          <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <label class="k-label">Partitions<input id="k-reset-parts" class="k-input" placeholder="0,1,2 (blank = all)" /></label>
+            <label class="k-label">Move to<select id="k-reset-mode" class="k-input"><option value="to-offset">Exact offset</option><option value="to-earliest">Earliest retained</option><option value="to-latest">Latest</option><option value="to-current">Current / latest if unset</option><option value="shift-by">Shift by ±N</option><option value="to-datetime">UTC datetime</option><option value="by-duration">Duration ago</option><option value="from-file">CSV file offsets</option></select></label>
+            <label id="k-reset-value-wrap" class="k-label">Value<input id="k-reset-value" class="k-input font-mono" placeholder="Offset" /></label>
+            <label id="k-reset-file-wrap" class="k-label" hidden>CSV file<input id="k-reset-file" class="k-input" type="file" accept=".csv,text/csv" /></label>
+          </div>
+          <div class="mt-3 flex flex-wrap gap-2"><button type="button" id="k-preview" class="k-btn k-btn-primary">Preview offset change</button><button type="button" id="k-apply" class="k-btn k-btn-danger" hidden>Apply these offsets</button></div>
+          <div id="k-reset-preview" class="mt-3 text-sm" hidden></div>
+        </section>
+      </>}
+    </main>
+  </div>
+  <section class="k-card text-sm leading-6 text-slate-600 dark:text-slate-300">
+    {view === 'client' ? <><h2 class="font-bold text-slate-900 dark:text-white">How browsing and replay work</h2><p class="mt-1">Offsets identify positions within a partition. A range starts at the first offset you enter and stops before the end offset. A timestamp lookup starts at the first available record at or after that time. Kafka retention and compaction can leave gaps. For diagnosis, compare messages and headers with the <a href="/avro-converter/" class="k-link">Avro converter</a> or <a href="/protobuf-converter/" class="k-link">Protobuf converter</a>.</p><p class="mt-2">Read the <a href="/guides/browse-kafka-messages-by-offset-time/" class="k-link">offset and timestamp guide</a> or the <a href="/guides/replay-kafka-messages-between-topics/" class="k-link">replay guide</a>.</p></> : <><h2 class="font-bold text-slate-900 dark:text-white">How to read the signals</h2><p class="mt-1">The committed offset is the next position a consumer group will read. Lag compares it with the current end of each partition. A different member host, growing lag, or one unchanged commit is a lead to investigate, not proof of a root cause. Read the <a href="/guides/diagnose-kafka-consumer-lag-stuck-partition/" class="k-link">consumer lag guide</a> for a worked example, or inspect <a href="/kafka-client/" class="k-link">exact Kafka records</a>.</p></>}
+  </section>
+</div>
+
+<script>import '../scripts/kafka-workspace.ts';</script>
+
+<style is:global>
+  .kafka-workspace [hidden]{display:none!important}
+  .kafka-workspace .k-card{border:1px solid rgb(226 232 240);border-radius:1rem;background:white;padding:1rem;box-shadow:0 1px 3px rgb(15 23 42 / .04)}
+  .kafka-workspace .k-label{display:block;font-size:.75rem;font-weight:650;color:#475569}
+  .kafka-workspace .k-input{display:block;width:100%;min-width:0;margin-top:.35rem;border:1px solid #cbd5e1;border-radius:.6rem;background:white;padding:.55rem .7rem;color:#0f172a;font-size:.85rem;outline:none}
+  .kafka-workspace .k-input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgb(99 102 241 / .15)}
+  .kafka-workspace .k-btn{display:inline-flex;align-items:center;justify-content:center;gap:.3rem;border-radius:.6rem;padding:.52rem .8rem;font-size:.75rem;font-weight:700;white-space:nowrap;transition:background .15s,transform .15s}
+  .kafka-workspace .k-btn:hover{transform:translateY(-1px)}.kafka-workspace .k-btn:disabled{opacity:.55;cursor:wait;transform:none}
+  .kafka-workspace .k-btn-primary{background:#4f46e5;color:white}.kafka-workspace .k-btn-primary:hover{background:#4338ca}
+  .kafka-workspace .k-btn-soft{border:1px solid #cbd5e1;background:#fff;color:#334155}.kafka-workspace .k-btn-soft:hover{background:#f8fafc}
+  .kafka-workspace .k-btn-danger{background:#be123c;color:white}.kafka-workspace .k-btn-danger:hover{background:#9f1239}
+  .kafka-workspace .k-tab{border-radius:.5rem;padding:.5rem .7rem;color:#64748b}.kafka-workspace .k-tab:hover{background:#f1f5f9;color:#4338ca}.kafka-workspace .k-tab-active{background:#eef2ff;color:#4338ca}
+  .kafka-workspace .k-notice{border-radius:.75rem;border:1px solid #c7d2fe;background:#eef2ff;padding:.75rem 1rem;font-size:.8rem;color:#312e81}
+  .kafka-workspace .k-link{font-weight:700;color:#4f46e5;text-decoration:underline;text-underline-offset:2px}
+  .dark .kafka-workspace .k-card{border-color:#334155;background:#1e293b}
+  .dark .kafka-workspace .k-label{color:#cbd5e1}
+  .dark .kafka-workspace .k-input{border-color:#475569;background:#0f172a;color:#f8fafc}
+  .dark .kafka-workspace .k-btn-soft{border-color:#475569;background:#1e293b;color:#e2e8f0}
+  .dark .kafka-workspace .k-btn-soft:hover{background:#334155}
+  .dark .kafka-workspace .k-tab{color:#94a3b8}
+  .dark .kafka-workspace .k-tab-active{background:#312e81;color:#c7d2fe}
+  .dark .kafka-workspace .k-notice{border-color:#4338ca;background:#312e81;color:#e0e7ff}
+  .dark .kafka-workspace .k-link{color:#a5b4fc}
+  @media print{.kafka-workspace aside,.kafka-workspace nav,.kafka-workspace button,.kafka-workspace form,.kafka-workspace #k-compare-card,.kafka-workspace #k-reset-preview{display:none!important}.kafka-workspace .k-card{box-shadow:none;border-color:#ddd;color:#111;break-inside:avoid}.kafka-workspace{max-width:none}}
+</style>
