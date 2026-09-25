@@ -101,6 +101,7 @@ const { view } = Astro.props;
             <label class="k-label">CA PEM<textarea id="k-other-ca" class="k-input h-16 font-mono text-xs"></textarea></label>
             <label class="k-label">Client certificate PEM<textarea id="k-other-cert" class="k-input h-16 font-mono text-xs"></textarea></label>
             <label class="k-label">Client key PEM<textarea id="k-other-key" class="k-input h-16 font-mono text-xs"></textarea></label>
+            <label class="k-label">Client key password<input id="k-other-key-password" class="k-input" type="password" autocomplete="off" /></label>
           </div>
           <div class="mt-3 flex flex-wrap items-center gap-3"><button type="button" id="k-replay-stop" class="k-btn k-btn-soft" hidden>Stop replay</button><span id="k-replay-progress" class="text-xs text-slate-500 dark:text-slate-400">Review the destination and offset range before sending.</span></div>
         </section>

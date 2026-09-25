@@ -141,12 +141,16 @@ test('replay to another cluster uses a separate short-lived bridge session', asy
   await page.locator('#k-topic').selectOption('orders.events');
   await page.locator('#k-replay-destination').selectOption('other');
   await page.locator('#k-other-brokers').fill('destination:9092');
+  await page.locator('#k-other-security').selectOption('SSL');
+  await page.locator('#k-other-key-password').fill('test-only-key-password');
   await page.locator('#k-replay-topic').fill('orders.retry');
   await page.locator('#k-replay-start').fill('0');
   await page.locator('#k-replay-end').fill('1');
   await page.getByRole('button', { name: 'Replay selected range' }).click();
   await expect(page.locator('#k-message')).toContainText('1 message delivered');
   expect(calls.find(call => call.path === 'replay')?.body).toMatchObject({ sourceToken: 'source-token', destinationToken: 'destination-token' });
+  expect(calls.find(call => call.path === 'connect' && call.body.brokers === 'destination:9092')?.body).toMatchObject({ securityProtocol: 'SSL', keyPassword: 'test-only-key-password' });
+  await expect(page.locator('#k-other-key-password')).toBeEmpty();
   await expect.poll(() => calls.some(call => call.path === 'disconnect' && call.body.token === 'destination-token')).toBeTruthy();
 });
 

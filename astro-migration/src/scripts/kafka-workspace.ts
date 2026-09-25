@@ -92,13 +92,12 @@ function init(root: HTMLElement): void {
     return text;
   }
   function connectionFromForm(prefix = 'k'): KafkaConnection {
-    const other = prefix === 'k-other';
     const get = (name: string) => value(`${prefix}-${name}`);
     const securityProtocol = get('security');
     return {
       brokers: get('brokers'), securityProtocol,
       ...(securityProtocol.startsWith('SASL') ? { saslMechanism: get('mechanism'), username: get('username'), password: get('password') } : {}),
-      ...(securityProtocol.endsWith('SSL') ? { caPem: get('ca'), certificatePem: get(other ? 'cert' : 'cert'), keyPem: get('key'), ...(!other ? { keyPassword: get('key-password') } : {}) } : {}),
+      ...(securityProtocol.endsWith('SSL') ? { caPem: get('ca'), certificatePem: get('cert'), keyPem: get('key'), keyPassword: get('key-password') } : {}),
     };
   }
   async function metadata(): Promise<void> {
@@ -317,6 +316,7 @@ function init(root: HTMLElement): void {
           destinationToken = connected.token;
           id<HTMLInputElement>('k-other-password').value = '';
           id<HTMLTextAreaElement>('k-other-key').value = '';
+          id<HTMLInputElement>('k-other-key-password').value = '';
         }
         while (start < end && !replayStopped) {
           const limit = Number((end - start) > 200n ? 200n : end - start);
