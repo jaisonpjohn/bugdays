@@ -40,4 +40,4 @@ npm run build
 npx wrangler pages deploy dist --project-name=bugdays --branch=main
 ```
 
-Never commit API tokens, account credentials, local Wrangler state, production payloads, or user-submitted data. See `AGENTS.md` for implementation and release expectations.
+Never commit API tokens, account credentials, local Wrangler state, production payloads, or user-submitted data. See the repository-root `AGENTS.md` for implementation and release expectations.
