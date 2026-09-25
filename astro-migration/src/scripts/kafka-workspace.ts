@@ -16,6 +16,8 @@ function init(root: HTMLElement): void {
   const messageBox = id<HTMLElement>('k-message');
   let token = sessionToken();
   let demo = false;
+  let sourceConnected = false;
+  let connectedBrokers = '';
   let records: KafkaRecord[] = [];
   let selected: KafkaRecord | null = null;
   let includeSelected = false;
@@ -41,6 +43,13 @@ function init(root: HTMLElement): void {
     messageBox.style.backgroundColor = error ? 'rgba(244,63,94,.1)' : '';
   }
   const readableError = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Try again.';
+  function refreshReplaySource(): void {
+    if (view !== 'client') return;
+    id<HTMLElement>('k-replay-source-status').textContent = demo ? 'Sample only' : sourceConnected ? 'Connected' : 'Not connected';
+    id<HTMLElement>('k-replay-source-brokers').textContent = demo ? 'Sample data · no live cluster' : sourceConnected ? connectedBrokers || 'Connected via Holy CORS' : value('k-brokers') || 'Connect a cluster above';
+    const topic = value('k-topic');
+    id<HTMLElement>('k-replay-source-topic').textContent = topic ? `${topic} · partition ${value('k-partition')}` : 'Choose a topic above';
+  }
   function textNode(tag: string, content: string, className = ''): HTMLElement {
     const element = document.createElement(tag);
     element.textContent = content;
@@ -48,11 +57,14 @@ function init(root: HTMLElement): void {
     return element;
   }
   function setConnected(connected: boolean): void {
+    sourceConnected = connected;
+    if (!connected) connectedBrokers = '';
     const badge = id<HTMLElement>('k-connection-badge');
     badge.textContent = connected ? 'Connected' : 'Not connected';
     badge.className = connected ? 'rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' : 'rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300';
     id<HTMLElement>('k-disconnect').hidden = !connected;
     if (connected && view === 'diagnostics') id<HTMLButtonElement>('k-sample').disabled = false;
+    refreshReplaySource();
   }
   function download(content: string, name: string, type: string): void {
     const url = URL.createObjectURL(new Blob([content], { type }));
@@ -123,6 +135,7 @@ function init(root: HTMLElement): void {
       const select = id<HTMLSelectElement>('k-partition'); const old = select.value;
       select.replaceChildren(...info.partitions.map(p => new Option(`${p.partition} · ${p.earliest}–${p.latest}`, String(p.partition))));
       if (info.partitions.some(p => String(p.partition) === old)) select.value = old;
+      refreshReplaySource();
     }
     return info;
   }
@@ -131,7 +144,9 @@ function init(root: HTMLElement): void {
     event.preventDefault(); demo = false;
     const button = id<HTMLButtonElement>('k-connect'); button.disabled = true; button.textContent = 'Connecting…';
     try {
-      const response = await bridgePost<{ token: string; overview: { brokers: number; topics: number } }>('connect', connectionFromForm());
+      const connection = connectionFromForm();
+      const response = await bridgePost<{ token: string; overview: { brokers: number; topics: number } }>('connect', connection);
+      connectedBrokers = connection.brokers;
       token = response.token; saveSessionToken(token); setConnected(true);
       id<HTMLInputElement>('k-password').value = ''; id<HTMLTextAreaElement>('k-key').value = ''; id<HTMLInputElement>('k-key-password').value = '';
       announce(`Connected to ${response.overview.brokers} broker${response.overview.brokers === 1 ? '' : 's'}. Choose a topic to begin.`);
@@ -145,7 +160,7 @@ function init(root: HTMLElement): void {
     token = ''; clearSessionToken(); setConnected(false); announce('Disconnected. Your connection details were cleared from the local bridge.');
   });
   id<HTMLButtonElement>('k-refresh').addEventListener('click', async () => { try { await metadata(); await topicInfo(); if (view === 'diagnostics') await takeSnapshot(); } catch (error) { announce(readableError(error), true); } });
-  id<HTMLSelectElement>('k-topic').addEventListener('change', () => { invalidateReset(); topicInfo().catch(error => announce(readableError(error), true)); });
+  id<HTMLSelectElement>('k-topic').addEventListener('change', () => { invalidateReset(); refreshReplaySource(); topicInfo().catch(error => announce(readableError(error), true)); });
 
   async function start(): Promise<void> {
     const ready = await bridgeReady();
@@ -157,6 +172,14 @@ function init(root: HTMLElement): void {
   start();
 
   if (view === 'client') {
+    refreshReplaySource();
+    id<HTMLInputElement>('k-brokers').addEventListener('input', refreshReplaySource);
+    id<HTMLSelectElement>('k-partition').addEventListener('change', refreshReplaySource);
+    id<HTMLButtonElement>('k-replay-change-source').addEventListener('click', () => {
+      const brokers = id<HTMLInputElement>('k-brokers');
+      brokers.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      brokers.focus({ preventScroll: true });
+    });
     const table = id<HTMLElement>('k-records');
     const detail = id<HTMLElement>('k-record-detail');
     function renderRecords(): void {
@@ -296,7 +319,16 @@ function init(root: HTMLElement): void {
     id<HTMLButtonElement>('k-copy-json').addEventListener('click', async () => { await navigator.clipboard.writeText(JSON.stringify(records, null, 2)); announce(`${records.length} records copied as JSON.`); });
     id<HTMLButtonElement>('k-export-json').addEventListener('click', () => download(JSON.stringify(records, null, 2), 'kafka-messages.json', 'application/json'));
     id<HTMLButtonElement>('k-export-csv').addEventListener('click', () => download(csv([['topic','partition','offset','timestamp_ms','key_base64','value_base64','headers_json'], ...records.map(r => [r.topic,r.partition,r.offset,r.timestampMs,r.keyBase64,r.valueBase64,JSON.stringify(r.headers)])]), 'kafka-messages.csv', 'text/csv'));
-    id<HTMLSelectElement>('k-replay-destination').addEventListener('change', () => { id<HTMLElement>('k-other-cluster').hidden = value('k-replay-destination') !== 'other'; });
+    id<HTMLSelectElement>('k-replay-destination').addEventListener('change', () => {
+      const other = value('k-replay-destination') === 'other';
+      id<HTMLElement>('k-other-cluster').hidden = !other;
+      id<HTMLElement>('k-replay-same-note').hidden = other;
+    });
+    id<HTMLSelectElement>('k-other-security').addEventListener('change', () => {
+      const security = value('k-other-security');
+      id<HTMLElement>('k-other-sasl').hidden = !security.startsWith('SASL');
+      id<HTMLElement>('k-other-tls').hidden = !security.endsWith('SSL');
+    });
     id<HTMLSelectElement>('k-replay-policy').addEventListener('change', () => { id<HTMLElement>('k-replay-fixed-wrap').hidden = value('k-replay-policy') !== 'fixed'; });
     id<HTMLButtonElement>('k-replay-stop').addEventListener('click', () => { replayStopped = true; id<HTMLElement>('k-replay-progress').textContent = 'Stopping after the current batch…'; });
     id<HTMLButtonElement>('k-replay').addEventListener('click', async () => {
@@ -340,7 +372,7 @@ function init(root: HTMLElement): void {
       demo = true; records = sampleRecords; page = null; selected = null; detail.hidden = true;
       id<HTMLSelectElement>('k-topic').replaceChildren(new Option('orders.events · sample', 'orders.events'));
       id<HTMLSelectElement>('k-partition').replaceChildren(new Option('2 · sample', '2'));
-      renderRecords(); announce('Sample messages loaded. Connect a cluster to browse or replay live data.');
+      refreshReplaySource(); renderRecords(); announce('Sample messages loaded. Connect a cluster to browse or replay live data.');
     });
   } else {
     id<HTMLSelectElement>('k-group').addEventListener('change', invalidateReset);
@@ -471,6 +503,7 @@ function init(root: HTMLElement): void {
         records = restored as KafkaRecord[];
         if (typeof data.topic === 'string') id<HTMLSelectElement>('k-topic').replaceChildren(new Option(`${data.topic.slice(0, 150)} · shared`, data.topic.slice(0, 150)));
         if (typeof data.partition === 'string') id<HTMLSelectElement>('k-partition').replaceChildren(new Option(`${data.partition} · shared`, data.partition));
+        refreshReplaySource();
         id<HTMLElement>('k-records').replaceChildren();
         // A shared snapshot remains inert until the user connects their own bridge.
         id<HTMLElement>('k-record-count').textContent = `${records.length} shared`;

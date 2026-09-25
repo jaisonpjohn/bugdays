@@ -37,6 +37,8 @@ test('Kafka pages and worked guides are crawlable and internally linked', async 
 test('message sample is usable and shared link omits content by default', async ({ page }) => {
   await page.goto('/kafka-client/');
   await page.getByRole('button', { name: 'Try sample' }).click();
+  await expect(page.locator('#k-replay-source-status')).toHaveText('Sample only');
+  await expect(page.locator('#k-other-cluster')).toBeHidden();
   await expect(page.locator('#k-records tr')).toHaveCount(2);
   await expect(page.getByText('order-1028', { exact: false }).first()).toBeVisible();
   await page.getByRole('button', { name: 'Inspect ↗' }).first().click();
@@ -71,7 +73,13 @@ test('live Kafka browse and replay send exact ranges through the bridge', async 
   await page.locator('#k-brokers').fill('127.0.0.1:9092');
   await page.getByRole('button', { name: 'Connect cluster' }).click();
   await expect(page.locator('#k-connection-badge')).toHaveText('Connected');
+  await expect(page.locator('#k-replay-source-status')).toHaveText('Connected');
+  await expect(page.locator('#k-replay-source-brokers')).toHaveText('127.0.0.1:9092');
+  await page.locator('#k-brokers').fill('not-connected:9092');
+  await expect(page.locator('#k-replay-source-brokers')).toHaveText('127.0.0.1:9092');
+  await page.locator('#k-brokers').fill('127.0.0.1:9092');
   await page.locator('#k-topic').selectOption('orders.events');
+  await expect(page.locator('#k-replay-source-topic')).toHaveText('orders.events · partition 2');
   await page.locator('#k-read-mode').selectOption('offset');
   await page.locator('#k-start').fill('9310');
   await page.locator('#k-read-end').fill('9311');
@@ -84,6 +92,7 @@ test('live Kafka browse and replay send exact ranges through the bridge', async 
   await expect(page.locator('#k-message')).toContainText('1 message delivered');
   expect(calls.find(call => call.path === 'browse')?.body).toMatchObject({ partition: 2, offset: '9310', endExclusive: '9311' });
   expect(calls.find(call => call.path === 'replay')?.body).toMatchObject({ sourceTopic: 'orders.events', destinationTopic: 'orders.retry', partition: 2, offset: '9310', endExclusive: '9311' });
+  expect(calls.filter(call => call.path === 'connect')).toHaveLength(1);
 
   await page.getByRole('button', { name: 'Inspect ↗' }).click();
   await page.getByText('Edit this record for replay').click();
@@ -139,9 +148,17 @@ test('replay to another cluster uses a separate short-lived bridge session', asy
   await page.locator('#k-brokers').fill('source:9092');
   await page.getByRole('button', { name: 'Connect cluster' }).click();
   await page.locator('#k-topic').selectOption('orders.events');
+  await expect(page.locator('#k-other-cluster')).toBeHidden();
+  await expect(page.locator('#k-replay-same-note')).toBeVisible();
   await page.locator('#k-replay-destination').selectOption('other');
+  await expect(page.locator('#k-other-cluster')).toBeVisible();
+  await expect(page.locator('#k-replay-same-note')).toBeHidden();
+  await expect(page.locator('#k-other-sasl')).toBeHidden();
+  await expect(page.locator('#k-other-tls')).toBeHidden();
   await page.locator('#k-other-brokers').fill('destination:9092');
   await page.locator('#k-other-security').selectOption('SSL');
+  await expect(page.locator('#k-other-tls')).toBeVisible();
+  await page.locator('#k-other-tls summary').click();
   await page.locator('#k-other-key-password').fill('test-only-key-password');
   await page.locator('#k-replay-topic').fill('orders.retry');
   await page.locator('#k-replay-start').fill('0');
@@ -152,6 +169,29 @@ test('replay to another cluster uses a separate short-lived bridge session', asy
   expect(calls.find(call => call.path === 'connect' && call.body.brokers === 'destination:9092')?.body).toMatchObject({ securityProtocol: 'SSL', keyPassword: 'test-only-key-password' });
   await expect(page.locator('#k-other-key-password')).toBeEmpty();
   await expect.poll(() => calls.some(call => call.path === 'disconnect' && call.body.token === 'destination-token')).toBeTruthy();
+  await page.locator('#k-replay-destination').selectOption('same');
+  await expect(page.locator('#k-other-cluster')).toBeHidden();
+  await page.getByRole('button', { name: 'Replay selected range' }).click();
+  await expect(page.locator('#k-message')).toContainText('1 message delivered');
+  expect(calls.filter(call => call.path === 'connect')).toHaveLength(2);
+  expect(calls.filter(call => call.path === 'replay').at(-1)?.body.destinationToken).toBe('source-token');
+});
+
+test('destination credentials follow the selected Kafka security mode', async ({ page }) => {
+  await page.goto('/kafka-client/');
+  await page.locator('#k-replay-destination').selectOption('other');
+  await page.locator('#k-other-security').selectOption('SASL_SSL');
+  await expect(page.locator('#k-other-sasl')).toBeVisible();
+  await expect(page.locator('#k-other-tls')).toBeVisible();
+  await page.locator('#k-other-security').selectOption('SASL_PLAINTEXT');
+  await expect(page.locator('#k-other-sasl')).toBeVisible();
+  await expect(page.locator('#k-other-tls')).toBeHidden();
+  await page.locator('#k-other-security').selectOption('PLAINTEXT');
+  await expect(page.locator('#k-other-sasl')).toBeHidden();
+  await expect(page.locator('#k-other-tls')).toBeHidden();
+  await page.locator('#k-replay-change-source').click();
+  await expect(page.locator('#k-brokers')).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
 });
 
 test('diagnostic sample surfaces evidence and live offset change requires a preview', async ({ page }) => {
