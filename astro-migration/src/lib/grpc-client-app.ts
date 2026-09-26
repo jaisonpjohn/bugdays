@@ -3,6 +3,7 @@ import { ungzip } from 'pako';
 import {
   GrpcWebFrameDecoder,
   buildGrpcUrl,
+  canonicalRequestJson,
   decodeResponse,
   encodeRequest,
   frameGrpcMessage,
@@ -199,17 +200,35 @@ export function initGrpcClient() {
     if (!count) servicesList.textContent = 'No matching methods.';
   }
 
+  // Encode the request as the user types, so unknown fields and malformed values show up before
+  // Send. Nothing leaves the browser; this is the same validation Send performs.
+  let validationTimer: ReturnType<typeof setTimeout> | undefined;
+  function validateRequest() {
+    const status = byId('request-validation');
+    if (!selected) return;
+    if (selected.requestStream) {
+      status.textContent = 'Client-streaming and bidirectional calls need a native client; browser request streams are not portable.';
+      status.dataset.state = 'unsupported';
+      return;
+    }
+    try {
+      encodeRequest(selected.requestType, requestInput.value);
+      status.textContent = `Valid ${selected.requestType?.fullName?.replace(/^\./, '') || 'protobuf'} request, encoded in your browser. Proto field names or lowerCamelCase, RFC 3339 timestamps and "1.5s" durations are accepted.`;
+      status.dataset.state = 'valid';
+    } catch (error) {
+      status.textContent = error instanceof Error ? error.message : 'The request does not match the method.';
+      status.dataset.state = 'invalid';
+    }
+  }
+
   function selectMethod(method: any, keepBody = false) {
     selected = method;
     byId('selected-method').textContent = method.path;
     byId('method-type').textContent = methodKind(method);
     byId('method-signature').textContent = `${method.requestType?.fullName || '?'} → ${method.responseType?.fullName || '?'}`;
     if (!keepBody) requestInput.value = JSON.stringify(makeRequestTemplate(method.requestType), null, 2);
-    const unsupported = Boolean(method.requestStream);
-    sendButton.disabled = unsupported;
-    byId('request-validation').textContent = unsupported
-      ? 'Client-streaming and bidirectional calls need a native client; browser request streams are not portable.'
-      : `Validated and encoded as ${method.requestType?.fullName || 'protobuf'} in your browser.`;
+    sendButton.disabled = Boolean(method.requestStream);
+    validateRequest();
     renderMethods(byId<HTMLInputElement>('method-search').value);
   }
 
@@ -574,6 +593,10 @@ export function initGrpcClient() {
     parseSources();
   });
   byId<HTMLInputElement>('method-search').addEventListener('input', (event) => renderMethods((event.target as HTMLInputElement).value));
+  requestInput.addEventListener('input', () => {
+    clearTimeout(validationTimer);
+    validationTimer = setTimeout(validateRequest, 250);
+  });
   byId('format-request-btn').addEventListener('click', () => { try { requestInput.value = JSON.stringify(JSON.parse(requestInput.value), null, 2); clearError(); } catch { showError('Request body is not valid JSON.'); } });
   byId('add-metadata-btn').addEventListener('click', () => addMetadataRow());
   byId<HTMLSelectElement>('auth-type').addEventListener('change', (event) => {
@@ -616,7 +639,8 @@ export function initGrpcClient() {
       const flags = Object.entries(metadata).map(([key, value]) => `-H ${shellQuote(`${key}: ${value}`)}`).join(' ');
       const plaintext = /^http:\/\//i.test(endpointInput.value) || !/^https:\/\//i.test(endpointInput.value);
       const endpoint = endpointInput.value.replace(/^https?:\/\//, '').replace(/\/$/, '');
-      const command = `grpcurl ${plaintext ? '-plaintext ' : ''}${flags ? `${flags} ` : ''}-d ${shellQuote(requestInput.value)} ${shellQuote(endpoint)} ${shellQuote(selected.id)}`;
+      const body = canonicalRequestJson(selected.requestType, requestInput.value);
+      const command = `grpcurl ${plaintext ? '-plaintext ' : ''}${flags ? `${flags} ` : ''}-d ${shellQuote(body)} ${shellQuote(endpoint)} ${shellQuote(selected.id)}`;
       await navigator.clipboard.writeText(command);
       announce('grpcurl copied');
     } catch (error) { showError(error instanceof Error ? error.message : 'Could not copy grpcurl.'); }

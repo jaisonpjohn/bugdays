@@ -6,6 +6,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "test:grpc-client": "node scripts/check-grpc-client.mjs",
+    "test:grpc-json": "node --test tests/grpc-json.test.mjs",
     "test:api-guides": "node scripts/check-api-guides.mjs",
     "test:gzip-seo": "node scripts/check-gzip-seo.mjs",
     "test:urls": "node scripts/check-url-preservation.mjs",

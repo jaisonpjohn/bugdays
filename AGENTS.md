@@ -34,6 +34,7 @@ npm run test:ip-enrichment
 npm run test:traffic           # IP / access-log analysis
 npm run test:network-diagnostics
 npm run test:grpc-client
+npm run test:grpc-json         # proto loading and proto3 JSON mapping
 npm run test:gzip-seo          # these two read dist/, so build first
 npm run test:api-guides
 npx playwright test            # browser tests, desktop + mobile; starts the dev server itself
