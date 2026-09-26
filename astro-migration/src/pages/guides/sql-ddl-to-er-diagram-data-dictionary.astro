@@ -5,7 +5,7 @@ import { guideBySlug } from '../../lib/guides';
 const guide = guideBySlug('sql-ddl-to-er-diagram-data-dictionary');
 ---
 
-<GuideLayout guide={guide} keywords="DDL to ER diagram, SQL schema visualization, database data dictionary, PostgreSQL ERD from DDL, MySQL schema diagram, database documentation, foreign key diagram">
+<GuideLayout guide={guide} keywords="DDL to ER diagram, information_schema CSV to ER diagram, SQL schema visualization, database data dictionary, PostgreSQL ERD from DDL, MySQL schema diagram, foreign key diagram">
   <p>The most accurate database documentation is often trapped in the database itself: table definitions, keys, constraints, and comments. A stale diagram can still look convincing, which makes it dangerous. Starting from current DDL gives you an evidence-based picture without granting a diagramming service database access.</p>
 
   <blockquote><strong>The workflow:</strong> export schema definitions without data, parse tables and foreign keys into an ER diagram, add the business meaning SQL cannot express, and publish both the visual model and a searchable data dictionary.</blockquote>
@@ -16,6 +16,13 @@ const guide = guideBySlug('sql-ddl-to-er-diagram-data-dictionary');
   --file=schema.sql database_name</code></pre>
   <p><code>--schema-only</code> excludes table data. <code>--no-owner</code> and <code>--no-privileges</code> reduce deployment-specific noise when the goal is documentation. Review the output anyway: comments, object names, defaults, and extensions can reveal internal details.</p>
   <p>Other databases provide similar “DDL only” or “no data” export options through their command-line clients and administration tools. Prefer plain SQL containing <code>CREATE TABLE</code>, constraints, indexes, comments, and later <code>ALTER TABLE ... FOREIGN KEY</code> statements.</p>
+
+  <h2>When you have catalog access but cannot export DDL</h2>
+  <p>The <a href="/schema-explorer/">Schema Explorer</a> can also make an ER diagram from database catalog results. Open <strong>No DDL? Import column metadata</strong>, choose PostgreSQL, MySQL, SQL Server, Oracle, DB2, or SQLite, and copy its read-only column query into your database client. Export the result as CSV or JSON and paste it into the columns box. Run the separate foreign-key query and paste that result too if you want relationship lines. Column metadata without foreign keys still makes a table-and-column browser, but it cannot establish edges.</p>
+  <p>For your own CSV/JSON export, each column row needs <code>table_name</code> and <code>column_name</code>; <code>table_schema</code>, <code>data_type</code>, <code>ordinal_position</code>, <code>is_nullable</code>, <code>is_primary_key</code>, and <code>column_comment</code> improve the result. A relationship row supplies the source table and column, <code>foreign_table_name</code>, and ideally <code>foreign_column_name</code> and <code>constraint_name</code>. No database credentials or row data are required. Review catalog comments and defaults before making a public share link, since they can contain internal details.</p>
+
+  <h2>Navigate a large schema without a wall of boxes</h2>
+  <p>With more than 150 tables, the explorer opens a searchable table list first. Search a table or column, choose a table, and the diagram draws its one-hop neighborhood; switch to two hops when you need wider context. Filter by database schema to draw a smaller namespace as a whole. PostgreSQL child partitions are counted on their parent rather than repeated as separate diagram nodes. This keeps the first view useful even for large production catalogs.</p>
 
   <h2>A small schema already tells a story</h2>
   <pre><code>CREATE TABLE customers (
@@ -76,7 +83,7 @@ CREATE TABLE orders (
     <li>Keep sensitive examples and real row data out of the documentation artifact.</li>
   </ol>
 
-  <div class="guide-note"><p><strong>Why browser-only matters here:</strong> the Bug Days explorer parses pasted DDL locally and never connects to the database. You control exactly which definitions enter the workspace.</p></div>
+  <div class="guide-note"><p><strong>Why browser-only matters here:</strong> Bug Days parses pasted DDL and catalog exports locally; it never connects to your database. You control exactly which definitions enter the workspace. A data-embedded share link contains the schema you choose to share, so review it before sending it to anyone.</p></div>
 
   <a slot="related" href="/guides/convert-terminal-table-to-excel/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Rescue a terminal table</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Move command output into Excel, CSV, or a document.</span></a>
   <a slot="related" href="/guides/read-java-thread-dump-find-deadlock/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Diagnose a Java deadlock</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Read thread states, monitor ownership, and cycles.</span></a>

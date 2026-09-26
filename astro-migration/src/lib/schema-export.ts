@@ -1,7 +1,7 @@
 // Export generators for the Schema Explorer: Markdown data dictionary,
 // Mermaid ER diagram, and engine-specific COMMENT statements.
 
-import type { ParsedSchema, ParsedTable } from './schema-parser';
+import type { ParsedSchema, ParsedTable } from './schema-parser.ts';
 
 export interface Annotations {
   /** table key -> comment */
@@ -27,7 +27,8 @@ export function toMarkdown(schema: ParsedSchema, ann: Annotations): string {
   const lines: string[] = ['# Data Dictionary', ''];
   for (const t of schema.tables) {
     const tc = effectiveTableComment(t, ann);
-    lines.push(`## ${t.name}`);
+    lines.push(`## ${t.schema ? `${t.schema}.` : ''}${t.name}`);
+    if (t.partitionCount) lines.push('', `Partitioned table · ${t.partitionCount} child partitions`);
     if (tc) lines.push('', tc);
     lines.push('', '| Column | Type | Nullable | Key | Description |', '|---|---|---|---|---|');
     for (const c of t.columns) {
@@ -55,8 +56,21 @@ const mermaidType = (s: string) => s.replace(/\(.*\)/, '').trim().replace(/\s+/g
 
 export function toMermaid(schema: ParsedSchema, ann: Annotations): string {
   const lines: string[] = ['erDiagram'];
+  const nameCounts = new Map<string, number>();
+  for (const table of schema.tables) nameCounts.set(table.name.toLowerCase(), (nameCounts.get(table.name.toLowerCase()) ?? 0) + 1);
+  const identifiers = new Map<string, string>();
+  const used = new Set<string>();
+  for (const table of schema.tables) {
+    const base = mermaidIdent((nameCounts.get(table.name.toLowerCase()) ?? 0) > 1 && table.schema
+      ? `${table.schema}_${table.name}` : table.name);
+    let candidate = base;
+    let suffix = 2;
+    while (used.has(candidate)) candidate = `${base}_${suffix++}`;
+    used.add(candidate);
+    identifiers.set(table.key, candidate);
+  }
   for (const t of schema.tables) {
-    lines.push(`  ${mermaidIdent(t.name)} {`);
+    lines.push(`  ${identifiers.get(t.key)} {`);
     for (const c of t.columns) {
       const keys: string[] = [];
       if (c.isPrimaryKey) keys.push('PK');
@@ -68,15 +82,14 @@ export function toMermaid(schema: ParsedSchema, ann: Annotations): string {
     }
     lines.push('  }');
   }
-  const keyToName = new Map(schema.tables.map(t => [t.key, t.name]));
   for (const t of schema.tables) {
     for (const fk of t.foreignKeys) {
-      const target = keyToName.get(fk.refTable);
+      const target = identifiers.get(fk.refTable);
       if (!target) continue;
       // FK column nullable => optional relationship
       const col = t.columns.find(c => fk.columns.includes(c.name.toLowerCase()));
       const many = col?.nullable ? 'o{' : '|{';
-      lines.push(`  ${mermaidIdent(target)} ||--${many} ${mermaidIdent(t.name)} : "${fk.columns.join(', ')}"`);
+      lines.push(`  ${target} ||--${many} ${identifiers.get(t.key)} : "${fk.columns.join(', ')}"`);
     }
   }
   return lines.join('\n');
@@ -136,6 +149,7 @@ export function toJson(schema: ParsedSchema, ann: Annotations): string {
   const out = schema.tables.map(t => ({
     name: t.name,
     schema: t.schema,
+    partitionCount: t.partitionCount,
     comment: effectiveTableComment(t, ann) || undefined,
     primaryKey: t.primaryKey,
     columns: t.columns.map(c => ({

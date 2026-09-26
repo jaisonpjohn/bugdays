@@ -32,6 +32,8 @@ export interface ParsedTable {
   comment?: string;
   /** Source statements that involve this table: CREATE, ALTERs, COMMENT ON, indexes, triggers */
   ddl: string[];
+  /** Child partitions are represented on their parent rather than as diagram nodes. */
+  partitionCount?: number;
 }
 
 export interface ParsedSchema {
@@ -42,17 +44,79 @@ export interface ParsedSchema {
   fingerprint: string;
 }
 
+export function schemaFingerprint(tables: ParsedTable[]): string {
+  const canonical = tables
+    .map(table => `${table.key}(${table.columns.map(column => column.name.toLowerCase()).sort().join(',')})`)
+    .sort()
+    .join(';');
+  let hash = 5381;
+  for (let i = 0; i < canonical.length; i++) hash = ((hash << 5) + hash + canonical.charCodeAt(i)) | 0;
+  return (hash >>> 0).toString(36);
+}
+
 // ---------------------------------------------------------------------------
 // Statement splitting (string/comment/dollar-quote aware)
 // ---------------------------------------------------------------------------
 
-export function splitStatements(sql: string): string[] {
+function withoutRoutineBodies(sql: string): string {
+  const output: string[] = [];
+  let delimiter = ';';
+  let inRoutine = false;
+  const lines = sql.split(/\r?\n/);
+  for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
+    const line = lines[lineNumber];
+    const trimmed = line.trim();
+    const delimiterLine = /^DELIMITER\s+(\S+)/i.exec(trimmed);
+    if (delimiterLine && !inRoutine) { delimiter = delimiterLine[1]; continue; }
+    if (inRoutine) {
+      if (/^(?:GO(?:\s+\d+)?|\/)$/i.test(trimmed) ||
+          (delimiter !== ';' && trimmed.endsWith(delimiter)) ||
+          (delimiter === ';' && /^END\s*;$/i.test(trimmed))) {
+        inRoutine = false;
+        output.push(';');
+      }
+      continue;
+    }
+    if (/^CREATE\s+(?:(?:OR\s+(?:REPLACE|ALTER))\s+)?(?:(?:DEFINER\s*=\s*\S+)\s+)?(?:PROCEDURE|FUNCTION|TRIGGER|PACKAGE(?:\s+BODY)?)\b/i.test(trimmed)) {
+      // PostgreSQL dollar-quoted bodies are already atomic to splitStatements.
+      if (delimiter === ';' && /\bAS\s+\$[A-Za-z_]*\$/i.test(lines.slice(lineNumber, lineNumber + 12).join('\n'))) {
+        output.push(line);
+        continue;
+      }
+      inRoutine = true;
+      if ((delimiter !== ';' && trimmed.endsWith(delimiter)) || (delimiter === ';' && /(?:\bEND\s*;|\bEXECUTE\s+FUNCTION\b.*;)$/i.test(trimmed))) {
+        inRoutine = false;
+      }
+      output.push(';');
+      continue;
+    }
+    output.push(line);
+  }
+  return output.join('\n');
+}
+
+export function splitStatements(source: string): string[] {
+  const sql = withoutRoutineBodies(source);
   const statements: string[] = [];
   let current = '';
   let i = 0;
   const n = sql.length;
 
   while (i < n) {
+    if (i === 0 || sql[i - 1] === '\n') {
+      const end = sql.indexOf('\n', i);
+      const line = sql.slice(i, end < 0 ? n : end).trim();
+      if (/^(?:GO(?:\s+\d+)?|\/)$/i.test(line)) {
+        if (current.trim()) statements.push(current.trim());
+        current = '';
+        i = end < 0 ? n : end + 1;
+        continue;
+      }
+      if (!current.trim() && !line.endsWith(';') && /^(?:REM(?:ARK)?\b|PROMPT\b|PRO\b|SET\b|SPOOL\b|WHENEVER\b|@@?\S*|DEFINE\b|COLUMN\b)/i.test(line)) {
+        i = end < 0 ? n : end + 1;
+        continue;
+      }
+    }
     const ch = sql[i];
     const two = sql.substr(i, 2);
 
@@ -163,8 +227,17 @@ export function tableKey(raw: string): string {
   return name.toLowerCase();
 }
 
+function qualifiedKey(raw: string): string {
+  const parts = splitQualified(raw);
+  return parts.slice(-2).join('.').toLowerCase();
+}
+
+function findTable(tables: Map<string, ParsedTable>, raw: string): ParsedTable | undefined {
+  return tables.get(qualifiedKey(raw)) ?? tables.get(tableKey(raw));
+}
+
 function columnList(raw: string): string[] {
-  return raw.split(',').map(c => unquoteIdent(c.trim()).toLowerCase()).filter(Boolean);
+  return raw.split(',').map(c => unquoteIdent(c.trim().replace(/\s+(?:ASC|DESC)\b.*$/i, '')).toLowerCase()).filter(Boolean);
 }
 
 /** Split a parenthesized body on commas at depth 0 (string-aware) */
@@ -244,7 +317,7 @@ function parseColumnDef(def: string, warnings: string[], tableName: string): Par
   const refMatch = /references\s+([\w$#."`[\]]+)\s*(?:\(([^)]*)\))?/i.exec(flags);
   if (refMatch) {
     col.references = {
-      table: tableKey(refMatch[1]),
+      table: qualifiedKey(refMatch[1]),
       column: refMatch[2] ? columnList(refMatch[2])[0] : undefined,
     };
   }
@@ -256,7 +329,8 @@ function parseColumnDef(def: string, warnings: string[], tableName: string): Par
 }
 
 function parseCreateTable(stmt: string, warnings: string[]): ParsedTable | null {
-  const headMatch = /^create\s+(?:or\s+replace\s+)?(?:global\s+temporary\s+|local\s+temporary\s+|temporary\s+|temp\s+|unlogged\s+)?table\s+(?:if\s+not\s+exists\s+)?([\w$#."`[\]]+)\s*\(/i.exec(stmt);
+  if (/^create\s+(?:global\s+temporary|local\s+temporary|temporary|temp)\s+table\b/i.test(stmt)) return null;
+  const headMatch = /^create\s+(?:or\s+replace\s+)?(?:unlogged\s+)?table\s+(?:if\s+not\s+exists\s+)?([\w$#."`[\]]+)\s*\(/i.exec(stmt);
   if (!headMatch) return null;
 
   const rawName = headMatch[1];
@@ -320,7 +394,7 @@ function parseCreateTable(stmt: string, warnings: string[]): ParsedTable | null 
         table.foreignKeys.push({
           name: fkMatch[1] ? unquoteIdent(fkMatch[1]) : undefined,
           columns: columnList(fkMatch[2]),
-          refTable: tableKey(fkMatch[3]),
+          refTable: qualifiedKey(fkMatch[3]),
           refColumns: fkMatch[4] ? columnList(fkMatch[4]) : [],
         });
         continue;
@@ -369,8 +443,7 @@ function parseCreateTable(stmt: string, warnings: string[]): ParsedTable | null 
 function applyAlterTable(stmt: string, tables: Map<string, ParsedTable>, warnings: string[]) {
   const headMatch = /^alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?([\w$#."`[\]]+)\s+/i.exec(stmt);
   if (!headMatch) return;
-  const key = tableKey(headMatch[1]);
-  const table = tables.get(key);
+  const table = findTable(tables, headMatch[1]);
   if (!table) return; // FK to a table outside the pasted DDL — fine
 
   const rest = stmt.slice(headMatch[0].length);
@@ -382,7 +455,7 @@ function applyAlterTable(stmt: string, tables: Map<string, ParsedTable>, warning
     table.foreignKeys.push({
       name: m[1] ? unquoteIdent(m[1]) : undefined,
       columns: columnList(m[2]),
-      refTable: tableKey(m[3]),
+      refTable: qualifiedKey(m[3]),
       refColumns: m[4] ? columnList(m[4]) : [],
     });
   }
@@ -402,7 +475,7 @@ function applyAlterTable(stmt: string, tables: Map<string, ParsedTable>, warning
 function applyCommentOn(stmt: string, tables: Map<string, ParsedTable>) {
   const tblMatch = /^comment\s+on\s+table\s+([\w$#."`[\]]+)\s+is\s+('(?:[^']|'')*'|null)/i.exec(stmt);
   if (tblMatch) {
-    const table = tables.get(tableKey(tblMatch[1]));
+    const table = findTable(tables, tblMatch[1]);
     if (table && tblMatch[2].toLowerCase() !== 'null') table.comment = unquoteString(tblMatch[2]);
     return;
   }
@@ -411,8 +484,7 @@ function applyCommentOn(stmt: string, tables: Map<string, ParsedTable>) {
     const parts = splitQualified(colMatch[1]);
     if (parts.length < 2) return;
     const colName = parts[parts.length - 1].toLowerCase();
-    const tblName = parts[parts.length - 2].toLowerCase();
-    const table = tables.get(tblName);
+    const table = findTable(tables, parts.slice(0, -1).join('.'));
     const col = table?.columns.find(c => c.name.toLowerCase() === colName);
     if (col && colMatch[2].toLowerCase() !== 'null') col.comment = unquoteString(colMatch[2]);
   }
@@ -426,22 +498,44 @@ export function parseSchema(sql: string): ParsedSchema {
   const warnings: string[] = [];
   const tables = new Map<string, ParsedTable>();
   const statements = splitStatements(sql);
+  const partitions: Array<{ parent: string; child: string }> = [];
+  const parsedTables: ParsedTable[] = [];
 
   // Pass 1: tables
   for (const stmt of statements) {
     if (/^create\s/i.test(stmt)) {
+      const partition = /^create\s+table\s+(?:if\s+not\s+exists\s+)?([\w$#."`[\]]+)\s+partition\s+of\s+([\w$#."`[\]]+)/i.exec(stmt);
+      if (partition) {
+        partitions.push({ child: partition[1], parent: partition[2] });
+        continue;
+      }
       const table = parseCreateTable(stmt, warnings);
       if (table) {
-        if (tables.has(table.key)) warnings.push(`Duplicate table ${table.name} — later definition wins`);
         table.ddl.push(stmt + ';');
-        tables.set(table.key, table);
+        parsedTables.push(table);
+      } else if (/^create\s+(?:(?:or\s+replace|unlogged)\s+)?table\b/i.test(stmt)) {
+        const name = /^create\s+(?:(?:or\s+replace|unlogged)\s+)?table\s+(?:if\s+not\s+exists\s+)?([\w$#."`[\]]+)/i.exec(stmt)?.[1] ?? '(unnamed)';
+        warnings.push(`CREATE TABLE ${name}: unsupported or malformed definition — skipped`);
       }
+    } else if (/\bcreate\s+table\b/i.test(stmt)) {
+      const name = /\bcreate\s+table\s+([\w$#."`[\]]+)/i.exec(stmt)?.[1] ?? '(unnamed)';
+      warnings.push(`CREATE TABLE ${name}: not at a recognized statement boundary — skipped`);
     }
+  }
+
+  // Keep old unqualified keys where names are unique, preserving annotation
+  // fingerprints. Qualify only collisions (for example auth.users + app.users).
+  const counts = new Map<string, number>();
+  for (const table of parsedTables) counts.set(table.key, (counts.get(table.key) ?? 0) + 1);
+  for (const table of parsedTables) {
+    if ((counts.get(table.key) ?? 0) > 1 && table.schema) table.key = `${table.schema.toLowerCase()}.${table.key}`;
+    if (tables.has(table.key)) warnings.push(`Duplicate table ${table.schema ? `${table.schema}.` : ''}${table.name} — later definition wins`);
+    tables.set(table.key, table);
   }
 
   const attachDdl = (rawName: string | undefined, stmt: string) => {
     if (!rawName) return;
-    const table = tables.get(tableKey(rawName));
+    const table = findTable(tables, rawName);
     if (table) table.ddl.push(stmt + ';');
   };
 
@@ -450,6 +544,8 @@ export function parseSchema(sql: string): ParsedSchema {
     if (/^alter\s+table\s/i.test(stmt)) {
       applyAlterTable(stmt, tables, warnings);
       attachDdl(/^alter\s+table\s+(?:if\s+exists\s+)?(?:only\s+)?([\w$#."`[\]]+)/i.exec(stmt)?.[1], stmt);
+      const partition = /^alter\s+table\s+(?:only\s+)?([\w$#."`[\]]+)\s+attach\s+partition\s+([\w$#."`[\]]+)/i.exec(stmt);
+      if (partition) partitions.push({ parent: partition[1], child: partition[2] });
     } else if (/^comment\s+on\s/i.test(stmt)) {
       applyCommentOn(stmt, tables);
       const m = /^comment\s+on\s+(?:table|column)\s+([\w$#."`[\]]+)/i.exec(stmt);
@@ -467,7 +563,31 @@ export function parseSchema(sql: string): ParsedSchema {
     }
   }
 
+  // pg_dump creates children as ordinary tables, then attaches them later.
+  const attached = new Map<string, Set<string>>();
+  const partitionParent = new Map<string, string>();
+  for (const names of partitions) {
+    const parent = findTable(tables, names.parent)?.key;
+    const child = findTable(tables, names.child)?.key ?? qualifiedKey(names.child);
+    if (!parent) { warnings.push(`Partition ${names.child}: parent ${names.parent} is not in the pasted DDL`); continue; }
+    if (!attached.has(parent)) attached.set(parent, new Set());
+    attached.get(parent)!.add(child);
+    if (child !== parent) {
+      partitionParent.set(child, parent);
+      partitionParent.set(qualifiedKey(names.child), parent);
+      tables.delete(child);
+    }
+  }
+  for (const [parent, children] of attached) tables.get(parent)!.partitionCount = children.size;
+
   const list = [...tables.values()];
+  for (const table of list) {
+    for (const fk of table.foreignKeys) {
+      const target = findTable(tables, fk.refTable) ??
+        (table.schema ? tables.get(`${table.schema.toLowerCase()}.${tableKey(fk.refTable)}`) : undefined);
+      fk.refTable = partitionParent.get(fk.refTable) ?? target?.key ?? fk.refTable;
+    }
+  }
 
   // Note dangling FK targets (referenced table not in the paste)
   for (const t of list) {
@@ -478,16 +598,5 @@ export function parseSchema(sql: string): ParsedSchema {
     }
   }
 
-  // Fingerprint: structure only (names), so annotations survive comment edits
-  const canonical = list
-    .map(t => `${t.key}(${t.columns.map(c => c.name.toLowerCase()).sort().join(',')})`)
-    .sort()
-    .join(';');
-  let hash = 5381;
-  for (let i = 0; i < canonical.length; i++) {
-    hash = ((hash << 5) + hash + canonical.charCodeAt(i)) | 0;
-  }
-  const fingerprint = (hash >>> 0).toString(36);
-
-  return { tables: list, warnings, fingerprint };
+  return { tables: list, warnings, fingerprint: schemaFingerprint(list) };
 }

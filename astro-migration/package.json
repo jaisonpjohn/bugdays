@@ -10,6 +10,7 @@
     "test:gzip-seo": "node scripts/check-gzip-seo.mjs",
     "test:urls": "node scripts/check-url-preservation.mjs",
     "test:analytics": "node --test tests/analytics.test.mjs",
+    "test:schema-parser": "node --test tests/schema-parser.test.mjs tests/schema-view.test.mjs tests/schema-metadata.test.mjs",
     "refresh:ip-ranges": "node scripts/refresh-ip-ranges.mjs",
     "generate:ip-database": "node scripts/generate-ip-range-sql.mjs",
     "accept:ip-database-snapshot": "node scripts/accept-ip-range-snapshot.mjs",

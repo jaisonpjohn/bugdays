@@ -135,7 +135,7 @@ export const toolGroups: ToolGroup[] = [
     href: "/database-tools/",
     icon: "database",
     items: [
-      { name: "Schema Explorer", href: "/schema-explorer/", description: "ER diagram & data dictionary from DDL", keywords: ["erd", "er diagram", "entity relationship", "table relationships", "data dictionary", "postgres", "mysql", "oracle", "db2", "sql server", "ddl", "annotate"] },
+      { name: "Schema Explorer", href: "/schema-explorer/", description: "ER diagram & data dictionary from DDL or catalog CSV/JSON", keywords: ["erd", "er diagram", "entity relationship", "table relationships", "data dictionary", "postgres", "mysql", "oracle", "db2", "sql server", "ddl", "information schema", "csv", "annotate"] },
       { name: "DBeaver Decrypt", href: "/dbeaver-password-decrypter/", description: "Recover credentials-config.json", keywords: ["credentials", "recover", "database"] },
     ]
   },

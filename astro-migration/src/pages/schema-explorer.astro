@@ -6,20 +6,22 @@ const jsonLd = [
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "DDL to ER Diagram and Data Dictionary",
-    "description": "Turn SQL DDL into an interactive ER diagram, annotate tables and columns, and export Markdown documentation, Mermaid ERD, JSON, or database comment SQL.",
-    "url": "https://bugdays.com/schema-explorer",
+    "description": "Turn SQL DDL or exported database metadata into an interactive ER diagram, annotate tables and columns, and export Markdown, Mermaid, JSON, or comment SQL.",
+    "url": "https://bugdays.com/schema-explorer/",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any",
     "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
     "featureList": [
       "ER diagram from SQL DDL",
+      "ER diagram from information_schema CSV or JSON",
+      "Search and focus large database schemas",
       "Works with PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, DB2",
       "Table relationship visualization",
       "Annotate tables and columns with comments",
       "Export data dictionary as Markdown",
       "Export Mermaid ER diagram",
       "Generate COMMENT ON / extended property SQL",
-      "100% in-browser - schema never leaves your machine"
+      "Local parsing with optional user-initiated sharing"
     ]
   },
   {
@@ -31,7 +33,7 @@ const jsonLd = [
         "name": "How do I visualize my database schema online?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Export your schema as DDL (e.g. pg_dump --schema-only, mysqldump --no-data, or your IDE's 'Generate DDL'), paste it into the Schema Explorer or open the .sql file, and click Explore. An interactive ER diagram with all table relationships is drawn instantly in your browser."
+          "text": "Export schema-only DDL or catalog columns and foreign keys as CSV/JSON, then import them into Schema Explorer. Smaller schemas open as an interactive ER diagram; large schemas open as a searchable table list so you can focus on the relationships you need."
         }
       },
       {
@@ -39,7 +41,7 @@ const jsonLd = [
         "name": "Is it safe to paste my database schema here?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Yes. The DDL is parsed entirely in your browser with JavaScript. Your schema is never uploaded to any server."
+          "text": "DDL and catalog exports are parsed locally in your browser, without connecting to your database or uploading input automatically. If you choose a server-stored short share link, the selected schema and annotations are uploaded for that link."
         }
       },
       {
@@ -48,6 +50,14 @@ const jsonLd = [
         "acceptedAnswer": {
           "@type": "Answer",
           "text": "PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, DB2 and SQLite - the parser understands the common CREATE TABLE, ALTER TABLE ADD CONSTRAINT and COMMENT ON syntax emitted by each engine's dump tools."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Can I make an ER diagram without a DDL export?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Run the read-only catalog queries in your database client, export the column and optional foreign-key results as CSV or JSON, and import them locally. Foreign-key results are needed to draw relationship lines."
         }
       },
       {
@@ -64,9 +74,9 @@ const jsonLd = [
 ---
 
 <Layout
-  title="DDL to ER Diagram & Data Dictionary - Schema Explorer"
-  description="Paste PostgreSQL, MySQL, Oracle, SQL Server, DB2, or SQLite DDL to build an interactive ER diagram. Annotate columns and export Markdown, Mermaid, JSON, or comment SQL."
-  keywords="database schema explorer, ER diagram generator, erd online, visualize database schema, ddl to diagram, table relationships, data dictionary generator, postgres schema diagram, mysql er diagram, oracle schema visualization, database documentation tool"
+  title="SQL DDL or CSV to ER Diagram & Data Dictionary - Schema Explorer"
+  description="Visualize SQL DDL or information_schema CSV/JSON as an interactive ER diagram. Explore large schemas, annotate tables, and export Mermaid or a data dictionary locally."
+  keywords="database schema explorer, ER diagram generator, information_schema to er diagram, csv to er diagram, ddl to diagram, table relationships, data dictionary generator, postgres schema diagram, mysql er diagram, oracle schema visualization"
   breadcrumb={[{ name: "Database", href: "/database-tools/" }, { name: "Schema Explorer" }]}
   toolId="schema-explorer"
   jsonLd={jsonLd}
@@ -78,8 +88,8 @@ const jsonLd = [
   <div class="max-w-7xl mx-auto">
     <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-1">Database Schema Explorer</h1>
     <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">
-      Paste your DDL, get an interactive ER diagram. Works with PostgreSQL, MySQL, Oracle, SQL Server, DB2 &amp; SQLite —
-      <span class="text-green-600 dark:text-green-400 font-medium">your schema never leaves your browser</span>.
+      Paste SQL DDL or exported catalog rows to explore tables and relationships. PostgreSQL, MySQL, Oracle, SQL Server, DB2 &amp; SQLite —
+      <span class="text-green-600 dark:text-green-400 font-medium">parsed locally in your browser</span>.
     </p>
 
     <!-- Input card -->
@@ -92,7 +102,7 @@ const jsonLd = [
           Open File…
         </button>
         <input id="file-input" type="file" accept=".sql,.ddl,.txt,.dump" class="hidden" />
-        <button id="sample-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+        <button id="sample-btn" data-share-action="explore" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
           Load Sample
         </button>
         <button id="clear-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 rounded hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors text-sm font-medium">
@@ -151,6 +161,37 @@ CREATE TABLE orders (
 );"
         class="w-full p-4 font-mono text-sm bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset resize-y"
       ></textarea>
+      <details id="metadata-details" class="border-t border-gray-200 p-3 dark:border-slate-700">
+        <summary class="cursor-pointer text-sm font-semibold text-indigo-700 dark:text-indigo-300">No DDL? Import column metadata (CSV or JSON)</summary>
+        <p class="mt-2 text-xs text-slate-600 dark:text-slate-300">Run the read-only catalog queries in your own database client, export each result as CSV or JSON, then paste it here. Importing columns alone draws tables; add foreign keys to draw relationships. Files stay in this browser. <a href="/guides/sql-ddl-to-er-diagram-data-dictionary/" class="font-medium text-indigo-700 underline dark:text-indigo-300">Step-by-step guide</a></p>
+        <div class="mt-3 flex flex-wrap items-end gap-2">
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Database
+            <select id="metadata-engine" class="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+              <option value="postgres">PostgreSQL</option><option value="mysql">MySQL / MariaDB</option><option value="sqlserver">SQL Server</option><option value="oracle">Oracle</option><option value="db2">DB2</option><option value="sqlite">SQLite</option>
+            </select>
+          </label>
+          <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Query
+            <select id="metadata-query-kind" class="mt-1 block rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100">
+              <option value="columns">Columns + primary keys</option><option value="foreignKeys">Foreign keys</option>
+            </select>
+          </label>
+          <button id="copy-metadata-query" type="button" class="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300">Copy query</button>
+        </div>
+        <pre id="metadata-query" class="mt-2 max-h-40 overflow-auto rounded-lg bg-slate-50 p-2 font-mono text-[11px] text-slate-700 dark:bg-slate-900 dark:text-slate-300"></pre>
+        <div class="mt-3 grid gap-3 sm:grid-cols-2">
+          <label class="min-w-0 text-xs font-semibold text-slate-600 dark:text-slate-300">Columns CSV/JSON (required)
+            <textarea id="metadata-columns" data-share-key="metadata-columns" rows="5" spellcheck="false" placeholder="table_schema,table_name,column_name,data_type,ordinal_position,is_nullable,is_primary_key" class="mt-1 block w-full resize-y rounded-lg border border-slate-300 bg-white p-2 font-mono text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"></textarea>
+          </label>
+          <label class="min-w-0 text-xs font-semibold text-slate-600 dark:text-slate-300">Foreign keys CSV/JSON (optional)
+            <textarea id="metadata-foreign-keys" data-share-key="metadata-foreign-keys" rows="5" spellcheck="false" placeholder="table_schema,table_name,column_name,constraint_name,foreign_table_name,foreign_column_name" class="mt-1 block w-full resize-y rounded-lg border border-slate-300 bg-white p-2 font-mono text-xs text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"></textarea>
+          </label>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="import-metadata-btn" type="button" data-share-action="import" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Import metadata</button>
+          <label class="cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">Open columns file<input id="metadata-columns-file" type="file" accept=".csv,.json,text/csv,application/json" class="hidden" /></label>
+          <label class="cursor-pointer rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-200">Open foreign keys file<input id="metadata-foreign-keys-file" type="file" accept=".csv,.json,text/csv,application/json" class="hidden" /></label>
+        </div>
+      </details>
     </div>
 
     <!-- Error box -->
@@ -160,14 +201,29 @@ CREATE TABLE orders (
 
     <!-- Diagram section -->
     <div id="diagram-section" class="hidden">
+      <section class="mb-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800" aria-label="Browse schema tables">
+        <div class="flex flex-wrap items-center gap-2">
+          <span id="schema-stats" class="text-sm font-semibold text-slate-700 dark:text-slate-200"></span>
+          <button id="warnings-toggle" class="hidden text-xs font-semibold text-amber-700 hover:underline dark:text-amber-400"></button>
+          <div class="flex-1"></div>
+          <button type="button" title="Share this schema and your annotations. Review the link before sending it." class="share-trigger rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">Share schema ↗</button>
+        </div>
+        <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_180px_120px_auto] lg:items-end">
+          <label class="min-w-0 text-xs font-semibold text-slate-600 dark:text-slate-300">Find a table or column<input id="table-search" type="search" autocomplete="off" placeholder="Search names or columns…" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" /></label>
+          <label class="min-w-0 text-xs font-semibold text-slate-600 dark:text-slate-300">Schema<select id="schema-filter" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"><option value="">All schemas</option></select></label>
+          <label class="min-w-0 text-xs font-semibold text-slate-600 dark:text-slate-300">Focus depth<select id="focus-hops" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"><option value="1">1 hop</option><option value="2">2 hops</option></select></label>
+          <button id="show-schema-btn" type="button" class="rounded-lg border border-indigo-200 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40">Show schema diagram</button>
+        </div>
+        <p id="schema-browser-status" class="mt-2 text-xs text-slate-500 dark:text-slate-400"></p>
+        <div id="table-results" class="mt-2 grid max-h-52 gap-1 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3" hidden></div>
+        <div id="warnings-panel" class="hidden mt-3 max-h-36 overflow-y-auto rounded-lg bg-amber-50 p-3 text-xs text-amber-800 dark:bg-amber-900/20 dark:text-amber-300"></div>
+      </section>
       <div id="diagram-card" class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col">
         <!-- Diagram toolbar -->
         <div class="flex flex-wrap items-center gap-2 p-2.5 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 rounded-t-lg shrink-0">
-          <span id="schema-stats" class="text-sm text-slate-600 dark:text-slate-300 font-medium px-1"></span>
-          <button id="warnings-toggle" class="hidden text-xs text-amber-600 dark:text-amber-400 hover:underline"></button>
           <div class="flex-1"></div>
-          <button id="ddl-toggle" class="px-2 h-8 flex items-center justify-center rounded text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-xs font-medium" title="Show / hide the raw DDL editor">
-            Edit DDL
+          <button id="ddl-toggle" class="px-2 h-8 flex items-center justify-center rounded text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-xs font-medium" title="Show / hide the schema input">
+            Edit input
           </button>
           <div class="flex items-center gap-1">
             <button id="zoom-out-btn" title="Zoom out (⌘−)" class="w-8 h-8 flex items-center justify-center rounded text-slate-600 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors text-lg font-bold">−</button>
@@ -187,9 +243,6 @@ CREATE TABLE orders (
             Export
           </button>
         </div>
-
-        <!-- Warnings -->
-        <div id="warnings-panel" class="hidden p-3 border-b border-gray-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/20 text-xs text-amber-800 dark:text-amber-300 max-h-32 overflow-y-auto shrink-0"></div>
 
         <!-- Canvas + floating detail panel -->
         <div id="svg-wrap" class="relative min-w-0">
@@ -290,9 +343,9 @@ CREATE TABLE orders (
     <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100">Turn existing SQL DDL into useful database documentation</h2>
     <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-slate-300">This is a reverse-engineering workspace for schemas you already have. Paste <code class="text-xs">CREATE TABLE</code>, primary-key, foreign-key, and comment statements to produce an interactive entity-relationship diagram. Click a table to inspect its columns and follow incoming or outgoing relationships without connecting Bug Days to the database.</p>
     <div class="mt-5 grid md:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-slate-300">
-      <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Multi-dialect DDL parser</h3><p>Understands common PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, DB2, and SQLite schema syntax, including inline constraints and later <code class="text-xs">ALTER TABLE</code> foreign keys.</p></div>
+      <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">DDL or catalog export</h3><p>Paste a schema-only SQL dump, or import <code class="text-xs">information_schema</code> and database-catalog CSV/JSON results. Read-only queries for six engines help you export columns, keys, and relationships.</p></div>
       <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">ERD plus data dictionary</h3><p>The diagram is only the start. Add plain-language table and column annotations, then export a Markdown data dictionary, Mermaid ER diagram, JSON model, or dialect-specific database comments.</p></div>
-      <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Designed for real schemas</h3><p>Search tables, zoom and rearrange the canvas, isolate relationships, reopen raw table DDL, and keep annotations in local browser storage while you work.</p></div>
+      <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Designed for real schemas</h3><p>Search tables and columns, filter by schema, and draw one- or two-hop relationships instead of thousands of boxes at once. Child partitions fold into their parent, and local annotations stay available while you work.</p></div>
     </div>
     <p class="mt-5 text-sm text-gray-600 dark:text-slate-300">Follow the complete <a href="/guides/sql-ddl-to-er-diagram-data-dictionary/" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">DDL-to-ER-diagram and data-dictionary workflow</a>, or correlate connection names with the <a href="/dbeaver-password-decrypter/" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">DBeaver credentials-config.json recovery tool</a>. Need a diagram you can paste into documentation? Export Mermaid directly from this page.</p>
   </section>
@@ -337,18 +390,26 @@ CREATE TABLE orders (
 </style>
 
 <script>
-  import { track } from '../lib/analytics';
-  import { parseSchema, type ParsedSchema, type ParsedTable } from '../lib/schema-parser';
+  import { track } from '../lib/analytics.ts';
+  import { parseSchema, type ParsedSchema, type ParsedTable } from '../lib/schema-parser.ts';
+  import { parseMetadataSchema } from '../lib/schema-metadata.ts';
+  import { metadataQueries, type MetadataEngine } from '../lib/schema-metadata-queries.ts';
+  import { matchingTables, neighborhood, MAX_DIAGRAM_TABLES, MAX_TABLE_RESULTS } from '../lib/schema-view.ts';
   import {
     toMarkdown, toMermaid, toCommentSql, toJson,
     effectiveTableComment, effectiveColumnComment,
     type Annotations, type CommentDialect,
-  } from '../lib/schema-export';
-  import { ShareManager } from '../lib/share';
+  } from '../lib/schema-export.ts';
+  import { ShareManager } from '../lib/share.ts';
 
   // ---------- State ----------
   let schema: ParsedSchema | null = null;
+  let inputMode: 'ddl' | 'metadata' = 'ddl';
+  let visibleTables: ParsedTable[] = [];
+  let focusedTable: string | null = null;
+  let renderedCompact = false;
   let annotations: Annotations = { tables: {}, columns: {} };
+  let restoredAnnotations: Annotations | null = null;
   let positions = new Map<string, { x: number; y: number }>();
   let selection: { kind: 'table' | 'column'; table: string; column?: string } | null = null;
   let view = { x: 40, y: 40, k: 1 };
@@ -363,6 +424,7 @@ CREATE TABLE orders (
   const PAD_B = 6;
 
   const boxHeight = (t: ParsedTable) => HEADER_H + t.columns.length * ROW_H + PAD_B;
+  const drawnHeight = (t: ParsedTable) => renderedCompact ? HEADER_H + PAD_B : boxHeight(t);
 
   // ---------- DOM ----------
   const $ = (id: string) => document.getElementById(id)!;
@@ -396,7 +458,7 @@ CREATE TABLE orders (
   function autoLayout() {
     if (!schema) return;
     positions.clear();
-    const tables = schema.tables;
+    const tables = visibleTables;
     if (!tables.length) return;
     const byKey = new Map(tables.map(t => [t.key, t]));
 
@@ -557,7 +619,7 @@ CREATE TABLE orders (
   function fitToView() {
     if (!schema || !positions.size) return;
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const t of schema.tables) {
+    for (const t of visibleTables) {
       const p = positions.get(t.key)!;
       minX = Math.min(minX, p.x); minY = Math.min(minY, p.y);
       maxX = Math.max(maxX, p.x + BOX_W); maxY = Math.max(maxY, p.y + boxHeight(t));
@@ -573,6 +635,7 @@ CREATE TABLE orders (
 
   function applyView() {
     canvas.setAttribute('transform', `translate(${view.x},${view.y}) scale(${view.k})`);
+    if (visibleTables.length && renderedCompact !== (view.k < 0.45)) render();
   }
 
   function zoomBy(factor: number, cx?: number, cy?: number) {
@@ -630,6 +693,7 @@ CREATE TABLE orders (
 
   function render() {
     if (!schema) return;
+    renderedCompact = view.k < 0.45;
     canvas.innerHTML = '';
 
     const edgesGroup = svgEl<SVGGElement>('g');
@@ -638,9 +702,9 @@ CREATE TABLE orders (
     canvas.appendChild(tablesGroup);
 
     // Tables
-    for (const t of schema.tables) {
+    for (const t of visibleTables) {
       const p = positions.get(t.key)!;
-      const h = boxHeight(t);
+      const h = drawnHeight(t);
       const g = svgEl<SVGGElement>('g', { transform: `translate(${p.x},${p.y})`, 'data-table': t.key });
       (g as any).style.cursor = 'move';
 
@@ -664,8 +728,18 @@ CREATE TABLE orders (
         class: 'fill-white',
         'font-size': '12', 'font-weight': '600', 'font-family': 'ui-monospace, monospace',
       });
-      title.textContent = t.name.length > 26 ? t.name.slice(0, 25) + '…' : t.name;
+      const titleLimit = t.partitionCount ? 19 : 26;
+      title.textContent = t.name.length > titleLimit ? t.name.slice(0, titleLimit - 1) + '…' : t.name;
       g.appendChild(title);
+
+      if (t.partitionCount) {
+        const count = svgEl('text', { x: String(BOX_W - 9), y: String(HEADER_H / 2 + 4), 'text-anchor': 'end', 'font-size': '10', 'font-weight': '700', class: 'fill-indigo-100' });
+        count.textContent = `+${t.partitionCount}p`;
+        g.appendChild(count);
+        const partitionTip = svgEl('title');
+        partitionTip.textContent = `${t.partitionCount} child partitions folded into ${t.name}`;
+        header.appendChild(partitionTip);
+      }
 
       if (effectiveTableComment(t, annotations)) {
         const dot = svgEl('circle', { cx: String(BOX_W - 12), cy: String(HEADER_H / 2), r: '3.5', class: 'fill-amber-300' });
@@ -674,7 +748,7 @@ CREATE TABLE orders (
         g.appendChild(dot);
       }
 
-      t.columns.forEach((c, i) => {
+      if (!renderedCompact) t.columns.forEach((c, i) => {
         const y = HEADER_H + i * ROW_H;
         const rowSelected = selection?.kind === 'column' && selection.table === t.key && selection.column === c.name.toLowerCase();
         const row = svgEl<SVGGElement>('g', { 'data-table': t.key, 'data-column': c.name.toLowerCase() });
@@ -734,8 +808,8 @@ CREATE TABLE orders (
     }
 
     // Edges (grouped so path + source dot fade/highlight together)
-    const byKey = new Map(schema.tables.map(t => [t.key, t]));
-    for (const t of schema.tables) {
+    const byKey = new Map(visibleTables.map(t => [t.key, t]));
+    for (const t of visibleTables) {
       for (const fk of t.foreignKeys) {
         const target = byKey.get(fk.refTable);
         if (!target) continue;
@@ -743,7 +817,7 @@ CREATE TABLE orders (
         const sp = positions.get(t.key)!;
         const tp = positions.get(target.key)!;
         const colIdx = t.columns.findIndex(c => fk.columns.includes(c.name.toLowerCase()));
-        const sy = sp.y + (colIdx >= 0 ? HEADER_H + colIdx * ROW_H + ROW_H / 2 : HEADER_H / 2);
+        const sy = sp.y + (!renderedCompact && colIdx >= 0 ? HEADER_H + colIdx * ROW_H + ROW_H / 2 : HEADER_H / 2);
         const ty = tp.y + HEADER_H / 2;
 
         const sourceRight = tp.x + BOX_W / 2 >= sp.x + BOX_W / 2;
@@ -844,8 +918,9 @@ CREATE TABLE orders (
       $('detail-title').textContent = t.name;
       $('detail-subtitle').textContent = `${t.columns.length} columns${t.schema ? ` · schema: ${t.schema}` : ''}`;
       if (t.primaryKey.length) badge(`PK: ${t.primaryKey.join(', ')}`, 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300');
+      if (t.partitionCount) badge(`${t.partitionCount} partitions`, 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300');
       input.value = effectiveTableComment(t, annotations);
-      ddlBtn.classList.remove('hidden');
+      ddlBtn.classList.toggle('hidden', !t.ddl.length);
 
       const rows: HTMLElement[] = [];
       for (const fk of t.foreignKeys) {
@@ -890,6 +965,7 @@ CREATE TABLE orders (
   }
 
   function followTo(key: string) {
+    if (!visibleTables.some(table => table.key === key)) { focusOnTable(key); return; }
     selection = { kind: 'table', table: key };
     render();
     renderDetail();
@@ -902,23 +978,99 @@ CREATE TABLE orders (
     renderDetail();
   }
 
-  // ---------- Explore ----------
-  function explore() {
-    const input = ($('ddl-input') as HTMLTextAreaElement).value;
-    const errorBox = $('error-box');
-    const section = $('diagram-section');
+  // ---------- Searchable schema browser ----------
+  function renderTableResults() {
+    if (!schema) return;
+    const query = ($('table-search') as HTMLInputElement).value;
+    const scope = ($('schema-filter') as HTMLSelectElement).value;
+    const matches = matchingTables(schema, query, scope);
+    const results = $('table-results');
+    results.replaceChildren();
+    results.hidden = schema.tables.length <= MAX_DIAGRAM_TABLES && !query.trim() && !scope;
+    for (const table of matches.slice(0, MAX_TABLE_RESULTS)) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'min-w-0 rounded-lg border border-slate-200 px-2.5 py-2 text-left hover:border-indigo-300 hover:bg-indigo-50 dark:border-slate-700 dark:hover:border-indigo-700 dark:hover:bg-indigo-950/30';
+      const name = document.createElement('span');
+      name.className = 'block truncate font-mono text-xs font-semibold text-slate-800 dark:text-slate-100';
+      name.textContent = `${table.schema ? `${table.schema}.` : ''}${table.name}`;
+      const detail = document.createElement('span');
+      detail.className = 'block text-[11px] text-slate-500 dark:text-slate-400';
+      detail.textContent = `${table.columns.length} columns · ${table.foreignKeys.length} outgoing links${table.partitionCount ? ` · ${table.partitionCount} partitions` : ''}`;
+      button.append(name, detail);
+      button.addEventListener('click', () => focusOnTable(table.key));
+      results.appendChild(button);
+    }
+    const status = $('schema-browser-status');
+    if (focusedTable) status.textContent = `Focused on ${focusedTable}: ${visibleTables.length} related tables in the diagram. Search or choose another table to switch focus.`;
+    else if (visibleTables.length) status.textContent = `Showing ${visibleTables.length} tables in the diagram. Search to jump to a table, or choose a schema to narrow the view.`;
+    else status.textContent = `${matches.length} matching tables. Choose one to draw its relationships without loading the entire schema into the diagram.`;
+    if (!results.hidden && matches.length > MAX_TABLE_RESULTS) status.textContent += ` First ${MAX_TABLE_RESULTS} listed; type to narrow the search.`;
+    if (!results.hidden && !matches.length) status.textContent = 'No matching tables. Try a different name, column, or schema.';
+    const filterCount = matchingTables(schema, '', scope).length;
+    const show = $('show-schema-btn') as HTMLButtonElement;
+    show.disabled = filterCount > MAX_DIAGRAM_TABLES || filterCount === 0;
+    show.title = show.disabled ? `This view has ${filterCount} tables; choose one to draw a smaller neighborhood.` : '';
+    show.classList.toggle('opacity-50', show.disabled);
+  }
 
-    if (!input.trim()) {
-      errorBox.classList.remove('hidden');
-      $('error-text').textContent = 'Paste some DDL first (CREATE TABLE statements), or use Open File.';
-      section.classList.add('hidden');
+  function showDiagram(tables: ParsedTable[], focusKey: string | null = null) {
+    visibleTables = tables;
+    focusedTable = focusKey;
+    selection = focusKey ? { kind: 'table', table: focusKey } : null;
+    $('diagram-card').classList.remove('hidden');
+    view = { x: 40, y: 40, k: 1 };
+    autoLayout();
+    render();
+    renderDetail();
+    requestAnimationFrame(() => {
+      fitToView();
+      if (focusKey) {
+        view.k = Math.max(0.8, view.k);
+        applyView();
+        centerOn(focusKey);
+      }
+    });
+    renderTableResults();
+  }
+
+  function showFilteredDiagram() {
+    if (!schema) return;
+    const scope = ($('schema-filter') as HTMLSelectElement).value;
+    const tables = matchingTables(schema, '', scope);
+    if (tables.length > MAX_DIAGRAM_TABLES || !tables.length) {
+      visibleTables = [];
+      focusedTable = null;
+      selection = null;
+      positions.clear();
+      $('diagram-card').classList.add('hidden');
+      renderTableResults();
       return;
     }
+    showDiagram(tables);
+  }
 
-    const parsed = parseSchema(input);
+  function focusOnTable(key: string) {
+    if (!schema) return;
+    const hops = Number(($('focus-hops') as HTMLSelectElement).value) === 2 ? 2 : 1;
+    const all = neighborhood(schema, key, hops);
+    if (!all.length) return;
+    const selected = all.length > MAX_DIAGRAM_TABLES
+      ? [all.find(table => table.key === key)!, ...all.filter(table => table.key !== key).slice(0, MAX_DIAGRAM_TABLES - 1)]
+      : all;
+    showDiagram(selected, key);
+    if (all.length > selected.length) $('schema-browser-status').textContent += ` Showing ${selected.length} of ${all.length} related tables; use 1-hop focus to narrow it.`;
+  }
+
+  // ---------- Explore ----------
+  function showParsedSchema(parsed: ParsedSchema) {
+    const errorBox = $('error-box');
+    const section = $('diagram-section');
     if (!parsed.tables.length) {
       errorBox.classList.remove('hidden');
-      $('error-text').textContent = 'No CREATE TABLE statements found. Check that your DDL contains table definitions (see "How do I get my DDL?").';
+      $('error-text').textContent = parsed.warnings.length
+        ? `No tables could be read. ${parsed.warnings.slice(0, 3).join(' ')}`
+        : 'No CREATE TABLE statements found. Check that your DDL contains table definitions (see "How do I get my DDL?").';
       section.classList.add('hidden');
       return;
     }
@@ -927,29 +1079,74 @@ CREATE TABLE orders (
     schema = parsed;
     selection = null;
     loadAnnotations();
-    autoLayout();
+    if (restoredAnnotations) {
+      annotations = restoredAnnotations;
+      restoredAnnotations = null;
+    }
     section.classList.remove('hidden');
 
     // Reclaim real estate: hide the editor once the diagram is up
     $('input-card').classList.add('hidden');
 
-    const nFks = parsed.tables.reduce((s, t) => s + t.foreignKeys.filter(fk => parsed.tables.some(x => x.key === fk.refTable)).length, 0);
-    $('schema-stats').textContent = `${parsed.tables.length} tables · ${nFks} relationships`;
+    const keys = new Set(parsed.tables.map(table => table.key));
+    const nFks = parsed.tables.reduce((count, table) => count + table.foreignKeys.filter(fk => keys.has(fk.refTable)).length, 0);
+    const nPartitions = parsed.tables.reduce((count, table) => count + (table.partitionCount ?? 0), 0);
+    $('schema-stats').textContent = `${parsed.tables.length} table${parsed.tables.length === 1 ? '' : 's'}${nPartitions ? ` · ${nPartitions} partitions` : ''} · ${nFks} relationship${nFks === 1 ? '' : 's'}`;
+    const schemas = [...new Set(parsed.tables.map(table => table.schema).filter((name): name is string => Boolean(name)))].sort();
+    ($('schema-filter') as HTMLSelectElement).replaceChildren(new Option('All schemas', ''), ...schemas.map(name => new Option(name, name)));
+    ($('table-search') as HTMLInputElement).value = '';
 
     const wToggle = $('warnings-toggle');
     const wPanel = $('warnings-panel');
     if (parsed.warnings.length) {
       wToggle.classList.remove('hidden');
       wToggle.textContent = `${parsed.warnings.length} warning${parsed.warnings.length > 1 ? 's' : ''}`;
-      wPanel.innerHTML = parsed.warnings.map(w => `<p>• ${w.replace(/</g, '&lt;')}</p>`).join('');
+      wPanel.replaceChildren(...parsed.warnings.slice(0, 100).map(warning => {
+        const line = document.createElement('p');
+        line.textContent = `• ${warning}`;
+        return line;
+      }));
     } else {
       wToggle.classList.add('hidden');
       wPanel.classList.add('hidden');
     }
 
-    render();
-    renderDetail();
-    requestAnimationFrame(fitToView);
+    showFilteredDiagram();
+  }
+
+  function showInputError(message: string) {
+    $('error-box').classList.remove('hidden');
+    $('error-text').textContent = message;
+    $('diagram-section').classList.add('hidden');
+  }
+
+  function explore() {
+    const input = ($('ddl-input') as HTMLTextAreaElement).value;
+    if (!input.trim()) {
+      showInputError('Paste some DDL first (CREATE TABLE statements), or use Open File.');
+      return;
+    }
+    inputMode = 'ddl';
+    ShareManager.setLastAction('explore');
+    showParsedSchema(parseSchema(input));
+  }
+
+  function importMetadata() {
+    const columns = ($('metadata-columns') as HTMLTextAreaElement).value;
+    const foreignKeys = ($('metadata-foreign-keys') as HTMLTextAreaElement).value;
+    try {
+      const parsed = parseMetadataSchema(columns, foreignKeys);
+      inputMode = 'metadata';
+      ShareManager.setLastAction('import');
+      showParsedSchema(parsed);
+    }
+    catch (error) { showInputError(error instanceof Error ? error.message : 'Could not read the catalog export.'); }
+  }
+
+  function updateMetadataQuery() {
+    const engine = ($('metadata-engine') as HTMLSelectElement).value as MetadataEngine;
+    const kind = ($('metadata-query-kind') as HTMLSelectElement).value as 'columns' | 'foreignKeys';
+    $('metadata-query').textContent = metadataQueries[engine]?.[kind] ?? '';
   }
 
   // ---------- Interaction: drag / pan / zoom / select ----------
@@ -1102,6 +1299,18 @@ CREATE TABLE orders (
 
   // ---------- Toolbar ----------
   $('explore-btn').addEventListener('click', explore);
+  $('import-metadata-btn').addEventListener('click', importMetadata);
+  $('metadata-engine').addEventListener('change', updateMetadataQuery);
+  $('metadata-query-kind').addEventListener('change', updateMetadataQuery);
+  $('copy-metadata-query').addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($('metadata-query').textContent || '');
+      const button = $('copy-metadata-query');
+      button.textContent = 'Copied!';
+      setTimeout(() => { button.textContent = 'Copy query'; }, 1500);
+    } catch { showInputError('Could not copy the query. Select it above and copy manually.'); }
+  });
+  updateMetadataQuery();
   $('ddl-toggle').addEventListener('click', () => {
     const card = $('input-card');
     const nowHidden = card.classList.toggle('hidden');
@@ -1110,13 +1319,24 @@ CREATE TABLE orders (
   });
   $('clear-btn').addEventListener('click', () => {
     ($('ddl-input') as HTMLTextAreaElement).value = '';
+    ($('metadata-columns') as HTMLTextAreaElement).value = '';
+    ($('metadata-foreign-keys') as HTMLTextAreaElement).value = '';
     $('diagram-section').classList.add('hidden');
     $('error-box').classList.add('hidden');
     if (focusMode) toggleFocus();
     schema = null;
+    restoredAnnotations = null;
+    inputMode = 'ddl';
+    visibleTables = [];
+    focusedTable = null;
+    positions.clear();
   });
   $('howto-toggle').addEventListener('click', () => $('howto-panel').classList.toggle('hidden'));
   $('warnings-toggle').addEventListener('click', () => $('warnings-panel').classList.toggle('hidden'));
+  $('table-search').addEventListener('input', renderTableResults);
+  $('schema-filter').addEventListener('change', showFilteredDiagram);
+  $('focus-hops').addEventListener('change', () => { if (focusedTable) focusOnTable(focusedTable); });
+  $('show-schema-btn').addEventListener('click', showFilteredDiagram);
   $('zoom-in-btn').addEventListener('click', () => zoomBy(1.25));
   $('zoom-out-btn').addEventListener('click', () => zoomBy(1 / 1.25));
   $('zoom-fit-btn').addEventListener('click', fitToView);
@@ -1135,6 +1355,17 @@ CREATE TABLE orders (
     };
     reader.readAsText(file);
   });
+  for (const [fileId, textareaId] of [['metadata-columns-file', 'metadata-columns'], ['metadata-foreign-keys-file', 'metadata-foreign-keys']] as const) {
+    $(fileId).addEventListener('change', async () => {
+      const input = $(fileId) as HTMLInputElement;
+      const file = input.files?.[0];
+      if (!file) return;
+      if (file.size > 10 * 1024 * 1024) { showInputError('Metadata files are limited to 10 MB. Export one schema at a time.'); input.value = ''; return; }
+      try { ($(textareaId) as HTMLTextAreaElement).value = await file.text(); }
+      catch { showInputError('Could not open that file. Try a UTF-8 CSV or JSON export.'); }
+      input.value = '';
+    });
+  }
 
   // ---------- Export ----------
   const exportModal = $('export-modal');
@@ -1244,6 +1475,23 @@ COMMENT ON TABLE payments IS 'One row per payment attempt; captured_at is null u
   // ---------- Share integration ----------
   ShareManager.register({
     tool: 'schema-explorer',
-    actions: { explore },
+    actions: { explore, import: importMetadata },
+    customCollect: () => ({
+      ...(inputMode === 'metadata'
+        ? { 'metadata-columns': ($('metadata-columns') as HTMLTextAreaElement).value, 'metadata-foreign-keys': ($('metadata-foreign-keys') as HTMLTextAreaElement).value }
+        : { ddl: ($('ddl-input') as HTMLTextAreaElement).value }),
+      ...(Object.keys(annotations.tables).length || Object.keys(annotations.columns).length ? { annotations } : {}),
+    }),
+    customRestore: data => {
+      if (typeof data.ddl === 'string') ($('ddl-input') as HTMLTextAreaElement).value = data.ddl;
+      if (typeof data['metadata-columns'] === 'string') ($('metadata-columns') as HTMLTextAreaElement).value = data['metadata-columns'];
+      if (typeof data['metadata-foreign-keys'] === 'string') ($('metadata-foreign-keys') as HTMLTextAreaElement).value = data['metadata-foreign-keys'];
+      if (data.annotations && typeof data.annotations === 'object') {
+        const strings = (value: unknown): Record<string, string> => value && typeof value === 'object' && !Array.isArray(value)
+          ? Object.fromEntries(Object.entries(value).filter(([key, note]) => key.length < 300 && typeof note === 'string' && note.length < 20_000))
+          : {};
+        restoredAnnotations = { tables: strings(data.annotations.tables), columns: strings(data.annotations.columns) };
+      }
+    },
   });
 </script>

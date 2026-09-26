@@ -55,6 +55,11 @@ export function register(config: ToolConfig) {
   toolConfigs.set(config.tool, config);
 }
 
+/** Record an action performed programmatically (for example after opening a local file). */
+export function setLastAction(action: string) {
+  lastAction = action;
+}
+
 /**
  * Collect state from all [data-share-key] elements
  */
@@ -358,6 +363,7 @@ export function formatBytes(bytes: number): string {
 export const ShareManager = {
   init,
   register,
+  setLastAction,
   collectState,
   restoreState,
   prepareShare,
