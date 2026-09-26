@@ -15,8 +15,8 @@ const jsonLd = [
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: 'SOAP API Client - Online WSDL Tester',
-    description: 'Private browser-based SOAP client with WSDL import, direct XML requests, Basic authentication, custom headers, and detailed response inspection.',
-    url: 'https://bugdays.com/soap-client',
+    description: 'Browser SOAP client with WSDL and XSD imports, schema-based request generation, WS-Security UsernameToken, local saved requests, and response inspection.',
+    url: 'https://bugdays.com/soap-client/',
     applicationCategory: 'DeveloperApplication',
     operatingSystem: 'Any',
     offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
@@ -25,6 +25,9 @@ const jsonLd = [
       'Direct SOAP request mode',
       'SOAP 1.1 and SOAP 1.2 support',
       'Generated XML request envelopes',
+      'Nested XSD types, imports, document and RPC bindings',
+      'WS-Security UsernameToken with password text or digest',
+      'Local saved requests and opt-in history',
       'Basic authentication and custom HTTP headers',
       'Response body, headers, timing, and SOAP Fault inspection',
       'Private direct-to-endpoint requests',
@@ -47,7 +50,7 @@ const jsonLd = [
         name: 'Does Bug Days receive my SOAP payload or credentials?',
         acceptedAnswer: {
           '@type': 'Answer',
-          text: 'No. Normal test requests go from your browser directly to the endpoint you specify. Basic-auth fields and custom HTTP headers stay in the current page. Sharing is a separate explicit action, and users should review request XML for embedded secrets before sharing.',
+          text: 'No. Requests go from your browser to your endpoint, optionally through your own local bridge. Basic and WS-Security credentials are never saved or shared; SOAP headers are stripped from saved requests and share links. Review the body before sharing because it may contain your own sensitive values.',
         },
       },
       {
@@ -64,9 +67,9 @@ const jsonLd = [
 ---
 
 <Layout
-  title="Online SOAP Client & WSDL Tester for SOAP 1.1/1.2"
-  description="Import a WSDL, generate SOAP 1.1 or 1.2 envelopes, send XML requests with auth and headers, and inspect faults and responses. No install; optional local CORS bridge."
-  keywords="SOAP client, WSDL tester, SOAP API tester, online SOAP client, SOAP request builder, WSDL parser, XML web service, SOAP envelope generator, SOAP 1.1, SOAP 1.2, SOAP response viewer"
+  title="Online SOAP Client & WSDL Tester with XSD Request Builder"
+  description="Generate SOAP 1.1/1.2 requests from WSDL and imported XSD types, test RPC or document services, add WS-Security UsernameToken, and save requests locally."
+  keywords="SOAP client, WSDL tester, SOAP request builder from WSDL, XSD import SOAP, JAX-WS SOAP client, RPC SOAP tester, WS-Security UsernameToken, SOAP 1.1, SOAP 1.2"
   breadcrumb={[{ name: 'Network Tools', href: '/network-tools/' }, { name: 'SOAP Client' }]}
   toolId="soap-client"
   jsonLd={jsonLd}
@@ -100,11 +103,11 @@ const jsonLd = [
       </div>
       <div class="p-3 flex items-start gap-2.5 border-b md:border-b-0 md:border-r border-emerald-200 dark:border-emerald-900">
         <svg class="w-5 h-5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Zm10-10V7a4 4 0 0 0-8 0v4"/></svg>
-        <div><strong class="text-emerald-900 dark:text-emerald-100">Credential handling</strong><p class="text-xs text-emerald-800 dark:text-emerald-200 mt-0.5">Basic-auth fields stay in this tab; review XML before sharing.</p></div>
+        <div><strong class="text-emerald-900 dark:text-emerald-100">Credential handling</strong><p class="text-xs text-emerald-800 dark:text-emerald-200 mt-0.5">Auth fields stay in this tab; review the SOAP body before sharing.</p></div>
       </div>
       <div class="p-3 flex items-start gap-2.5">
         <svg class="w-5 h-5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7Z"/></svg>
-        <div><strong class="text-emerald-900 dark:text-emerald-100">No saved history</strong><p class="text-xs text-emerald-800 dark:text-emerald-200 mt-0.5">Refresh or close the tab to clear the in-memory session.</p></div>
+        <div><strong class="text-emerald-900 dark:text-emerald-100">Local workspace</strong><p class="text-xs text-emerald-800 dark:text-emerald-200 mt-0.5">Save requests here; history is opt-in. Auth fields and SOAP headers are excluded.</p></div>
       </div>
     </div>
 
@@ -135,11 +138,13 @@ const jsonLd = [
           <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
             <label for="wsdl-xml" class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">WSDL XML</label>
             <label class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-200 hover:border-indigo-400">
-              Open .wsdl or .xml
-              <input id="wsdl-file" type="file" accept=".wsdl,.xml,text/xml,application/xml" class="hidden" />
+              Open WSDL + XSD files
+              <input id="wsdl-file" type="file" multiple accept=".wsdl,.xsd,.xml,text/xml,application/xml" class="hidden" />
             </label>
           </div>
           <textarea id="wsdl-xml" class="w-full h-44 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-xs bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100 resize-y" placeholder="Paste the WSDL document here…" spellcheck="false"></textarea>
+          <div class="mt-2 flex flex-wrap items-center gap-2"><button id="add-xsd-btn" type="button" class="rounded-md border border-indigo-200 px-2.5 py-1.5 text-xs font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300">+ Add pasted XSD</button><span id="local-schema-count" class="text-xs text-slate-500 dark:text-slate-400"></span></div>
+          <div id="pasted-schemas" class="mt-2 space-y-2"></div>
           <button id="parse-xml-btn" type="button" class="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-semibold">Use pasted contract</button>
         </div>
       </div>
@@ -165,6 +170,7 @@ const jsonLd = [
     </section>
 
     <div id="error-box" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-200 whitespace-pre-wrap" role="alert"></div>
+    <div id="contract-warnings" class="hidden mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200" role="status"></div>
     <div id="loading" class="hidden mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2" role="status">
       <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.4 0 0 5.4 0 12h4Zm2 5.3A8 8 0 0 1 4 12H0c0 3 1.1 5.8 3 7.9l3-2.6Z"></path></svg>
       <span id="loading-text">Loading…</span>
@@ -202,7 +208,7 @@ const jsonLd = [
               <span id="session-mode-badge" class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Manual</span>
               <h2 id="selected-operation" class="font-semibold text-gray-800 dark:text-slate-100 truncate">New SOAP request</h2>
             </div>
-            <span id="request-security-note" class="text-[11px] text-slate-500 dark:text-slate-400">Basic-auth fields and HTTP headers are excluded from share links</span>
+            <span id="request-security-note" class="text-[11px] text-slate-500 dark:text-slate-400">Auth fields and SOAP headers are excluded from saves and shares; review endpoint and body</span>
           </div>
 
           <div class="p-3 border-b border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
@@ -218,18 +224,18 @@ const jsonLd = [
           </div>
 
           <details id="request-options" class="border-b border-gray-200 dark:border-slate-700">
-            <summary class="px-4 py-2.5 cursor-pointer text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50">Authentication, SOAPAction, and HTTP headers</summary>
+            <summary class="px-4 py-2.5 cursor-pointer text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50">Authentication, WS-Security, SOAPAction, and HTTP headers</summary>
             <div class="px-4 pb-4 grid md:grid-cols-2 gap-3">
               <label class="text-xs font-medium text-gray-600 dark:text-slate-300">SOAPAction
                 <input type="text" id="soap-action" data-share-key="soapAction" class="mt-1 w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-xs bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100" placeholder="Auto-detected from WSDL, or enter manually" />
               </label>
-              <label class="text-xs font-medium text-gray-600 dark:text-slate-300">HTTP authentication
-                <select id="auth-type" class="mt-1 w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100"><option value="none">None</option><option value="basic">Basic authentication</option></select>
+              <label class="text-xs font-medium text-gray-600 dark:text-slate-300">Authentication
+                <select id="auth-type" class="mt-1 w-full p-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100"><option value="none">None</option><option value="basic">HTTP Basic</option><option value="wsse-text">WS-Security PasswordText</option><option value="wsse-digest">WS-Security PasswordDigest</option></select>
               </label>
               <div id="basic-auth-fields" class="hidden md:col-span-2 grid sm:grid-cols-2 gap-3 p-3 rounded-lg border border-amber-200 dark:border-amber-900 bg-amber-50 dark:bg-amber-950/20">
                 <label class="text-xs font-medium text-amber-900 dark:text-amber-100">Username<input id="auth-username" type="text" autocomplete="off" class="mt-1 w-full p-2 border border-amber-300 dark:border-amber-800 rounded-lg bg-white dark:bg-slate-950 text-sm text-gray-900 dark:text-slate-100" /></label>
                 <label class="text-xs font-medium text-amber-900 dark:text-amber-100">Password<input id="auth-password" type="password" autocomplete="new-password" class="mt-1 w-full p-2 border border-amber-300 dark:border-amber-800 rounded-lg bg-white dark:bg-slate-950 text-sm text-gray-900 dark:text-slate-100" /></label>
-                <p class="sm:col-span-2 text-[11px] text-amber-800 dark:text-amber-200">Stored only in this page’s memory. The browser may trigger a CORS preflight when Authorization is present.</p>
+                <p id="auth-help" class="sm:col-span-2 text-[11px] text-amber-800 dark:text-amber-200">Stored only in this page’s memory. The browser may trigger a CORS preflight when Authorization is present.</p>
               </div>
               <label class="md:col-span-2 text-xs font-medium text-gray-600 dark:text-slate-300">Additional HTTP headers <span class="font-normal text-gray-400">(one per line)</span>
                 <textarea id="custom-headers" class="mt-1 w-full h-20 p-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-xs bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100 resize-y" placeholder="X-Correlation-ID: test-001&#10;Accept-Language: en-US" spellcheck="false"></textarea>
@@ -266,12 +272,17 @@ const jsonLd = [
       </div>
     </section>
 
+    <section class="mt-4 grid gap-3 md:grid-cols-2" aria-label="Saved SOAP requests and history">
+      <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800"><div class="flex flex-wrap items-center justify-between gap-2"><h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Saved requests</h2><div class="flex gap-2"><button id="save-request-btn" type="button" class="rounded-md bg-indigo-600 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">Save current</button><button id="clear-saved-btn" type="button" class="text-xs text-slate-500 hover:underline">Clear</button></div></div><p class="mt-1 text-[11px] text-slate-500 dark:text-slate-400">Stored in this browser without auth fields or SOAP headers. Check endpoint and body values.</p><div id="saved-list" class="mt-2 max-h-44 space-y-1 overflow-y-auto text-xs text-slate-500 dark:text-slate-400">Nothing saved yet.</div></div>
+      <div class="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800"><div class="flex flex-wrap items-center justify-between gap-2"><h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Local history</h2><button id="clear-history-btn" type="button" class="text-xs text-slate-500 hover:underline">Clear</button></div><label class="mt-1 flex items-center gap-2 text-[11px] text-slate-600 dark:text-slate-300"><input id="save-history" type="checkbox" class="rounded border-slate-300 text-indigo-600" /> Keep sanitized request history in this browser</label><div id="history-list" class="mt-2 max-h-44 space-y-1 overflow-y-auto text-xs text-slate-500 dark:text-slate-400">No requests yet.</div></div>
+    </section>
+
     <section class="mt-8 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm p-6">
       <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-4">An online SOAP client for focused request debugging</h2>
       <div class="grid md:grid-cols-3 gap-6 text-sm text-gray-600 dark:text-slate-300">
         <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Contract-driven when available</h3><p>Import WSDL from a URL, local file, or pasted XML. Browse operations and start from generated envelopes, endpoint addresses, namespaces, and SOAPAction values.</p></div>
         <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Manual when it isn’t</h3><p>A WSDL is optional. Direct mode keeps the endpoint, version, headers, authentication, request XML, and response inspector in one working surface.</p></div>
-        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Honest browser constraints</h3><p>Target servers must permit browser CORS requests. For mTLS, NTLM/Kerberos, client certificates, WS-Security automation, or private-network policy controls, use an approved desktop or internal enterprise client.</p></div>
+        <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-1">Browser connection notes</h3><p>Target servers must permit browser CORS requests, or you can use the local Holy CORS bridge. UsernameToken is supported here; mTLS, NTLM/Kerberos, and client certificates still need an approved desktop or internal enterprise client.</p></div>
       </div>
       <div class="mt-5 p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">
         <strong>Request path:</strong> Browser → your SOAP endpoint. When enabled, the path is Browser → Holy CORS on your computer → your SOAP endpoint. Normal requests are not relayed through Bug Days infrastructure.
@@ -316,27 +327,11 @@ const jsonLd = [
 </style>
 
 <script>
-  import { track } from '../lib/analytics';
-  import { ShareManager } from '../lib/share';
-  import { createLocalBridgeAccessGuard } from '../lib/local-bridge-access';
-
-  interface WsdlOperation {
-    name: string;
-    inputMsg: string;
-    outputMsg: string;
-    soapAction: string;
-    namespace: string;
-  }
-
-  interface ParsedWsdl {
-    serviceName: string;
-    namespace: string;
-    endpoint: string;
-    version: '1.1' | '1.2';
-    operations: WsdlOperation[];
-    messages: Record<string, Array<{ name: string; element: string; type: string }>>;
-    types: Record<string, Array<{ name: string; type: string }>>;
-  }
+  import { track } from '../lib/analytics.ts';
+  import { ShareManager } from '../lib/share.ts';
+  import { createLocalBridgeAccessGuard } from '../lib/local-bridge-access.ts';
+  import { parseSoapContract, generateSoapRequest, type SoapContract, type SoapOperation, type LocalSoapDocument } from '../lib/soap-wsdl.ts';
+  import { usernameTokenRequest, requestWithoutSoapHeader } from '../lib/soap-security.ts';
 
   const DEMO_WSDL = `<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="https://example.com/customer" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="https://example.com/customer" name="CustomerDirectory">
@@ -388,22 +383,18 @@ const jsonLd = [
   const customHeadersInput = byId<HTMLTextAreaElement>('custom-headers');
   const toast = byId<HTMLElement>('soap-toast');
 
-  let parsedWsdl: ParsedWsdl | null = null;
+  let parsedWsdl: SoapContract | null = null;
   let selectedOperation = '';
   let lastResponseText = '';
   let toastTimer = 0;
+  let localSchemas: LocalSoapDocument[] = [];
+  const SAVED_KEY = 'bugdays-soap-saved-v1';
+  const HISTORY_KEY = 'bugdays-soap-history-v1';
 
   function elementsByLocalName(root: Document | Element, name: string): Element[] {
     return Array.from(root.getElementsByTagNameNS('*', name));
   }
 
-  function directChildrenByLocalName(root: Element, name: string): Element[] {
-    return Array.from(root.children).filter(child => child.localName === name);
-  }
-
-  function localPart(value: string): string {
-    return value.split(':').pop() || value;
-  }
 
   function setMode(mode: 'wsdl' | 'direct'): void {
     const wsdl = mode === 'wsdl';
@@ -467,92 +458,68 @@ const jsonLd = [
     return proxy.endsWith('/') ? proxy + target : `${proxy}/${target}`;
   }
 
-  function parseWsdlXml(xml: string, sourceLabel = 'WSDL'): void {
+  function collectedSchemas(): LocalSoapDocument[] {
+    const pasted = Array.from(byId<HTMLElement>('pasted-schemas').querySelectorAll<HTMLElement>('[data-xsd-row]')).map((row, index) => ({
+      name: (row.querySelector<HTMLInputElement>('input')?.value || `schema-${index + 1}.xsd`).trim(),
+      xml: row.querySelector<HTMLTextAreaElement>('textarea')?.value || '',
+    })).filter(item => item.xml.trim());
+    return [...localSchemas, ...pasted];
+  }
+
+  function renderContractWarnings(extra: string[] = []): void {
+    const panel = byId<HTMLElement>('contract-warnings');
+    const warnings = [...new Set([...(parsedWsdl?.warnings || []), ...extra])];
+    panel.replaceChildren();
+    panel.classList.toggle('hidden', !warnings.length);
+    if (!warnings.length) return;
+    const heading = document.createElement('strong');
+    heading.textContent = `${warnings.length} contract note${warnings.length === 1 ? '' : 's'} — review the generated XML`;
+    panel.appendChild(heading);
+    for (const warning of warnings.slice(0, 20)) {
+      const line = document.createElement('p');
+      line.className = 'mt-1';
+      line.textContent = warning;
+      panel.appendChild(line);
+    }
+  }
+
+  async function parseWsdlXml(xml: string, sourceLabel = 'WSDL', baseUrl?: string): Promise<void> {
+    showLoading('Reading WSDL and linked schemas…');
+    hideError();
     try {
-      const doc = new DOMParser().parseFromString(xml, 'text/xml');
-      const parseError = doc.querySelector('parsererror');
-      if (parseError) throw new Error(parseError.textContent?.trim() || 'Invalid XML.');
-      if (doc.documentElement.localName !== 'definitions' && doc.documentElement.localName !== 'description') {
-        throw new Error('This XML does not appear to be a WSDL definitions document.');
-      }
-
-      const definitions = doc.documentElement;
-      const targetNamespace = definitions.getAttribute('targetNamespace') || '';
-      const service = elementsByLocalName(doc, 'service')[0];
-      const address = elementsByLocalName(service || doc.documentElement, 'address').find(element => element.hasAttribute('location'));
-      const endpoint = address?.getAttribute('location') || '';
-      const version: '1.1' | '1.2' = address?.namespaceURI?.includes('soap12') ? '1.2' : '1.1';
-      const messages: ParsedWsdl['messages'] = {};
-      const types: ParsedWsdl['types'] = {};
-
-      elementsByLocalName(doc, 'message').forEach(message => {
-        const name = message.getAttribute('name') || '';
-        messages[name] = directChildrenByLocalName(message, 'part').map(part => ({
-          name: part.getAttribute('name') || '',
-          element: part.getAttribute('element') || '',
-          type: part.getAttribute('type') || '',
-        }));
+      const contract = await parseSoapContract(xml, {
+        sourceName: sourceLabel,
+        baseUrl,
+        localDocuments: collectedSchemas(),
+        fetchText: async url => {
+          if (useProxyCheckbox.checked && !await confirmLocalBridgeAccess(proxyUrlInput.value)) throw new Error('Local bridge access was not approved.');
+          const response = await fetch(requestUrl(url));
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          const content = await response.text();
+          if (content.length > 5 * 1024 * 1024) throw new Error('XSD is larger than 5 MB.');
+          return content;
+        },
       });
-
-      elementsByLocalName(doc, 'schema').forEach(schema => {
-        directChildrenByLocalName(schema, 'element').forEach(element => {
-          const name = element.getAttribute('name') || '';
-          if (!name) return;
-          const sequence = elementsByLocalName(element, 'sequence')[0];
-          types[name] = sequence ? directChildrenByLocalName(sequence, 'element').map(child => ({
-            name: child.getAttribute('name') || 'value',
-            type: child.getAttribute('type') || 'xsd:string',
-          })) : [];
-        });
-      });
-
-      const bindingActions = new Map<string, string>();
-      elementsByLocalName(doc, 'binding').forEach(binding => {
-        directChildrenByLocalName(binding, 'operation').forEach(operation => {
-          const soapOperation = directChildrenByLocalName(operation, 'operation').find(child => child.hasAttribute('soapAction'));
-          bindingActions.set(operation.getAttribute('name') || '', soapOperation?.getAttribute('soapAction') || '');
-        });
-      });
-
-      const portType = elementsByLocalName(doc, 'portType')[0] || elementsByLocalName(doc, 'interface')[0];
-      const operations: WsdlOperation[] = portType ? directChildrenByLocalName(portType, 'operation').map(operation => ({
-        name: operation.getAttribute('name') || 'UnnamedOperation',
-        inputMsg: localPart(directChildrenByLocalName(operation, 'input')[0]?.getAttribute('message') || ''),
-        outputMsg: localPart(directChildrenByLocalName(operation, 'output')[0]?.getAttribute('message') || ''),
-        soapAction: bindingActions.get(operation.getAttribute('name') || '') || '',
-        namespace: targetNamespace,
-      })) : [];
-
-      parsedWsdl = {
-        serviceName: service?.getAttribute('name') || definitions.getAttribute('name') || sourceLabel,
-        namespace: targetNamespace,
-        endpoint,
-        version,
-        operations,
-        messages,
-        types,
-      };
-
+      parsedWsdl = contract;
       displayOperations();
       byId<HTMLElement>('contract-summary').classList.remove('hidden');
-      byId<HTMLElement>('service-name').textContent = parsedWsdl.serviceName;
-      byId<HTMLElement>('target-namespace').textContent = parsedWsdl.namespace || 'No target namespace declared';
+      byId<HTMLElement>('service-name').textContent = contract.serviceName;
+      byId<HTMLElement>('target-namespace').textContent = `${contract.namespace || 'No target namespace'}${contract.importedCount ? ` · ${contract.importedCount} linked XSD${contract.importedCount === 1 ? '' : 's'}` : ''}`;
       byId<HTMLElement>('contract-status').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
       byId<HTMLElement>('contract-status').title = 'WSDL loaded';
-      byId<HTMLElement>('operation-count').textContent = `${operations.length} operation${operations.length === 1 ? '' : 's'}`;
-      soapVersionSelect.value = version;
+      byId<HTMLElement>('operation-count').textContent = `${contract.operations.length} operation${contract.operations.length === 1 ? '' : 's'}`;
+      soapVersionSelect.value = contract.version;
       updateContentType();
-      hideError();
-
-      if (operations.length) selectOperation(operations[0].name);
+      if (contract.operations.length) selectOperation(contract.operations[0].name);
       else {
         setManualSession(false);
-        if (endpoint) endpointUrlInput.value = endpoint;
-        showError('The WSDL loaded, but no operations were found in its first portType/interface. You can still send a manual request.');
+        if (contract.endpoint) endpointUrlInput.value = contract.endpoint;
+        showError('The WSDL loaded, but no operations were found for its selected binding. You can still send a manual request.');
       }
+      renderContractWarnings();
     } catch (error) {
       showError(`Could not parse ${sourceLabel}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
+    } finally { hideLoading(); }
   }
 
   function displayOperations(): void {
@@ -593,22 +560,10 @@ const jsonLd = [
     badge.className = 'px-2 py-1 rounded-md bg-indigo-100 dark:bg-indigo-900/40 text-[11px] font-semibold uppercase tracking-wide text-indigo-700 dark:text-indigo-300';
     endpointUrlInput.value = parsedWsdl.endpoint;
     soapActionInput.value = operation.soapAction;
-    requestXmlInput.value = generateSoapEnvelope(operation);
+    const generated = generateSoapRequest(parsedWsdl, operation, soapVersionSelect.value as '1.1' | '1.2');
+    requestXmlInput.value = generated.xml;
+    renderContractWarnings(generated.warnings);
     displayOperations();
-  }
-
-  function generateSoapEnvelope(operation: WsdlOperation): string {
-    if (!parsedWsdl) return requestXmlInput.value;
-    const messageParts = parsedWsdl.messages[operation.inputMsg] || [];
-    const typeName = localPart(messageParts[0]?.element || operation.name);
-    const typeElements = parsedWsdl.types[typeName] || [];
-    const params = typeElements.length
-      ? typeElements.map(element => `      <${element.name}>?</${element.name}>`).join('\n')
-      : '      <!-- Add parameters here -->';
-    const body = `    <${typeName} xmlns="${operation.namespace}">\n${params}\n    </${typeName}>`;
-    return soapVersionSelect.value === '1.2'
-      ? `<?xml version="1.0" encoding="UTF-8"?>\n<soap12:Envelope xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">\n  <soap12:Header/>\n  <soap12:Body>\n${body}\n  </soap12:Body>\n</soap12:Envelope>`
-      : `<?xml version="1.0" encoding="UTF-8"?>\n<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">\n  <soap:Header/>\n  <soap:Body>\n${body}\n  </soap:Body>\n</soap:Envelope>`;
   }
 
   function formatXml(xml: string): string {
@@ -648,6 +603,82 @@ const jsonLd = [
     return `Basic ${btoa(binary)}`;
   }
 
+  interface SoapSnapshot { endpoint: string; version: string; action: string; request: string; authMode: string }
+  interface StoredSoapRequest { name?: string; at?: string; status?: string; elapsed?: number; snapshot: SoapSnapshot }
+
+  function snapshot(): SoapSnapshot {
+    return {
+      endpoint: shareEndpoint(endpointUrlInput.value.trim()), version: soapVersionSelect.value,
+      action: soapActionInput.value.trim(), request: requestWithoutSoapHeader(requestXmlInput.value),
+      authMode: authType.value,
+    };
+  }
+
+  function getStored(key: string): StoredSoapRequest[] {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || '[]');
+      return Array.isArray(value) ? value.filter(item => item && typeof item === 'object' && item.snapshot && typeof item.snapshot.request === 'string') : [];
+    } catch { return []; }
+  }
+
+  function store(key: string, items: StoredSoapRequest[]): boolean {
+    try { localStorage.setItem(key, JSON.stringify(items)); return true; }
+    catch { showToast('Browser storage is full or unavailable. Clear older entries and retry.', true); return false; }
+  }
+
+  function applySnapshot(saved: SoapSnapshot): void {
+    endpointUrlInput.value = saved.endpoint || '';
+    soapVersionSelect.value = saved.version === '1.2' ? '1.2' : '1.1';
+    soapActionInput.value = saved.action || '';
+    requestXmlInput.value = saved.request || '';
+    authType.value = ['basic', 'wsse-text', 'wsse-digest'].includes(saved.authMode) ? saved.authMode : 'none';
+    authUsername.value = '';
+    authPassword.value = '';
+    authType.dispatchEvent(new Event('change'));
+    setMode('direct');
+    updateContentType();
+    requestXmlInput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function renderStored(elementId: string, storageKey: string, kind: 'saved' | 'history'): void {
+    const list = byId<HTMLElement>(elementId);
+    const items = getStored(storageKey);
+    list.replaceChildren();
+    if (!items.length) { list.textContent = kind === 'saved' ? 'Nothing saved yet.' : 'No requests yet.'; return; }
+    for (const [index, item] of items.entries()) {
+      const row = document.createElement('div');
+      row.className = 'flex min-w-0 items-center gap-2 rounded-lg border border-slate-200 p-2 dark:border-slate-700';
+      const load = document.createElement('button');
+      load.type = 'button';
+      load.className = 'min-w-0 flex-1 text-left hover:text-indigo-600';
+      const title = document.createElement('strong');
+      title.className = 'block truncate text-xs text-slate-800 dark:text-slate-100';
+      title.textContent = item.name || item.snapshot.endpoint || 'SOAP request';
+      const detail = document.createElement('span');
+      detail.className = 'block truncate text-[11px] text-slate-500 dark:text-slate-400';
+      detail.textContent = kind === 'history' ? `${item.status || 'Sent'} · ${item.elapsed || 0} ms · ${item.at ? new Date(item.at).toLocaleString() : ''}` : `${item.snapshot.version} · ${item.snapshot.action || 'No action'}`;
+      load.append(title, detail);
+      load.addEventListener('click', () => applySnapshot(item.snapshot));
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'shrink-0 text-[11px] text-red-600 hover:underline dark:text-red-400';
+      remove.textContent = 'Delete';
+      remove.setAttribute('aria-label', `Delete ${kind} entry ${index + 1}`);
+      remove.addEventListener('click', () => { items.splice(index, 1); store(storageKey, items); renderStored(elementId, storageKey, kind); });
+      row.append(load, remove);
+      list.appendChild(row);
+    }
+  }
+
+  function addHistory(status: string, elapsed: number): void {
+    if (!byId<HTMLInputElement>('save-history').checked) return;
+    const current = snapshot();
+    if (!current.request || current.request.length > 100_000) { showToast('History skipped: request is invalid or too large to store locally.', true); return; }
+    const items = getStored(HISTORY_KEY);
+    items.unshift({ at: new Date().toISOString(), status, elapsed, snapshot: current });
+    if (store(HISTORY_KEY, items.slice(0, 30))) renderStored('history-list', HISTORY_KEY, 'history');
+  }
+
   function updateContentType(): void {
     const action = soapActionInput.value.trim();
     const contentType = soapVersionSelect.value === '1.2'
@@ -677,6 +708,12 @@ const jsonLd = [
 
     if (useProxyCheckbox.checked && !await confirmLocalBridgeAccess(proxyUrlInput.value)) return;
 
+    let outgoingXml = requestXml;
+    if (authType.value === 'wsse-text' || authType.value === 'wsse-digest') {
+      try { outgoingXml = await usernameTokenRequest(requestXml, authUsername.value.trim(), authPassword.value, authType.value === 'wsse-digest' ? 'digest' : 'text'); }
+      catch (error) { showError(error instanceof Error ? error.message : 'Could not add the UsernameToken.'); return; }
+    }
+
     const version = soapVersionSelect.value;
     const soapAction = soapActionInput.value.trim();
     headers['Content-Type'] = version === '1.2'
@@ -695,7 +732,7 @@ const jsonLd = [
     const started = performance.now();
 
     try {
-      const response = await fetch(target, { method: 'POST', headers, body: requestXml, signal: controller.signal });
+      const response = await fetch(target, { method: 'POST', headers, body: outgoingXml, signal: controller.signal });
       const elapsed = Math.round(performance.now() - started);
       lastResponseText = await response.text();
       let formattedResponse = lastResponseText;
@@ -711,6 +748,7 @@ const jsonLd = [
       statusBadge.className = `px-2 py-0.5 rounded text-[11px] font-semibold ${hasSoapFault || !response.ok ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'}`;
       responseContent.classList.remove('hidden');
       showResponseView('body');
+      addHistory(hasSoapFault ? `SOAP Fault ${response.status}` : `HTTP ${response.status}`, elapsed);
     } catch (error) {
       responseEmpty.classList.remove('hidden');
       const message = error instanceof DOMException && error.name === 'AbortError'
@@ -720,6 +758,7 @@ const jsonLd = [
         ? '\n\nIf the endpoint works in a desktop client, its CORS policy may be blocking browsers. Open “Browser blocked by CORS?” above to configure the optional local bridge.'
         : `\n\nThe local Holy CORS bridge is enabled. Check that it is running at ${proxyUrlInput.value.trim()}, the endpoint is correct, and your browser allows local access for bugdays.com.`;
       showError(`Request failed: ${message}${corsHelp}`);
+      addHistory('Network error', Math.round(performance.now() - started));
     } finally {
       if (timer) window.clearTimeout(timer);
       hideLoading();
@@ -742,7 +781,33 @@ const jsonLd = [
   directModeTab.addEventListener('click', () => setMode('direct'));
   byId<HTMLButtonElement>('focus-endpoint-btn').addEventListener('click', () => endpointUrlInput.focus());
   byId<HTMLButtonElement>('toggle-wsdl-input').addEventListener('click', () => wsdlXmlSection.classList.toggle('hidden'));
-  byId<HTMLButtonElement>('load-demo-btn').addEventListener('click', () => { wsdlXmlInput.value = DEMO_WSDL; parseWsdlXml(DEMO_WSDL, 'demo contract'); });
+  byId<HTMLButtonElement>('load-demo-btn').addEventListener('click', () => { wsdlXmlInput.value = DEMO_WSDL; void parseWsdlXml(DEMO_WSDL, 'demo contract'); });
+  byId<HTMLButtonElement>('add-xsd-btn').addEventListener('click', () => {
+    const list = byId<HTMLElement>('pasted-schemas');
+    const row = document.createElement('div');
+    row.dataset.xsdRow = 'true';
+    row.className = 'rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700 dark:bg-slate-800';
+    const bar = document.createElement('div');
+    bar.className = 'mb-1 flex items-center gap-2';
+    const name = document.createElement('input');
+    name.className = 'min-w-0 flex-1 rounded border border-slate-300 bg-white p-1.5 font-mono text-xs dark:border-slate-600 dark:bg-slate-900';
+    name.placeholder = 'schemaLocation, e.g. types/customer.xsd';
+    name.setAttribute('aria-label', 'Pasted XSD filename');
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'text-xs text-red-600 hover:underline dark:text-red-400';
+    remove.textContent = 'Remove';
+    remove.addEventListener('click', () => row.remove());
+    bar.append(name, remove);
+    const input = document.createElement('textarea');
+    input.className = 'h-28 w-full resize-y rounded border border-slate-300 bg-white p-2 font-mono text-xs dark:border-slate-600 dark:bg-slate-950';
+    input.placeholder = 'Paste this XSD document…';
+    input.spellcheck = false;
+    input.setAttribute('aria-label', 'Pasted XSD XML');
+    row.append(bar, input);
+    list.appendChild(row);
+    name.focus();
+  });
   operationFilter.addEventListener('input', displayOperations);
 
   parseWsdlBtn.addEventListener('click', async () => {
@@ -756,7 +821,7 @@ const jsonLd = [
     try {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
-      parseWsdlXml(await response.text(), 'WSDL');
+      await parseWsdlXml(await response.text(), 'WSDL', value);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown network error';
       const help = useProxyCheckbox.checked
@@ -768,16 +833,25 @@ const jsonLd = [
 
   parseXmlBtn.addEventListener('click', () => {
     if (!wsdlXmlInput.value.trim()) { showError('Paste or open a WSDL document first.'); return; }
-    parseWsdlXml(wsdlXmlInput.value, 'pasted WSDL');
+    void parseWsdlXml(wsdlXmlInput.value, 'pasted WSDL', wsdlUrlInput.value.trim() || undefined);
   });
 
   wsdlFileInput.addEventListener('change', async () => {
-    const file = wsdlFileInput.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { showError('That WSDL file is larger than 5 MB.'); wsdlFileInput.value = ''; return; }
-    wsdlXmlInput.value = await file.text();
+    const files = [...(wsdlFileInput.files || [])];
+    if (!files.length) return;
+    if (files.some(file => file.size > 5 * 1024 * 1024) || files.reduce((sum, file) => sum + file.size, 0) > 20 * 1024 * 1024) {
+      showError('Each WSDL/XSD must be under 5 MB and the selection under 20 MB.');
+      wsdlFileInput.value = '';
+      return;
+    }
+    const documents = await Promise.all(files.map(async file => ({ name: file.webkitRelativePath || file.name, xml: await file.text() })));
+    const wsdl = documents.find(item => item.name.toLowerCase().endsWith('.wsdl')) || documents.find(item => new DOMParser().parseFromString(item.xml, 'text/xml').documentElement.localName === 'definitions');
     wsdlFileInput.value = '';
-    parseWsdlXml(wsdlXmlInput.value, file.name);
+    if (!wsdl) { localSchemas.push(...documents); byId<HTMLElement>('local-schema-count').textContent = `${localSchemas.length} XSD file${localSchemas.length === 1 ? '' : 's'} ready`; showToast('XSD files added. Paste or open the WSDL, then load the contract.'); return; }
+    wsdlXmlInput.value = wsdl.xml;
+    localSchemas = [...localSchemas, ...documents.filter(item => item !== wsdl)];
+    byId<HTMLElement>('local-schema-count').textContent = `${localSchemas.length} XSD file${localSchemas.length === 1 ? '' : 's'} ready`;
+    void parseWsdlXml(wsdl.xml, wsdl.name, wsdlUrlInput.value.trim() || undefined);
   });
 
   useProxyCheckbox.addEventListener('change', () => { proxyUrlInput.disabled = !useProxyCheckbox.checked; });
@@ -785,13 +859,25 @@ const jsonLd = [
   byId<HTMLButtonElement>('close-proxy-modal-btn').addEventListener('click', () => { proxyModal.classList.add('hidden'); proxyModal.classList.remove('flex'); });
   proxyModal.addEventListener('click', event => { if (event.target === proxyModal) { proxyModal.classList.add('hidden'); proxyModal.classList.remove('flex'); } });
 
-  authType.addEventListener('change', () => basicAuthFields.classList.toggle('hidden', authType.value !== 'basic'));
+  authType.addEventListener('change', () => {
+    const mode = authType.value;
+    basicAuthFields.classList.toggle('hidden', mode === 'none');
+    byId<HTMLElement>('auth-help').textContent = mode === 'basic'
+      ? 'Credentials stay in this tab and are never saved or shared. HTTP Authorization may trigger a CORS preflight.'
+      : mode === 'wsse-digest'
+        ? 'A fresh nonce and timestamp are generated for every send. PasswordDigest is added only to the outgoing XML, never the editor, saves, history, or shares.'
+        : 'A UsernameToken is added only when sending. PasswordText exposes the password to the target service; use a trusted HTTPS endpoint.';
+  });
   soapActionInput.addEventListener('input', updateContentType);
   soapVersionSelect.addEventListener('change', () => {
     updateContentType();
     if (selectedOperation && parsedWsdl) {
       const operation = parsedWsdl.operations.find(candidate => candidate.name === selectedOperation);
-      if (operation) requestXmlInput.value = generateSoapEnvelope(operation);
+      if (operation) {
+        const generated = generateSoapRequest(parsedWsdl, operation, soapVersionSelect.value as '1.1' | '1.2');
+        requestXmlInput.value = generated.xml;
+        renderContractWarnings(generated.warnings);
+      }
     } else {
       requestXmlInput.value = soapVersionSelect.value === '1.2'
         ? requestXmlInput.value.replaceAll('soap:', 'soap12:').replaceAll('xmlns:soap=', 'xmlns:soap12=').replace('http://schemas.xmlsoap.org/soap/envelope/', 'http://www.w3.org/2003/05/soap-envelope')
@@ -819,14 +905,57 @@ const jsonLd = [
   byId<HTMLButtonElement>('response-headers-tab').addEventListener('click', () => showResponseView('headers'));
   byId<HTMLButtonElement>('inline-feedback-btn').addEventListener('click', () => byId<HTMLButtonElement>('feedback-btn').click());
 
+  byId<HTMLButtonElement>('save-request-btn').addEventListener('click', () => {
+    const current = snapshot();
+    if (!current.request) { showToast('Enter valid SOAP XML before saving.', true); return; }
+    if (current.request.length > 100_000) { showToast('This request is too large to save locally (100 KB limit).', true); return; }
+    const name = window.prompt('Saved request name', selectedOperation || current.action || 'SOAP request');
+    if (name === null) return;
+    const items = getStored(SAVED_KEY);
+    items.unshift({ name: name.trim().slice(0, 80) || 'SOAP request', snapshot: current });
+    if (store(SAVED_KEY, items.slice(0, 20))) { renderStored('saved-list', SAVED_KEY, 'saved'); showToast('Request saved in this browser.'); }
+  });
+  byId<HTMLButtonElement>('clear-saved-btn').addEventListener('click', () => { if (store(SAVED_KEY, [])) renderStored('saved-list', SAVED_KEY, 'saved'); });
+  byId<HTMLButtonElement>('clear-history-btn').addEventListener('click', () => { if (store(HISTORY_KEY, [])) renderStored('history-list', HISTORY_KEY, 'history'); });
+  const historyToggle = byId<HTMLInputElement>('save-history');
+  try { historyToggle.checked = localStorage.getItem('bugdays-soap-history-enabled-v1') === 'true'; } catch {}
+  historyToggle.addEventListener('change', () => { try { localStorage.setItem('bugdays-soap-history-enabled-v1', String(historyToggle.checked)); } catch {} });
+  renderStored('saved-list', SAVED_KEY, 'saved');
+  renderStored('history-list', HISTORY_KEY, 'history');
+
+  function shareEndpoint(value: string): string {
+    try {
+      const url = new URL(value);
+      url.username = '';
+      url.password = '';
+      for (const name of [...url.searchParams.keys()]) if (/key|token|secret|pass|auth|signature|credential/i.test(name)) url.searchParams.delete(name);
+      return url.toString();
+    } catch { return ''; }
+  }
+
   ShareManager.register({
     tool: 'soap-client',
-    afterLoad: () => {
+    customCollect: () => ({
+      endpoint: shareEndpoint(endpointUrlInput.value.trim()),
+      version: soapVersionSelect.value,
+      soapAction: soapActionInput.value.trim(),
+      request: requestWithoutSoapHeader(requestXmlInput.value),
+    }),
+    customRestore: data => {
+      if (typeof data.wsdl === 'string') wsdlUrlInput.value = data.wsdl;
+      endpointUrlInput.value = typeof data.endpoint === 'string' ? data.endpoint : '';
+      soapVersionSelect.value = data.version === '1.2' ? '1.2' : '1.1';
+      soapActionInput.value = typeof data.soapAction === 'string' ? data.soapAction : '';
+      requestXmlInput.value = typeof data.request === 'string' ? requestWithoutSoapHeader(data.request) : '';
+      authUsername.value = '';
+      authPassword.value = '';
+      authType.value = 'none';
+      authType.dispatchEvent(new Event('change'));
       updateContentType();
-      if (wsdlUrlInput.value.trim()) setMode('wsdl');
-      else setMode('direct');
+      setMode('direct');
     },
   });
 
+  authType.dispatchEvent(new Event('change'));
   updateContentType();
 </script>

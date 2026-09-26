@@ -5,7 +5,7 @@ import { guideBySlug } from '../../lib/guides';
 const guide = guideBySlug('test-soap-api-from-wsdl-soap-11-vs-12');
 ---
 
-<GuideLayout guide={guide} keywords="test SOAP API from WSDL, SOAP 1.1 vs SOAP 1.2, WSDL tester, SOAPAction header, application soap+xml, SOAP fault debugging, online SOAP client">
+<GuideLayout guide={guide} keywords="test SOAP API from WSDL, SOAP 1.1 vs SOAP 1.2, WSDL request generator, XSD import include, JAX-WS unqualified elements, RPC SOAP, SOAPAction header, SOAP fault debugging">
   <p>SOAP failures often look more mysterious than they are. A service returns HTTP 415, “action not supported,” or a namespace fault, and the request XML looks perfectly reasonable. The missing clue is usually in the contract: SOAP version, binding, endpoint, action, or qualified element names.</p>
 
   <blockquote><strong>The reliable workflow:</strong> choose an operation from the correct WSDL binding, start with its generated envelope, preserve its namespaces, send the version-appropriate content type and action, and read the SOAP fault before changing the business payload.</blockquote>
@@ -23,12 +23,16 @@ const guide = guideBySlug('test-soap-api-from-wsdl-soap-11-vs-12');
   <h2>Start with one operation, not a blank editor</h2>
   <ol>
     <li>Load the WSDL from a URL, local file, or pasted XML.</li>
-    <li>Select the intended service, port, and operation.</li>
+    <li>Select the intended operation. Check which service port and binding the WSDL exposes; if it has several, verify the endpoint and version in the client.</li>
     <li>Confirm the generated endpoint is appropriate for the environment.</li>
     <li>Fill in required values without removing namespace declarations.</li>
     <li>Check authentication and any application-specific headers.</li>
   </ol>
   <p>Imported WSDL endpoints are often production URLs, obsolete hosts, or internal names. Treat the address as contract data to verify, not an instruction to send blindly.</p>
+
+  <h2>Follow named types and linked XSD files</h2>
+  <p>Java JAX-WS and CXF WSDLs often declare an operation’s global element in one schema and its fields in a named <code>complexType</code> elsewhere. A template with only an empty operation tag is not enough. In the <a href="/soap-client/">Bug Days SOAP client</a>, load the WSDL by URL so relative <code>xsd:import</code> and <code>xsd:include</code> paths can be fetched, or select the WSDL and its XSD files together. You can also paste each XSD with its <code>schemaLocation</code> filename.</p>
+  <p>The generated request expands nested named types, shows a sample enum value, and marks optional and repeatable fields. If a linked schema is inaccessible because of CORS or authentication, the client reports it; add the file locally and reload rather than guessing at the missing parameters.</p>
 
   <h2>SOAP 1.1 and SOAP 1.2 use different HTTP conventions</h2>
   <div class="table-scroll"><table>
@@ -56,6 +60,7 @@ Content-Type: application/soap+xml; charset=utf-8; action="urn:GetCustomer"</cod
   <pre><code>&lt;cus:GetCustomer xmlns:cus="urn:customers"&gt;...&lt;/cus:GetCustomer&gt;
 &lt;c:GetCustomer xmlns:c="urn:customers"&gt;...&lt;/c:GetCustomer&gt;</code></pre>
   <p>Removing the namespace, however, produces a different element. “Operation not found” and deserialization errors frequently come from a correct local name in the wrong namespace.</p>
+  <p>There is a subtler case in Java services: a qualified operation wrapper can contain <em>unqualified</em> child parameters. If the XSD omits <code>elementFormDefault="qualified"</code>, local elements have no namespace unless an individual <code>form</code> overrides it. An unprefixed <code>&lt;customerId&gt;</code> below a prefixed wrapper is intentional; adding the wrapper’s namespace to every child can make a server deserialize them as null. RPC-style bindings also have their own operation wrapper and message-part parameter rules.</p>
 
   <h2>Read the fault before rewriting the request</h2>
   <p>A SOAP fault is structured diagnostic output. Preserve the HTTP status, response headers, fault code, human-readable reason, and detail block. Then classify the failure:</p>
