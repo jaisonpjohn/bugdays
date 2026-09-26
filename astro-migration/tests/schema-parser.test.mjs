@@ -87,3 +87,41 @@ CREATE TABLE app.orders (id int PRIMARY KEY, user_id int REFERENCES app.users(id
   assert.deepEqual(schema.tables.map(table => table.key), ['auth.users', 'app.users', 'orders']);
   assert.equal(schema.tables.find(table => table.name === 'orders').foreignKeys[0].refTable, 'app.users');
 });
+
+test('SQL Server ALTER TABLE primary keys include clustered, nonclustered and composite keys', () => {
+  const schema = parseSchema(`CREATE TABLE [Person].[Address] ([AddressID] int NOT NULL, [City] nvarchar(50));
+GO
+CREATE TABLE [Sales].[Bridge] ([AddressID] int NOT NULL, [RegionID] int NOT NULL);
+GO
+ALTER TABLE [Person].[Address] WITH CHECK ADD
+    CONSTRAINT [PK_Address_AddressID] PRIMARY KEY CLUSTERED
+    ([AddressID] ASC) ON [PRIMARY];
+GO
+ALTER TABLE [Sales].[Bridge] WITH CHECK ADD
+    CONSTRAINT [PK_Bridge] PRIMARY KEY NONCLUSTERED
+    ([AddressID] ASC, [RegionID] DESC) ON [PRIMARY];
+GO`);
+  const address = schema.tables.find(table => table.name === 'Address');
+  const bridge = schema.tables.find(table => table.name === 'Bridge');
+  assert.deepEqual(address.primaryKey, ['addressid']);
+  assert.deepEqual(bridge.primaryKey, ['addressid', 'regionid']);
+  assert.equal(address.columns[0].isPrimaryKey, true);
+  assert.equal(bridge.columns[1].isPrimaryKey, true);
+  assert.equal(bridge.columns[1].nullable, false);
+  assert.deepEqual(schema.warnings, []);
+});
+
+test('GRANT and REVOKE CREATE TABLE privileges do not warn about skipped tables', () => {
+  const schema = parseSchema(`GRANT CREATE TABLE TO app_user;
+GRANT
+  CREATE TABLE
+TO another_user;
+REVOKE CREATE TABLE FROM old_user;
+CREATE TABLE employees (employee_id NUMBER PRIMARY KEY);`);
+  assert.deepEqual(schema.tables.map(table => table.name), ['employees']);
+  assert.deepEqual(schema.warnings, []);
+
+  const swallowed = parseSchema(`GRANT CREATE TABLE TO app_user
+CREATE TABLE missing (id NUMBER);`);
+  assert.match(swallowed.warnings.join(' '), /CREATE TABLE missing: not at a recognized statement boundary/);
+});

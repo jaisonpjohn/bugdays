@@ -461,7 +461,7 @@ function applyAlterTable(stmt: string, tables: Map<string, ParsedTable>, warning
   }
 
   // ADD [CONSTRAINT x] PRIMARY KEY (...)
-  const pkMatch = /(?:constraint\s+[\w$#"`[\]]+\s+)?primary\s+key\s*\(([^)]*)\)/i.exec(rest);
+  const pkMatch = /(?:constraint\s+[\w$#"`[\]]+\s+)?primary\s+key(?:\s+(?:clustered|nonclustered))?\s*\(([^)]*)\)/i.exec(rest);
   if (pkMatch && !/foreign\s+key/i.test(rest.slice(0, pkMatch.index))) {
     const cols = columnList(pkMatch[1]);
     for (const c of cols) {
@@ -517,9 +517,12 @@ export function parseSchema(sql: string): ParsedSchema {
         const name = /^create\s+(?:(?:or\s+replace|unlogged)\s+)?table\s+(?:if\s+not\s+exists\s+)?([\w$#."`[\]]+)/i.exec(stmt)?.[1] ?? '(unnamed)';
         warnings.push(`CREATE TABLE ${name}: unsupported or malformed definition — skipped`);
       }
-    } else if (/\bcreate\s+table\b/i.test(stmt)) {
-      const name = /\bcreate\s+table\s+([\w$#."`[\]]+)/i.exec(stmt)?.[1] ?? '(unnamed)';
-      warnings.push(`CREATE TABLE ${name}: not at a recognized statement boundary — skipped`);
+    } else {
+      // A GRANT/REVOKE of the CREATE TABLE privilege is not a table definition,
+      // even when the privilege starts on its own line. Require a table name
+      // followed by a definition body before warning about a swallowed CREATE.
+      const missed = /(?:^|\r?\n)\s*create\s+table\s+(?:if\s+not\s+exists\s+)?([\w$#."`[\]]+)\s*(?=\(|AS\b)/i.exec(stmt);
+      if (missed) warnings.push(`CREATE TABLE ${missed[1]}: not at a recognized statement boundary — skipped`);
     }
   }
 
