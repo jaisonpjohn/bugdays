@@ -11,7 +11,13 @@ bugdays.com — 60+ free developer tools that run in the browser. Privacy is the
 - `astro-migration/` — the site (Astro 5 + Tailwind 4, static) plus Pages Functions in `functions/api/` backed by the D1 database `bugdays-ip-intelligence`.
 - `astro-migration/workers/share/` — share-link storage (Cloudflare KV), served at api.bugdays.com.
 - `workers/contact/` — contact/feedback worker (Cloudflare D1, `schema.sql` alongside).
-- `holy-cors/` — a separate git repo (gitignored here). Don't touch it as part of site work.
+- `holy-cors/` — the **Bug Days Local Bridge** (Rust): HTTP/S proxy, native gRPC, DNS, TLS inspection and a Kafka client that browser tools reach on localhost. It is in scope whenever a site feature needs a local capability, but it is its own repo (github.com/bugdays-com/holy-cors, gitignored here): commit, test and release it there, never from this repo.
+
+### Working on the local bridge
+
+- The bridge advertises what it can do at `GET /api/v1/capabilities` (`version`, `protocolVersion`, and flags such as `serverStreamingGrpc`). Add a flag for every new capability, and have the site feature-detect it: users run older bridges for months, so a missing flag must produce a clear "update your bridge" message, never a broken request.
+- A bridge change reaches users only through a release (tag → `release.yml` builds binaries, Docker images and the Homebrew tap). Don't ship site copy that depends on a bridge feature until that release is published.
+- Run `cargo test` in `holy-cors/` before committing there.
 
 ## Commands
 
