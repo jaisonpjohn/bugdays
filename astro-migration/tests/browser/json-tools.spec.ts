@@ -43,9 +43,9 @@ async function compare(page: Page, original: unknown, modified: unknown) {
 test('formatter formats, compacts, downloads, and restores a shared tree', async ({ page }) => {
   await page.goto('/json-formatter/');
   await page.locator('#sample-btn').click();
-  await expect(page.locator('#editor')).toHaveText(JSON.stringify(apiResponse, null, 2), { useInnerText: true });
+  await expect(page.locator('#editor')).toHaveValue(JSON.stringify(apiResponse, null, 2));
   await page.locator('#compact-btn').click();
-  await expect(page.locator('#editor')).toHaveText(JSON.stringify(apiResponse));
+  await expect(page.locator('#editor')).toHaveValue(JSON.stringify(apiResponse));
   const downloadPromise = page.waitForEvent('download');
   await page.locator('#download-btn').click();
   const download = await downloadPromise;
@@ -68,7 +68,7 @@ test('formatter formats, compacts, downloads, and restores a shared tree', async
   await expect(page.locator('#tree-view')).toContainText('paid');
   await page.locator(`.json-copy a[href="${formatterExample}"]`).click();
   await expect(page.locator('#editor')).toBeVisible();
-  await expect(page.locator('#editor')).toHaveText(JSON.stringify(apiResponse, null, 2), { useInnerText: true });
+  await expect(page.locator('#editor')).toHaveValue(JSON.stringify(apiResponse, null, 2));
 });
 
 test('formatter safely quotes arbitrary keys in jq paths and reports syntax errors', async ({ page }) => {
@@ -87,11 +87,32 @@ test('formatter safely quotes arbitrary keys in jq paths and reports syntax erro
   await page.locator('#editor').fill('{"status":"paid",}');
   await page.locator('#prettify-btn').click();
   await expect(page.locator('#error-box')).toBeVisible();
-  await expect(page.locator('#editor')).toContainText('"status"');
+  await expect(page.locator('#editor')).toHaveValue('{"status":"paid",}');
   await page.locator('#editor').fill('null');
   await page.locator('#prettify-btn').click();
   await expect(page.locator('#error-box')).toBeHidden();
-  await expect(page.locator('#editor')).toHaveText('null');
+  await expect(page.locator('#editor')).toHaveValue('null');
+});
+
+test('formatter provides syntax colors, line numbers, search, local files, and an error jump', async ({ page }) => {
+  await page.goto('/json-formatter/');
+  await page.locator('#editor').fill('{\n  "status": "paid",\n  "total": 29.5\n}');
+  await expect(page.locator('[data-json-editor-gutter]')).toContainText('1\n2\n3');
+  await expect(page.locator('[data-json-editor-code] .json-token-key')).toHaveCount(2);
+  await page.locator('#find-btn').click();
+  await page.locator('#formatter-find-input').fill('paid');
+  await expect(page.locator('#formatter-find-count')).toHaveText('1 / 1');
+  await expect(page.locator('.json-search-active')).toHaveCount(1);
+  await page.locator('#json-file').setInputFiles({ name: 'private-response.json', mimeType: 'application/json', buffer: Buffer.from('{"loaded":true}') });
+  await expect(page.locator('#editor')).toHaveValue('{"loaded":true}');
+  await expect(page.locator('#file-status')).toContainText('Nothing was uploaded');
+  await expect(page.locator('#file-status')).not.toContainText('private-response');
+  await page.locator('#editor').fill('{\n  "loaded":\n}');
+  await page.locator('#prettify-btn').click();
+  await expect(page.locator('#error-box')).toContainText('Line 3, column 1');
+  await expect(page.locator('.json-editor-error')).toHaveCount(1);
+  await page.locator('#error-jump-btn').click();
+  expect(await page.locator('#editor').evaluate(element => document.activeElement === element && (element as HTMLTextAreaElement).selectionStart > 0)).toBeTruthy();
 });
 
 test('runnable diff examples restore settings and share the actual comparison', async ({ page }) => {
@@ -113,6 +134,34 @@ test('runnable diff examples restore settings and share the actual comparison', 
   await expect(page.locator('#stats')).toContainText('2 differences');
   await page.locator('#swap-btn').click();
   await expect(page.locator('#stats')).toContainText('1 removed');
+});
+
+test('diff has line-aware inputs, file loading, find, change navigation, and JSON report export', async ({ page }) => {
+  await page.goto('/json-diff/');
+  await page.locator('#json1-file').setInputFiles({ name: 'before-private.json', mimeType: 'application/json', buffer: Buffer.from('{"status":"queued","count":1}') });
+  await page.locator('#json2-file').setInputFiles({ name: 'after-private.json', mimeType: 'application/json', buffer: Buffer.from('{"status":"paid","count":2,"active":true}') });
+  await expect(page.locator('#json1')).toHaveValue('{"status":"queued","count":1}');
+  await expect(page.locator('#json2')).toHaveValue('{"status":"paid","count":2,"active":true}');
+  await expect(page.locator('#json1-file-status')).toContainText('Nothing was uploaded');
+  await expect(page.locator('#json1-file-status')).not.toContainText('before-private');
+  await page.locator('#compare-btn').click();
+  await expect(page.locator('#change-nav')).toBeVisible();
+  await expect(page.locator('#change-position')).toContainText('Change 1 / 3');
+  await page.locator('#change-next').click();
+  await expect(page.locator('#change-position')).toContainText('Change 2 / 3');
+  await page.locator('#changes-list [data-change-index="1"]').click();
+  await expect(page.locator('#diff-left mark.diff-focus, #diff-right mark.diff-focus')).toHaveCount(2);
+  await page.locator('#diff-find-btn').click();
+  await page.locator('#diff-find-input').fill('paid');
+  await expect(page.locator('#diff-find-count')).toHaveText('1 / 1');
+  await expect(page.locator('.json-search-active')).toHaveCount(1);
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#export-report-btn').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe('json-diff-report.json');
+  const report = JSON.parse(await readFile((await download.path())!, 'utf8'));
+  expect(report.options).toEqual({ ignoreKeyOrder: true, ignoreArrayOrder: false });
+  expect(report.changes.map((change: { path: string }) => change.path).sort()).toEqual(['active', 'count', 'status']);
 });
 
 test('unordered arrays preserve duplicate counts and respect nested ordering options', async ({ page }) => {
@@ -202,7 +251,7 @@ test('JSON tool SEO, visible FAQs, guides, and runnable examples agree', async (
     expect(await exampleButton.evaluate(node => getComputedStyle(node).color)).toBe('rgb(255, 255, 255)');
     const link = await page.locator(`.guide-body a[href^="/${tool}/#lz:"]`).first().getAttribute('href');
     await page.goto(link!);
-    if (tool === 'json-formatter') await expect(page.locator('#editor')).toHaveText(JSON.stringify(apiResponse, null, 2), { useInnerText: true });
+    if (tool === 'json-formatter') await expect(page.locator('#editor')).toHaveValue(JSON.stringify(apiResponse, null, 2));
     else await expect(page.locator('#stats')).toContainText('4 differences');
   }
   await page.goto('/guides/');
@@ -210,5 +259,5 @@ test('JSON tool SEO, visible FAQs, guides, and runnable examples agree', async (
   const rss = await (await request.get('/guides/rss.xml')).text();
   for (const slug of guides) expect(rss).toContain(`/guides/${slug}/`);
   await page.goto(formatterExample);
-  await expect(page.locator('#editor')).toHaveText(JSON.stringify(apiResponse, null, 2), { useInnerText: true });
+  await expect(page.locator('#editor')).toHaveValue(JSON.stringify(apiResponse, null, 2));
 });

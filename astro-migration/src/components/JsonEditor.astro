@@ -1,0 +1,59 @@
+---
+interface Props {
+  id: string;
+  label: string;
+  placeholder?: string;
+  shareKey?: string;
+  height?: string;
+}
+const { id, label, placeholder = 'Paste JSON here…', shareKey, height = 'h-72' } = Astro.props;
+---
+
+<div class:list={['json-editor', height]} data-json-editor>
+  <pre class="json-editor-gutter" data-json-editor-gutter aria-hidden="true">1</pre>
+  <pre class="json-editor-code" data-json-editor-code aria-hidden="true"></pre>
+  <textarea
+    id={id}
+    data-share-key={shareKey}
+    class="json-editor-input"
+    aria-label={label}
+    autocapitalize="off"
+    autocomplete="off"
+    autocorrect="off"
+    spellcheck="false"
+    placeholder={placeholder}
+  ></textarea>
+</div>
+
+<style>
+  .json-editor { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); overflow: hidden; border: 1px solid #cbd5e1; border-radius: .5rem; background: #fff; font: .82rem/1.6 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; tab-size: 2; }
+  .json-editor:focus-within { border-color: #6366f1; box-shadow: 0 0 0 2px rgb(99 102 241 / .25); }
+  .json-editor-gutter { grid-column: 1; grid-row: 1; z-index: 3; margin: 0; min-width: 3rem; overflow: hidden; padding: .75rem .6rem; border-right: 1px solid #e2e8f0; background: #f8fafc; color: #94a3b8; text-align: right; user-select: none; }
+  .json-editor-code { grid-column: 2; grid-row: 1; z-index: 1; min-width: max-content; margin: 0; padding: .75rem 1rem; color: #334155; pointer-events: none; white-space: pre; will-change: transform; }
+  .json-editor-input { grid-column: 2; grid-row: 1; z-index: 2; width: 100%; min-width: 0; resize: none; border: 0; outline: 0; background: transparent; padding: .75rem 1rem; color: transparent; caret-color: #0f172a; font: inherit; line-height: inherit; tab-size: inherit; white-space: pre; overflow: auto; }
+  .json-editor-input::selection { background: rgb(165 180 252 / .55); }
+  .json-editor-input::placeholder { color: #94a3b8; }
+  :global(.dark) .json-editor { border-color: #475569; background: #1e293b; }
+  :global(.dark) .json-editor-gutter { border-color: #334155; background: #0f172a; color: #64748b; }
+  :global(.dark) .json-editor-code { color: #e2e8f0; }
+  :global(.dark) .json-editor-input { caret-color: #f8fafc; }
+  :global(.json-token-key) { color: #0369a1; }
+  :global(.json-token-string) { color: #047857; }
+  :global(.json-token-number) { color: #7c3aed; }
+  :global(.json-token-literal) { color: #b45309; }
+  :global(.json-token-punctuation) { color: #64748b; }
+  :global(.json-search-match) { background: #fef08a; color: #422006; border-radius: 2px; }
+  :global(.json-search-active) { outline: 2px solid #4f46e5; outline-offset: 1px; }
+  :global(.json-editor-error) { background: #fecaca; color: #991b1b; border-bottom: 2px wavy #dc2626; }
+  :global(.json-editor-error-eof) { display: inline-block; min-width: .75em; }
+  :global(.json-editor-placeholder) { color: #94a3b8; }
+  :global(.json-editor-drop-target) { outline: 3px solid rgb(99 102 241 / .6); outline-offset: -3px; }
+  :global(#diff-left mark.diff-focus), :global(#diff-right mark.diff-focus) { outline: 3px solid #4f46e5; outline-offset: 2px; }
+  :global(.dark) .json-token-key { color: #7dd3fc; }
+  :global(.dark) .json-token-string { color: #6ee7b7; }
+  :global(.dark) .json-token-number { color: #c4b5fd; }
+  :global(.dark) .json-token-literal { color: #fcd34d; }
+  :global(.dark) .json-token-punctuation { color: #94a3b8; }
+  :global(.dark) .json-search-match { background: #854d0e; color: #fef3c7; }
+  :global(.dark) .json-editor-error { background: #7f1d1d; color: #fecaca; }
+</style>

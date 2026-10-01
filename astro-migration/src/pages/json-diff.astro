@@ -1,5 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import JsonEditor from '../components/JsonEditor.astro';
 import JsonToolContent from '../components/JsonToolContent.astro';
 import { diffFaqs } from '../lib/json-examples.ts';
 
@@ -8,7 +9,7 @@ const jsonLd = [
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "JSON Diff - Compare JSON Online",
-    "description": "Compare JSON documents by structure, inspect changed values and paths, ignore key or array order, and share a reproducible comparison.",
+    "description": "Compare JSON documents by structure, inspect and navigate changed values and paths, search both inputs, ignore key or array order, export a report, and share a reproducible comparison.",
     "url": "https://bugdays.com/json-diff/",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any",
@@ -17,7 +18,7 @@ const jsonLd = [
       "price": "0",
       "priceCurrency": "USD"
     },
-    "featureList": ["JSON comparison", "Semantic diff", "Deep object comparison", "Array order ignore", "Color-coded diff"]
+    "featureList": ["JSON comparison", "Semantic diff", "Deep object comparison", "Array order ignore", "Color-coded diff", "Change navigation", "JSON report export", "Local JSON file comparison"]
   },
   {
     "@context": "https://schema.org",
@@ -28,8 +29,8 @@ const jsonLd = [
 ---
 
 <Layout
-  title="JSON Diff & Compare — Ignore Array Order, Share Results"
-  description="Compare two JSON documents, API responses, or config files. See changed paths, ignore key or array order, and share the comparison. Runs locally, free, no signup."
+  title="JSON Diff & Compare — Navigate Changes, Export & Share"
+  description="Compare two JSON documents, API responses, or config files. Navigate changed paths, search both files, ignore key or array order, export a diff report, and share the comparison locally."
   keywords="JSON diff, JSON compare, JSON comparison, JSON difference, compare JSON online, diff JSON, JSON diff checker, compare two JSON, JSON comparator, semantic JSON diff, API response compare, JSON file compare"
   breadcrumb={[{ name: "JSON Tools", href: "/json-tools/" }, { name: "JSON Diff" }]}
   toolId="json-diff"
@@ -37,27 +38,21 @@ const jsonLd = [
 >
   <div class="max-w-6xl mx-auto">
     <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-1">JSON Diff — Compare JSON Online</h1>
-    <p class="mb-4 text-sm text-slate-600 dark:text-slate-300">Find changed values in API responses or configuration files, then share a comparison someone else can reproduce.</p>
+    <p class="mb-4 text-sm text-slate-600 dark:text-slate-300">Find and navigate changed values in API responses or configuration files, download a report, then share a comparison someone else can reproduce.</p>
 
     <div class="grid md:grid-cols-2 gap-4 mb-4">
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label for="json1" class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Original JSON</label>
-        <textarea
-          id="json1"
-          data-share-key="json1"
-          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-          placeholder={'{"name": "John", "age": 30}'}
-        ></textarea>
+        <div class="mb-2 flex items-center justify-between gap-3"><label for="json1" class="text-sm font-medium text-gray-700 dark:text-slate-200">Original JSON</label><button id="json1-file-btn" class="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-300">Open file</button></div>
+        <input id="json1-file" type="file" accept="application/json,.json,.jsonc,text/plain" class="hidden" />
+        <JsonEditor id="json1" label="Original JSON" shareKey="json1" placeholder={'{"name": "John", "age": 30}'} height="h-56" />
+        <p id="json1-file-status" class="mt-2 text-xs text-slate-500 dark:text-slate-400">Drop a local JSON file here.</p>
       </div>
 
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label for="json2" class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Modified JSON</label>
-        <textarea
-          id="json2"
-          data-share-key="json2"
-          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-          placeholder={'{"name": "Jane", "age": 25}'}
-        ></textarea>
+        <div class="mb-2 flex items-center justify-between gap-3"><label for="json2" class="text-sm font-medium text-gray-700 dark:text-slate-200">Modified JSON</label><button id="json2-file-btn" class="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-300">Open file</button></div>
+        <input id="json2-file" type="file" accept="application/json,.json,.jsonc,text/plain" class="hidden" />
+        <JsonEditor id="json2" label="Modified JSON" shareKey="json2" placeholder={'{"name": "Jane", "age": 25}'} height="h-56" />
+        <p id="json2-file-status" class="mt-2 text-xs text-slate-500 dark:text-slate-400">Drop a local JSON file here.</p>
       </div>
     </div>
 
@@ -91,15 +86,32 @@ const jsonLd = [
       <button id="sample-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
         Load Sample
       </button>
+      <button id="diff-find-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">Find</button>
       <button id="share-diff-btn" class="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700">Share comparison ↗</button>
     </div>
 
-    <div id="error-box" role="alert" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-300"></div>
+    <div id="diff-find-bar" class="hidden mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+      <label for="diff-find-input" class="text-sm font-medium text-slate-700 dark:text-slate-200">Find keys or values</label>
+      <input id="diff-find-input" type="search" class="min-w-0 flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" placeholder="Search both JSON documents" />
+      <select id="diff-find-scope" class="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200" aria-label="Find scope"><option value="both">Both</option><option value="original">Original</option><option value="modified">Modified</option></select>
+      <span id="diff-find-count" class="min-w-20 text-right text-xs text-slate-500 dark:text-slate-400" aria-live="polite"></span>
+      <button id="diff-find-prev" class="rounded border border-slate-300 px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700" title="Previous match">↑</button>
+      <button id="diff-find-next" class="rounded border border-slate-300 px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700" title="Next match">↓</button>
+      <button id="diff-find-close" class="rounded px-2 py-1 text-sm text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700" aria-label="Close find">×</button>
+    </div>
+
+    <div id="error-box" role="alert" class="hidden mb-4 flex flex-wrap items-center gap-3 p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-300"><span id="diff-error-text"></span><button id="diff-error-jump" class="hidden rounded border border-red-300 px-2 py-1 text-xs font-semibold text-red-800 hover:bg-red-100 dark:border-red-800 dark:text-red-200 dark:hover:bg-red-950/50">Jump to error</button></div>
 
     <div id="stats" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800"></div>
 
     <!-- Diff Results -->
     <div id="results" class="hidden">
+      <div id="change-nav" class="hidden mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-900 dark:bg-indigo-950/30">
+        <span id="change-position" class="mr-auto text-sm font-semibold text-indigo-900 dark:text-indigo-100">Change 1 / 1</span>
+        <button id="change-prev" class="rounded border border-indigo-300 px-3 py-1.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-200 dark:hover:bg-indigo-900/60">Previous</button>
+        <button id="change-next" class="rounded bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700">Next</button>
+        <button id="export-report-btn" class="rounded border border-indigo-300 px-3 py-1.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-200 dark:hover:bg-indigo-900/60">Download report</button>
+      </div>
       <!-- Side-by-side JSON view with highlighting -->
       <div class="grid md:grid-cols-2 gap-4 mb-4">
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
@@ -126,7 +138,7 @@ const jsonLd = [
 
       <!-- Textual Changes Report -->
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Changes Report</label>
+        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Changes Report <span class="font-normal text-slate-500 dark:text-slate-400">Select a path to reveal it.</span></label>
         <div id="changes-list" class="space-y-2 max-h-80 overflow-auto break-words"></div>
       </div>
     </div>
@@ -138,12 +150,16 @@ const jsonLd = [
 
 
 <script>
+  import { track } from '../lib/analytics.ts';
   import { ShareManager } from '../lib/share.ts';
+  import { createJsonEditor, jsonErrorLocation, type JsonEditor } from '../lib/json-editor.ts';
 
   document.getElementById('share-diff-btn')!.addEventListener('click', () => document.getElementById('share-btn')?.click());
 
   const json1Input = document.getElementById('json1') as HTMLTextAreaElement;
   const json2Input = document.getElementById('json2') as HTMLTextAreaElement;
+  const originalEditor = createJsonEditor(json1Input);
+  const modifiedEditor = createJsonEditor(json2Input);
 
   ShareManager.register({
     tool: 'json-diff',
@@ -158,7 +174,15 @@ const jsonLd = [
   const changesList = document.getElementById('changes-list');
   const results = document.getElementById('results');
   const stats = document.getElementById('stats');
-  const errorBox = document.getElementById('error-box');
+  const errorBox = document.getElementById('error-box')!;
+  const errorText = document.getElementById('diff-error-text')!;
+  const errorJump = document.getElementById('diff-error-jump') as HTMLButtonElement;
+  const changeNav = document.getElementById('change-nav')!;
+  const changePosition = document.getElementById('change-position')!;
+  let errorEditor: JsonEditor | null = null;
+  let errorPosition: number | null = null;
+  let currentChanges: Change[] = [];
+  let activeChange = 0;
 
   const sample1 = {
     name: "John Doe",
@@ -186,15 +210,36 @@ const jsonLd = [
     active: false
   };
 
-  function showError(msg: string) {
-    errorBox.textContent = msg;
+  function showError(msg: string, editor: JsonEditor | null = null, position: number | null = null) {
+    errorText.textContent = msg;
+    errorEditor = editor;
+    errorPosition = position;
+    errorJump.classList.toggle('hidden', !editor || position === null);
     errorBox.classList.remove('hidden');
     results.classList.add('hidden');
     stats.classList.add('hidden');
+    changeNav.classList.add('hidden');
   }
 
   function hideError() {
     errorBox.classList.add('hidden');
+    errorEditor?.clearError();
+    errorEditor = null;
+    errorPosition = null;
+  }
+
+  errorJump.addEventListener('click', () => {
+    if (errorEditor && errorPosition !== null) errorEditor.focusPosition(errorPosition);
+  });
+  json1Input.addEventListener('input', () => { if (errorEditor === originalEditor) hideError(); });
+  json2Input.addEventListener('input', () => { if (errorEditor === modifiedEditor) hideError(); });
+
+  function showPanelError(label: string, value: string, editor: JsonEditor, error: unknown) {
+    const location = jsonErrorLocation(value, error);
+    editor.showError(location.position);
+    const detail = error instanceof Error ? error.message : String(error);
+    const at = location.line && location.column ? ` at line ${location.line}, column ${location.column}` : '';
+    showError(`Invalid JSON in ${label}${at}: ${detail}`, editor, location.position);
   }
 
   function sortObject(obj: any): any {
@@ -216,6 +261,7 @@ const jsonLd = [
     path: string;
     oldValue?: any;
     newValue?: any;
+    changeIndex?: number;
   }
 
   function propertyPath(path: string, key: string): string {
@@ -351,7 +397,7 @@ const jsonLd = [
         modified: 'background-color: #e9d5ff; color: #581c87; border: 1px solid #a855f7;',
       };
       const title = escapeHtml(change.path).replace(/"/g, '&quot;');
-      return `<mark style="${colors[change.type]} border-radius: 2px; padding: 0 1px;" title="${title}">${content}</mark>`;
+      return `<mark data-change-index="${change.changeIndex ?? -1}" style="${colors[change.type]} border-radius: 2px; padding: 0 1px;" title="${title}">${content}</mark>`;
     };
     function render(value: any, path: string, depth: number): string {
       const change = changedPaths.get(path || '(root)');
@@ -374,11 +420,34 @@ const jsonLd = [
     return '<pre class="whitespace-pre-wrap break-words text-sm">' + render(obj, '', 0) + '</pre>';
   }
 
+  function focusChange(index: number, scroll = true) {
+    if (!currentChanges.length) return;
+    activeChange = ((index % currentChanges.length) + currentChanges.length) % currentChanges.length;
+    const change = currentChanges[activeChange];
+    changePosition.textContent = `Change ${activeChange + 1} / ${currentChanges.length} · ${change.path}`;
+    document.querySelectorAll('#diff-left mark, #diff-right mark').forEach(mark => mark.classList.remove('diff-focus'));
+    const matches = document.querySelectorAll<HTMLElement>(`mark[data-change-index="${activeChange}"]`);
+    matches.forEach(mark => mark.classList.add('diff-focus'));
+    changesList?.querySelectorAll<HTMLElement>('[data-change-index]').forEach(button => {
+      const selected = Number(button.dataset.changeIndex) === activeChange;
+      button.classList.toggle('font-bold', selected);
+      button.setAttribute('aria-current', selected ? 'true' : 'false');
+    });
+    if (scroll) matches[0]?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+  }
+
+  function updateChangeNavigator() {
+    changeNav.classList.toggle('hidden', currentChanges.length === 0);
+    if (currentChanges.length) focusChange(0, false);
+  }
+
   function compare() {
     hideError();
+    originalEditor.clearError();
+    modifiedEditor.clearError();
 
-    const str1 = json1Input.value.trim();
-    const str2 = json2Input.value.trim();
+    const str1 = originalEditor.getValue().trim();
+    const str2 = modifiedEditor.getValue().trim();
 
     if (!str1 || !str2) {
       showError('Please enter JSON in both fields');
@@ -389,17 +458,20 @@ const jsonLd = [
     try {
       obj1 = JSON.parse(str1);
     } catch (e) {
-      showError('Invalid JSON in left panel: ' + (e as Error).message);
+      showPanelError('left panel', str1, originalEditor, e);
       return;
     }
     try {
       obj2 = JSON.parse(str2);
     } catch (e) {
-      showError('Invalid JSON in right panel: ' + (e as Error).message);
+      showPanelError('right panel', str2, modifiedEditor, e);
       return;
     }
 
     const changes = findChanges(obj1, obj2);
+    changes.forEach((change, index) => change.changeIndex = index);
+    currentChanges = changes;
+    activeChange = 0;
 
     // Stats
     const added = changes.filter(c => c.type === 'added').length;
@@ -432,13 +504,13 @@ const jsonLd = [
         return s.length > 80 ? s.slice(0, 80) + '...' : s;
       };
 
-      changesList.innerHTML = changes.map(c => {
+      changesList.innerHTML = changes.map((c, index) => {
         const colorClasses = c.type === 'added' ? 'bg-green-50 dark:bg-green-950/40 border-green-500' : c.type === 'removed' ? 'bg-red-50 dark:bg-red-950/40 border-red-500' : 'bg-purple-50 dark:bg-purple-950/40 border-purple-500';
         const icon = c.type === 'added' ? '+' : c.type === 'removed' ? '−' : '~';
         const iconColorStyle = c.type === 'added' ? 'color: #16a34a;' : c.type === 'removed' ? 'color: #dc2626;' : 'color: #9333ea;';
 
         let content = `<span style="${iconColorStyle} font-weight: bold; margin-right: 0.5rem;">${icon}</span>`;
-        content += `<code class="text-indigo-700 dark:text-indigo-300">${escapeHtml(c.path)}</code>`;
+        content += `<button type="button" data-change-index="${index}" class="text-left text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-100"><code>${escapeHtml(c.path)}</code></button>`;
 
         if (c.type === 'added') {
           content += `<span class="text-gray-500 dark:text-slate-400 mx-2">=</span><span class="text-green-700 dark:text-green-300">${escapeHtml(formatVal(c.newValue))}</span>`;
@@ -453,6 +525,7 @@ const jsonLd = [
     }
 
     results.classList.remove('hidden');
+    updateChangeNavigator();
 
     // Sync scroll
     diffLeft.onscroll = () => { diffRight.scrollTop = diffLeft.scrollTop; };
@@ -463,36 +536,139 @@ const jsonLd = [
 
   document.getElementById('format-btn').addEventListener('click', () => {
     try {
-      if (json1Input.value.trim()) {
-        json1Input.value = JSON.stringify(JSON.parse(json1Input.value), null, 2);
+      if (originalEditor.getValue().trim()) {
+        originalEditor.setValue(JSON.stringify(JSON.parse(originalEditor.getValue()), null, 2));
       }
     } catch {}
     try {
-      if (json2Input.value.trim()) {
-        json2Input.value = JSON.stringify(JSON.parse(json2Input.value), null, 2);
+      if (modifiedEditor.getValue().trim()) {
+        modifiedEditor.setValue(JSON.stringify(JSON.parse(modifiedEditor.getValue()), null, 2));
       }
     } catch {}
   });
 
   document.getElementById('clear-btn').addEventListener('click', () => {
-    json1Input.value = '';
-    json2Input.value = '';
+    originalEditor.setValue('');
+    modifiedEditor.setValue('');
+    currentChanges = [];
     results.classList.add('hidden');
     stats.classList.add('hidden');
+    changeNav.classList.add('hidden');
     hideError();
   });
 
   document.getElementById('swap-btn').addEventListener('click', () => {
-    const temp = json1Input.value;
-    json1Input.value = json2Input.value;
-    json2Input.value = temp;
+    const temp = originalEditor.getValue();
+    originalEditor.setValue(modifiedEditor.getValue());
+    modifiedEditor.setValue(temp);
     if (!results.classList.contains('hidden')) compare();
   });
 
   document.getElementById('sample-btn').addEventListener('click', () => {
-    json1Input.value = JSON.stringify(sample1, null, 2);
-    json2Input.value = JSON.stringify(sample2, null, 2);
+    originalEditor.setValue(JSON.stringify(sample1, null, 2));
+    modifiedEditor.setValue(JSON.stringify(sample2, null, 2));
     hideError();
+  });
+
+  function downloadReport() {
+    if (!currentChanges.length) return;
+    const report = {
+      format: 'bugdays-json-diff-report/v1',
+      comparedAt: new Date().toISOString(),
+      options: { ignoreKeyOrder: ignoreKeyOrder.checked, ignoreArrayOrder: ignoreArrayOrder.checked },
+      changes: currentChanges.map(({ changeIndex, ...change }) => change),
+    };
+    track('export_used', { tool: 'json-diff', format: 'json' });
+    const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'json-diff-report.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('change-prev')!.addEventListener('click', () => focusChange(activeChange - 1));
+  document.getElementById('change-next')!.addEventListener('click', () => focusChange(activeChange + 1));
+  document.getElementById('export-report-btn')!.addEventListener('click', downloadReport);
+  changesList?.addEventListener('click', event => {
+    const target = (event.target as HTMLElement).closest<HTMLElement>('[data-change-index]');
+    if (target?.dataset.changeIndex) focusChange(Number(target.dataset.changeIndex));
+  });
+
+  async function loadLocalFile(file: File, editor: JsonEditor, status: HTMLElement, label: string) {
+    if (file.size > 10 * 1024 * 1024) {
+      showError('Choose a JSON file smaller than 10 MB.');
+      return;
+    }
+    const text = await file.text();
+    editor.setValue(text);
+    status.textContent = `Loaded ${Math.max(1, Math.round(file.size / 1024))} KB locally. Nothing was uploaded.`;
+    try { JSON.parse(text); hideError(); }
+    catch (error) { showPanelError(label, text, editor, error); }
+  }
+
+  function enableFileInput(inputId: string, buttonId: string, editor: JsonEditor, statusId: string, label: string) {
+    const input = document.getElementById(inputId) as HTMLInputElement;
+    const status = document.getElementById(statusId)!;
+    document.getElementById(buttonId)!.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (file) void loadLocalFile(file, editor, status, label);
+      input.value = '';
+    });
+    const shell = editor.element.closest<HTMLElement>('[data-json-editor]')!;
+    ['dragenter', 'dragover'].forEach(type => shell.addEventListener(type, event => { event.preventDefault(); shell.classList.add('json-editor-drop-target'); }));
+    ['dragleave', 'drop'].forEach(type => shell.addEventListener(type, event => { event.preventDefault(); shell.classList.remove('json-editor-drop-target'); }));
+    shell.addEventListener('drop', event => {
+      const file = event.dataTransfer?.files?.[0];
+      if (file) void loadLocalFile(file, editor, status, label);
+    });
+  }
+
+  enableFileInput('json1-file', 'json1-file-btn', originalEditor, 'json1-file-status', 'the Original JSON panel');
+  enableFileInput('json2-file', 'json2-file-btn', modifiedEditor, 'json2-file-status', 'the Modified JSON panel');
+
+  const findBar = document.getElementById('diff-find-bar')!;
+  const findInput = document.getElementById('diff-find-input') as HTMLInputElement;
+  const findScope = document.getElementById('diff-find-scope') as HTMLSelectElement;
+  const findCount = document.getElementById('diff-find-count')!;
+  let findTargets: Array<{ editor: JsonEditor; index: number }> = [];
+  let findIndex = 0;
+
+  function refreshFind(focus = false) {
+    const query = findInput.value;
+    const useOriginal = findScope.value !== 'modified';
+    const useModified = findScope.value !== 'original';
+    const originalCount = useOriginal ? originalEditor.setSearch(query) : (originalEditor.setSearch(''), 0);
+    const modifiedCount = useModified ? modifiedEditor.setSearch(query) : (modifiedEditor.setSearch(''), 0);
+    findTargets = [
+      ...Array.from({ length: originalCount }, (_, index) => ({ editor: originalEditor, index })),
+      ...Array.from({ length: modifiedCount }, (_, index) => ({ editor: modifiedEditor, index })),
+    ];
+    if (!query) {
+      findCount.textContent = '';
+      return;
+    }
+    if (!findTargets.length) {
+      findCount.textContent = 'No matches';
+      return;
+    }
+    findIndex = ((findIndex % findTargets.length) + findTargets.length) % findTargets.length;
+    findCount.textContent = `${findIndex + 1} / ${findTargets.length}${findTargets.length === 500 ? '+' : ''}`;
+    if (focus) findTargets[findIndex].editor.focusMatch(findTargets[findIndex].index);
+  }
+
+  function openFind() { findBar.classList.remove('hidden'); findInput.focus(); findInput.select(); refreshFind(); }
+  function closeFind() { findBar.classList.add('hidden'); findInput.value = ''; findIndex = 0; refreshFind(); }
+  document.getElementById('diff-find-btn')!.addEventListener('click', openFind);
+  document.getElementById('diff-find-close')!.addEventListener('click', closeFind);
+  findInput.addEventListener('input', () => { findIndex = 0; refreshFind(); });
+  findScope.addEventListener('change', () => { findIndex = 0; refreshFind(); });
+  document.getElementById('diff-find-next')!.addEventListener('click', () => { if (findTargets.length) { findIndex++; refreshFind(true); } });
+  document.getElementById('diff-find-prev')!.addEventListener('click', () => { if (findTargets.length) { findIndex--; refreshFind(true); } });
+  document.addEventListener('keydown', event => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f') { event.preventDefault(); openFind(); }
+    if (event.key === 'Escape' && !findBar.classList.contains('hidden')) closeFind();
   });
 
   // Re-compare when options change

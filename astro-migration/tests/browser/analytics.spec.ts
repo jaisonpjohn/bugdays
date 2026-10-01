@@ -16,7 +16,7 @@ const events = (page: Page) => page.evaluate(() =>
 const typeJson = async (page: Page, value: string) => {
   await page.locator('#editor').click();
   await page.locator('#editor').evaluate((el, text) => {
-    el.textContent = text;
+    (el as HTMLTextAreaElement).value = text;
     el.dispatchEvent(new Event('input', { bubbles: true }));
   }, value);
 };
