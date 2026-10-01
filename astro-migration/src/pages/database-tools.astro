@@ -2,20 +2,21 @@
 import Layout from '../layouts/Layout.astro';
 
 const tools = [
+  { name: 'SQL Formatter', href: '/sql-formatter/', description: 'Format queries and DDL for PostgreSQL, MySQL, SQL Server, Oracle, DB2, BigQuery, and more' },
   { name: 'Schema Explorer', href: '/schema-explorer/', description: 'Visualize table relationships from DDL as an interactive ER diagram, annotate tables and columns, export a data dictionary' },
   { name: 'DBeaver Password Decrypt', href: '/dbeaver-password-decrypter/', description: 'Recover database passwords saved in DBeaver' },
 ];
 ---
 
 <Layout
-  title="Database Schema & DBeaver Recovery Tools"
-  description="Turn PostgreSQL, MySQL, Oracle, SQL Server, DB2, or SQLite DDL into an ER diagram and data dictionary, or recover authorized DBeaver saved credentials locally."
-  keywords="database tools, schema explorer, ER diagram, data dictionary, table relationships, postgres, mysql, oracle, db2, sql server"
+  title="SQL Formatter, Database Schema & DBeaver Recovery Tools"
+  description="Format SQL and DDL for major database dialects, turn PostgreSQL, MySQL, Oracle, SQL Server, DB2, or SQLite DDL into an ER diagram and data dictionary, or recover authorized DBeaver credentials locally."
+  keywords="database tools, SQL formatter, SQL beautifier, schema explorer, ER diagram, data dictionary, table relationships, postgres, mysql, oracle, db2, sql server"
   breadcrumb={[{ name: "Database Tools" }]}
 >
   <div class="max-w-6xl mx-auto">
     <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-2">Database Tools</h1>
-    <p class="text-gray-600 dark:text-slate-400 mb-6">Explore, document, and work with database schemas</p>
+    <p class="text-gray-600 dark:text-slate-400 mb-6">Format SQL, explore relationships, document schemas, and recover authorized local credentials</p>
 
     <div class="grid md:grid-cols-2 gap-4">
       {tools.map((tool) => (
@@ -32,7 +33,7 @@ const tools = [
     <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
       <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About Database Tools</h2>
       <p class="text-gray-600 dark:text-slate-300 text-sm">
-        Understand and document any database without installing anything. The Schema Explorer parses DDL from
+        Understand and document any database without installing anything. Format a query or migration with the SQL Formatter, then use the Schema Explorer to parse DDL from
         PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, DB2 and SQLite, draws the table relationships as an
         interactive ER diagram, and lets you annotate tables and columns before exporting a data dictionary.
         All parsing happens entirely in your browser — your schema never leaves your device.

@@ -1,0 +1,32 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+const guide = guideBySlug('json-to-typescript-zod-pydantic');
+const example = JSON.stringify([
+  { id: 42, displayName: 'Ada', roles: ['admin'], profile: { timezone: 'UTC' } },
+  { id: 43, displayName: 'Lin', profile: null },
+], null, 2);
+---
+
+<GuideLayout guide={guide} keywords="JSON to TypeScript interface, JSON to Zod schema, JSON to Pydantic model, JSON type generator, generate model from API response, infer optional JSON fields">
+  <p>A JSON example is evidence, not a complete API contract. It can still get you to a useful first model much faster—provided the example contains the nested objects, array variations, nulls, and missing fields your application really receives.</p>
+
+  <h2>Use a representative response</h2>
+  <p>Paste an object or an array into the <a href="/json-to-code/">JSON to TypeScript, Zod &amp; Pydantic Generator</a>. Arrays are especially useful because the generator compares object keys across their entries. In this example, the second record has no <code>roles</code>, and its <code>profile</code> is null:</p>
+  <pre><code>{example}</code></pre>
+  <p>That lets the generated code represent <code>roles</code> as optional and <code>profile</code> as nullable. If a production response has more variants, add a small synthetic representation of each before generating again.</p>
+
+  <h2>Choose the output that matches the job</h2>
+  <p><strong>TypeScript interfaces</strong> provide editor and compile-time help but disappear at runtime. <strong>Zod schemas</strong> validate untrusted API input while inferring a TypeScript type. <strong>Pydantic models</strong> are a natural starting point for Python services that parse and validate JSON.</p>
+  <p>The generator protects invalid property names by quoting them in TypeScript and creating Python aliases when a JSON key is not a safe Python identifier. It also handles nested objects, arrays, boolean values, numbers, and mixed values. Generated types are intentionally broad where JSON alone cannot prove a stronger constraint.</p>
+
+  <h2>Review the code before calling it a contract</h2>
+  <p>An example with <code>1</code> tells a generator only that it saw a JSON number—not whether your API guarantees an integer, a positive ID, or a bounded amount. Add enum values, date parsing, minimum and maximum ranges, string formats, defaults, and business rules by hand. If a field is absent from your sample, it cannot appear in generated output.</p>
+  <p>Use the <a href="/json-formatter/">JSON Formatter</a> to validate and inspect a response first. When a new deployment changes the response shape, compare a before and after sample in the <a href="/json-diff/">JSON Diff Checker</a> before updating the model.</p>
+
+  <h2>Share a safe reproducer</h2>
+  <p>A shared generator link restores the JSON example, root name, and selected target for a teammate. That makes a small mock payload useful in a code review or support question. A shared link is not a secret store: anyone with it can read the included JSON. Remove access tokens, customer records, private endpoints, and identifiers before sharing.</p>
+
+  <a slot="related" href="/guides/format-validate-json-api-response/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Format and validate a JSON API response</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Find parse errors and copy useful jq paths before generating code.</span></a>
+  <a slot="related" href="/guides/compare-json-api-responses-ignore-array-order/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Compare JSON responses safely</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">See whether a changed response actually changes the contract.</span></a>
+</GuideLayout>

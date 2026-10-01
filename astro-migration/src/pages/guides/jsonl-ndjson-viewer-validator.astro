@@ -1,0 +1,27 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+const guide = guideBySlug('jsonl-ndjson-viewer-validator');
+const sample = '{"event":"started","id":1}\n{"event":"finished","id":1,"durationMs":142}\n{"event":"started","id":2,"ok":true}';
+---
+
+<GuideLayout guide={guide} keywords="JSONL viewer, NDJSON validator, JSON Lines parser, JSONL to JSON array, invalid JSONL line, newline delimited JSON logs">
+  <p>JSONL, JSON Lines, and NDJSON are names for the same useful convention: each non-empty line is its own complete JSON value. There is no surrounding array. That small difference makes the format friendly to streaming logs and large exports, but it also means a normal JSON parser cannot read the whole file at once.</p>
+
+  <h2>Recognize a JSON Lines file</h2>
+  <p>This is three JSON records, not one JSON array:</p>
+  <pre><code>{sample}</code></pre>
+  <p>Wrapping those values in <code>[</code> and <code>]</code> without adding commas would produce invalid JSON. Use the <a href="/jsonl-viewer/">JSONL Viewer &amp; NDJSON Validator</a> to parse each line independently and inspect the records that succeed.</p>
+
+  <h2>Find a bad line without discarding good records</h2>
+  <p>A trailing comma, a truncated line, an unescaped quote, or an accidental log prefix can break a single record. The viewer reports the actual line number and preserves valid records in its preview. Filter the visible JSON when an export is noisy, then select a record to see a formatted value instead of scanning a long one-line payload.</p>
+
+  <h2>Convert valid JSON Lines to a JSON array</h2>
+  <p>After you decide how to handle invalid records, download the valid values as a conventional JSON array. That format can move into the <a href="/json-formatter/">JSON Formatter</a>, a fixture file, or the <a href="/json-to-code/">JSON-to-code generator</a>. Exporting valid records is deliberately explicit so a bad line is never silently treated as if it were good data.</p>
+
+  <h2>Share a minimal safe reproducer</h2>
+  <p>The viewer’s share link restores the input, filter, and parse action. Use it for a tiny synthetic example when asking why an ingestion pipeline rejects a record. Links can be read by anyone who receives them, so redact log messages, access tokens, customer data, internal hosts, and identifiers before sharing.</p>
+
+  <a slot="related" href="/guides/format-validate-json-api-response/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Format and validate ordinary JSON</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Move from a selected JSONL record to an interactive JSON tree.</span></a>
+  <a slot="related" href="/guides/json-to-typescript-zod-pydantic/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Generate a model from a JSON record</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Turn a representative record into TypeScript, Zod, or Pydantic code.</span></a>
+</GuideLayout>

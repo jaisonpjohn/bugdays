@@ -147,6 +147,25 @@ const detectJson: Detector = (input) => {
   };
 };
 
+const detectJsonLines: Detector = (input) => {
+  const lines = input.split(/\r?\n/).filter(line => line.trim());
+  if (lines.length < 2 || tryJson(input) !== undefined) return null;
+  const likelyJsonLines = lines.filter(line => /^[{[]/.test(line.trim()));
+  if (likelyJsonLines.length < 2) return null;
+  let valid = 0;
+  for (const line of lines) {
+    try { JSON.parse(line); valid++; } catch { /* reported by the viewer */ }
+  }
+  if (!valid) return null;
+  const invalid = lines.length - valid;
+  return {
+    id: 'jsonl', title: 'JSON Lines / NDJSON', confidence: invalid ? 90 : 97,
+    note: `${lines.length} non-empty lines · ${valid} valid${invalid ? ` · ${invalid} invalid` : ''}`,
+    primary: { label: 'Validate JSON Lines', toolId: 'jsonl-viewer', href: '/jsonl-viewer/', data: { jsonl: input }, action: 'parse' },
+    secondary: valid === lines.length ? { label: 'Generate typed code', toolId: 'json-to-code', href: '/json-to-code/', data: { json: `[${lines.join(',')}]` }, action: 'generate' } : undefined,
+  };
+};
+
 const detectCertificate: Detector = (input) => {
   const trimmed = input.trim();
   const certificateCount = (trimmed.match(/-----BEGIN CERTIFICATE-----/g) || []).length;
@@ -476,6 +495,15 @@ const detectCron: Detector = (input) => {
   };
 };
 
+const detectCurl: Detector = (input) => {
+  const command = input.trim();
+  if (!/^curl(?:\s|$)/i.test(command)) return null;
+  return {
+    id: 'curl-command', title: 'cURL command', confidence: 96,
+    primary: { label: 'Convert to JavaScript or Python', toolId: 'curl-to-code', href: '/curl-to-code/', data: { curl: input }, action: 'convert' },
+  };
+};
+
 const detectColor: Detector = (input) => {
   const t = input.trim();
   const isHex = /^#?([0-9a-f]{3}|[0-9a-f]{4}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(t) && (t.startsWith('#') || /[a-f]/i.test(t));
@@ -550,9 +578,9 @@ const detectHex: Detector = (input) => {
 // ---------------------------------------------------------------------------
 
 const DETECTORS: Detector[] = [
-  detectJwt, detectDataUriImage, detectThreadDump, detectJson, detectDdl, detectCertificate, detectXml,
+  detectJwt, detectDataUriImage, detectThreadDump, detectJsonLines, detectJson, detectDdl, detectCertificate, detectXml,
   detectEpoch, detectIsoDate, detectUuid, detectColor, detectIpCidr, detectTraffic,
-  detectCron, detectUnixPerms, detectUrl, detectUrlEncoded, detectQueryString,
+  detectCurl, detectCron, detectUnixPerms, detectUrl, detectUrlEncoded, detectQueryString,
   detectBase64, detectHex, detectToml, detectAsciiTable, detectYaml, detectCsv,
 ];
 

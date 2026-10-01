@@ -1,0 +1,27 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+const guide = guideBySlug('format-sql-query-postgres-mysql-sql-server');
+const compactQuery = "select customer_id,count(*) as paid_orders from orders where status = 'paid' and created_at >= current_date - interval '30 days' group by customer_id order by paid_orders desc;";
+---
+
+<GuideLayout guide={guide} keywords="format SQL query, SQL formatter PostgreSQL, MySQL SQL beautifier, SQL Server formatter, format DDL, SQL code review, SQL pretty print">
+  <p>SQL formatting is about making the query reviewable, not changing what it does. A consistent layout exposes joins, filters, window functions, and migrations that disappear in a one-line query. It should be the first step before a code review, not a substitute for executing a test query.</p>
+
+  <h2>Choose the closest SQL dialect</h2>
+  <p>PostgreSQL, MySQL, SQL Server, Oracle, DB2, BigQuery, Snowflake, and SQLite share familiar keywords but differ in identifiers, operators, functions, placeholders, and procedural syntax. Choose the closest dialect in the <a href="/sql-formatter/">SQL Formatter &amp; Beautifier</a> before formatting. The formatter runs only in your browser; it does not open a connection or run the statement.</p>
+
+  <h2>Format a compact query before reviewing it</h2>
+  <p>Start with a representative query such as:</p>
+  <pre><code>{compactQuery}</code></pre>
+  <p>Formatting separates <code>SELECT</code>, <code>FROM</code>, <code>WHERE</code>, <code>GROUP BY</code>, and <code>ORDER BY</code>, making it much easier to spot an accidental filter change or an aggregate that no longer matches the grouping. Keep the original query available for a <a href="/text-diff/">line-by-line diff</a> when the review needs to distinguish formatting from logic.</p>
+
+  <h2>Use formatted DDL as the handoff to a schema diagram</h2>
+  <p>For a migration or an existing database export, format the <code>CREATE TABLE</code> statements first. Then paste the supported DDL into the <a href="/schema-explorer/">Schema Explorer</a> to draw foreign-key relationships, annotate tables and columns, and export Markdown, Mermaid, or a data dictionary. Formatting does not validate constraints or execute the migration; it simply makes the handoff readable.</p>
+
+  <h2>Share a scrubbed SQL example</h2>
+  <p>A shareable formatted query is useful for a technical question or an internal review. The link includes the SQL, selected dialect, keyword casing, and indentation settings. It is not a secret store: anyone with the link can read the query. Replace customer IDs, private table names, connection strings, and any credentials with harmless placeholders before sharing.</p>
+
+  <a slot="related" href="/guides/sql-ddl-to-er-diagram-data-dictionary/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Turn SQL DDL into an ER diagram</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Explore relationships and export a data dictionary after formatting.</span></a>
+  <a slot="related" href="/guides/recover-dbeaver-saved-password-credentials-config/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Recover authorized DBeaver credentials safely</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">A local-only workflow for legacy/default saved credentials.</span></a>
+</GuideLayout>

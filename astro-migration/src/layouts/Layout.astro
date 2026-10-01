@@ -20,6 +20,8 @@ interface Props {
   keywords?: string;
   breadcrumb?: BreadcrumbItem[];
   toolId?: string;
+  /** Some tools handle credentials or other secrets and must never create a share link. */
+  shareable?: boolean;
   jsonLd?: object[];
   image?: string;
   imageAlt?: string;
@@ -38,6 +40,7 @@ const {
   keywords = "developer tools, online tools, JSON formatter, Base64 encoder, URL encoder",
   breadcrumb = [],
   toolId,
+  shareable = true,
   jsonLd = [],
   image = '/og-image.png',
   imageAlt = 'Bug Days browser-based developer tools',
@@ -290,7 +293,7 @@ const allJsonLd = breadcrumbSchema ? [breadcrumbSchema, ...jsonLd] : jsonLd;
 
           <!-- Right side: share + GitHub + theme toggle -->
           <div class="flex items-center gap-2">
-            {toolId && <ShareButton />}
+            {toolId && shareable && <ShareButton />}
             <a
               href="https://github.com/jaisonpjohn/bugdays"
               target="_blank"
@@ -312,7 +315,7 @@ const allJsonLd = breadcrumbSchema ? [breadcrumbSchema, ...jsonLd] : jsonLd;
       <main class="flex-1 p-3 md:p-4 lg:p-6 overflow-x-hidden">
         <div class="max-w-7xl mx-auto">
           <Breadcrumb items={breadcrumb} />
-          {toolId && <ShareNotice />}
+          {toolId && shareable && <ShareNotice />}
           <slot />
         </div>
       </main>

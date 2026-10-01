@@ -3,7 +3,10 @@ import Layout from '../layouts/Layout.astro';
 
 const tools = [
   { name: 'JSON Formatter', href: '/json-formatter/', description: 'Format, validate, and beautify JSON data' },
+  { name: 'JSON to Code', href: '/json-to-code/', description: 'Generate TypeScript interfaces, Zod schemas, and Pydantic models from JSON' },
+  { name: 'JSONL Viewer', href: '/jsonl-viewer/', description: 'Validate, filter, inspect, and export JSON Lines / NDJSON records' },
   { name: 'Schema Explorer', href: '/schema-explorer/', description: 'ER diagram & data dictionary from database DDL — Postgres, MySQL, Oracle & more' },
+  { name: 'SQL Formatter', href: '/sql-formatter/', description: 'Beautify SQL queries and DDL for PostgreSQL, MySQL, SQL Server, Oracle, and more' },
   { name: 'Remove Duplicate Lines', href: '/remove-duplicate-lines/', description: 'Remove duplicate lines from text' },
   { name: 'Compare Lists', href: '/list-compare/', description: 'Intersection, union, and difference of text lines' },
   { name: 'URL Encoder/Decoder', href: '/url-encoder/', description: 'Encode and decode URL strings' },
@@ -39,6 +42,7 @@ const tools = [
   { name: 'Protobuf Converter', href: '/protobuf-converter/', description: 'Convert between JSON and Protocol Buffers' },
   { name: 'Avro Converter', href: '/avro-converter/', description: 'Convert between JSON and Apache Avro' },
   { name: 'TOON Converter', href: '/toon-converter/', description: 'Convert JSON/YAML to TOON for 30-60% LLM token savings' },
+  { name: 'cURL to Code', href: '/curl-to-code/', description: 'Convert cURL commands to JavaScript Fetch, Python requests, or normalized cURL' },
   { name: 'API Client', href: '/api-client/', description: 'Test REST APIs with custom headers and body' },
   { name: 'Kafka Message Browser', href: '/kafka-client/', description: 'Browse Kafka messages by partition, offset or time, and replay a selected range' },
   { name: 'Kafka Consumer Diagnostics', href: '/kafka-diagnostics/', description: 'Inspect consumer group lag, assignments and offset reset previews' },

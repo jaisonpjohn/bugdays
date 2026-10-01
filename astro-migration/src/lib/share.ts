@@ -324,9 +324,6 @@ export async function loadFromUrl(): Promise<boolean> {
       }
     }
 
-    // Clean up URL
-    history.replaceState(null, '', location.pathname);
-
     return true;
   } catch (e) {
     console.error('Failed to parse share state:', e);

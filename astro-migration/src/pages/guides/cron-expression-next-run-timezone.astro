@@ -1,0 +1,31 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+const guide = guideBySlug('cron-expression-next-run-timezone');
+---
+
+<GuideLayout guide={guide} keywords="cron expression examples, crontab next run, cron timezone, Kubernetes CronJob schedule, five field cron parser, cron day of month day of week">
+  <p>A cron expression answers two different questions: which minutes match, and in which timezone does the scheduler evaluate them? A correct-looking schedule can still run hours early, late, or twice around a daylight-saving change if that second question is left to assumption.</p>
+
+  <h2>Read the five cron fields from left to right</h2>
+  <p>Traditional Linux cron and common Kubernetes CronJob schedules use five fields: <code>minute hour day-of-month month day-of-week</code>. For example, <code>0 9 * * 1-5</code> means 09:00 Monday through Friday.</p>
+  <pre><code>{`*/15 * * * *    every 15 minutes
+0 * * * *       at minute 0 of every hour
+0 0 * * *       daily at midnight
+0 9 * * 1-5     weekdays at 09:00
+0 0 1 * *       first day of each month`}</code></pre>
+  <p>Paste one into the <a href="/cron-parser/">Cron Expression Parser and Generator</a> to see a plain-language explanation and the next five matching times in your browser’s timezone. It supports wildcards, lists, ranges, and steps such as <code>1,15</code>, <code>1-5</code>, and <code>*/15</code>.</p>
+
+  <h2>Confirm the scheduler’s timezone</h2>
+  <p>The preview is deliberately labeled with your browser’s local timezone. That makes an ambiguous schedule visible, but it does not alter the timezone used by the machine that runs it. Check the platform setting for your server, CI job, or cluster before you deploy a time-sensitive task.</p>
+  <p>Kubernetes CronJobs use a five-field schedule. Newer Kubernetes versions can set <code>spec.timeZone</code>; otherwise, the controller manager’s local timezone is the relevant one. Quartz-style expressions are different: they often have six or seven fields and may include seconds, so do not paste one into a five-field crontab unchanged.</p>
+
+  <h2>The day-of-month and day-of-week surprise</h2>
+  <p>When both day-of-month and day-of-week are restricted, traditional Vixie cron normally treats them as an <strong>OR</strong> condition. For example, a job with <code>0 9 1 * 1</code> can run at 09:00 on the first day of a month and on Mondays. Schedulers are not perfectly uniform here, so treat this as a signal to check the runner’s documentation and preview the dates you expect.</p>
+
+  <h2>Share a schedule, not a secret command</h2>
+  <p>Use <strong>Share schedule</strong> to send a small, non-sensitive expression to a teammate with its next-run preview. A cron expression is normally safe to share. The command it triggers may contain endpoints, tokens, file paths, or business context; keep that out of examples and out of the shared URL.</p>
+
+  <a slot="related" href="/guides/format-validate-json-api-response/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Format a scheduled API payload</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Validate a JSON response before putting a job into production.</span></a>
+  <a slot="related" href="/datetime-converter/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Convert UTC and Unix timestamps</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Check the actual date and timezone behind a scheduled run.</span></a>
+</GuideLayout>

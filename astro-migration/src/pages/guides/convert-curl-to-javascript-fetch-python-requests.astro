@@ -1,0 +1,31 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+const guide = guideBySlug('convert-curl-to-javascript-fetch-python-requests');
+const command = [
+  "curl -X POST 'https://api.example.test/orders' \\",
+  "  -H 'Content-Type: application/json' \\",
+  "  --data-raw '{\"status\":\"paid\"}'",
+].join('\n');
+---
+
+<GuideLayout guide={guide} keywords="cURL to JavaScript Fetch, cURL to Python requests, cURL converter, convert cURL command, cURL code generator, convert curl to fetch">
+  <p>A cURL command is a compact way to reproduce an HTTP request, but it is awkward to review in a pull request or adapt into application code. The useful conversion is not merely syntax replacement: first make the method, URL, headers, query parameters, and body visible; then choose the right runtime and add the reliability concerns your application needs.</p>
+
+  <h2>Start by checking what the cURL command actually sends</h2>
+  <p>For this common JSON request, the meaningful request parts are a POST method, a URL, a content-type header, and a raw JSON body:</p>
+  <pre><code>{command}</code></pre>
+  <p>Paste it into the <a href="/curl-to-code/">cURL to JavaScript Fetch and Python Requests Converter</a>. Conversion runs only in your browser: it parses the command but does not contact the URL, replay an order, or transmit a credential. That makes it a useful first step when a command came from a terminal, browser DevTools, documentation page, or support ticket.</p>
+
+  <h2>Choose Fetch, Python requests, or readable cURL</h2>
+  <p>Use JavaScript Fetch for browser code or a modern JavaScript service. Use Python requests for a script, job, or Python backend. Choose normalized cURL when the goal is a cleaner reproducer for a teammate. The generated request should preserve the method, URL, headers, basic-auth option, and raw body, but it intentionally does not guess application behavior such as retry policy, response schema, pagination, or a timeout.</p>
+
+  <h2>Review the code before it reaches production</h2>
+  <p>Generated code is a starting point. Set a timeout or cancellation policy, decide how non-2xx responses are handled, parse successful responses deliberately, and validate JSON with a schema where appropriate. The <a href="/json-to-code/">JSON-to-TypeScript, Zod, and Pydantic generator</a> can turn a representative response into a model, while the <a href="/json-formatter/">JSON Formatter</a> is useful for checking a body before copying it into a fixture.</p>
+
+  <h2>Redact before sharing a cURL reproducer</h2>
+  <p>Headers, query strings, and bodies may contain Bearer tokens, cookies, passwords, private hosts, account IDs, or customer data. Replace them with obvious placeholders before using a share link or pasting a command into a ticket. A Bug Days share link restores the included text, and anyone who receives the link can read it. When you are ready to make a real call, move a scrubbed command into the <a href="/api-client/">REST API Client</a> and review its target and authentication settings separately.</p>
+
+  <a slot="related" href="/guides/format-validate-json-api-response/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Format and validate an API response</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Inspect a JSON response after you make a request.</span></a>
+  <a slot="related" href="/guides/json-to-typescript-zod-pydantic/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Generate models from JSON</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Turn a reviewed response shape into TypeScript, Zod, or Pydantic.</span></a>
+</GuideLayout>

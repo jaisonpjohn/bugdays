@@ -42,6 +42,8 @@ export const toolGroups: ToolGroup[] = [
     items: [
       { name: "JSON Formatter", href: "/json-formatter/", description: "Format, validate & share JSON", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq", "api response"] },
       { name: "JSON Diff", href: "/json-diff/", description: "Compare & share JSON changes", keywords: ["compare", "difference", "array order", "key order", "api response"] },
+      { name: "JSON to Code", href: "/json-to-code/", description: "Generate TypeScript, Zod & Pydantic", keywords: ["types", "interface", "schema", "python", "model", "code generator"] },
+      { name: "JSONL Viewer", href: "/jsonl-viewer/", description: "Validate, filter & export JSON Lines", keywords: ["ndjson", "json lines", "newline delimited json", "logs", "parser"] },
       { name: "YAML ↔ JSON", href: "/yaml-json-converter/", description: "Convert YAML to JSON and back", keywords: ["yml", "convert"] },
       { name: "CSV ↔ JSON", href: "/csv-json-converter/", description: "Convert CSV to JSON and back", keywords: ["spreadsheet", "excel", "convert"] },
     ]
@@ -80,7 +82,7 @@ export const toolGroups: ToolGroup[] = [
     href: "/encoding-tools/",
     icon: "lock",
     items: [
-      { name: "Base64", href: "/base64-encoder-decoder/", description: "Encode & decode Base64", keywords: ["b64", "encode", "decode"] },
+      { name: "Base64", href: "/base64-encoder-decoder/", description: "UTF-8, Base64URL & file conversion", keywords: ["b64", "encode", "decode", "utf8", "base64url", "data uri", "file"] },
       { name: "URL Encoder", href: "/url-encoder/", description: "Encode & decode URLs", keywords: ["percent encoding", "uri", "escape", "unescape"] },
       { name: "Image ↔ Base64", href: "/image-base64/", description: "Convert images to Base64", keywords: ["data uri", "png", "jpg", "encode"] },
       { name: "GZip & Base64", href: "/gzip-base64/", description: "Decode Base64 GZip or compress text", keywords: ["gzip base64", "base64 gzip", "compress", "decompress", "decode", "encode", "H4sI"] },
@@ -135,6 +137,7 @@ export const toolGroups: ToolGroup[] = [
     href: "/database-tools/",
     icon: "database",
     items: [
+      { name: "SQL Formatter", href: "/sql-formatter/", description: "Beautify SQL and DDL by dialect", keywords: ["sql beautifier", "pretty print", "postgres", "mysql", "sql server", "oracle", "query", "ddl"] },
       { name: "Schema Explorer", href: "/schema-explorer/", description: "ER diagram & data dictionary from DDL or catalog CSV/JSON", keywords: ["erd", "er diagram", "entity relationship", "table relationships", "data dictionary", "postgres", "mysql", "oracle", "db2", "sql server", "ddl", "information schema", "csv", "annotate"] },
       { name: "DBeaver Decrypt", href: "/dbeaver-password-decrypter/", description: "Recover credentials-config.json", keywords: ["credentials", "recover", "database"] },
     ]
@@ -156,6 +159,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "IP Address, ISP & Cloud Lookup", href: "/ip-lookup/", description: "Find ISP, ASN, location, reverse DNS & provider ranges", keywords: ["ip address", "ip lookup", "isp", "asn", "location", "reverse dns", "organization", "hosting", "datacenter", "digitalocean", "hetzner", "ovh", "hostinger", "aws", "gcp", "azure", "cloudflare", "googlebot", "ipv6", "provider", "bot"] },
       { name: "Access Log Analyzer", href: "/access-log-analyzer/", description: "Inspect traffic, errors & client networks", keywords: ["nginx", "apache", "logs", "requests", "bot traffic", "json logs", "404"] },
       { name: "CIDR Calculator", href: "/cidr-calculator/", description: "Subnet & IP range calculator", keywords: ["subnet", "netmask", "ip range"] },
+      { name: "cURL to Code", href: "/curl-to-code/", description: "Convert cURL to Fetch, Python & clean cURL", keywords: ["curl to javascript", "curl to fetch", "curl to python", "requests", "code generator", "api", "postman"] },
       { name: "API Client", href: "/api-client/", description: "Send HTTP requests from the browser", keywords: ["http", "rest", "postman", "curl", "request"] },
       { name: "Bulk API Invoker", href: "/bulk-api-invoker/", description: "Run templated API requests from CSV", keywords: ["batch", "http", "csv", "runner"] },
       { name: "SOAP Client", href: "/soap-client/", description: "Online WSDL tester & SOAP requests", keywords: ["wsdl", "xml", "web service", "soapui", "soap 1.1", "soap 1.2"] },
@@ -164,7 +168,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "Kafka Diagnostics", href: "/kafka-diagnostics/", description: "Inspect consumer lag, stuck partitions & reset offsets", keywords: ["consumer group", "lag", "poison pill", "stuck", "offset reset", "rebalance"] },
       { name: "WebSocket", href: "/websocket-client/", description: "Test WebSocket connections", keywords: ["ws", "wss", "socket"] },
       { name: "SSE Client", href: "/sse-client/", description: "Test Server-Sent Events streams", keywords: ["eventsource", "stream"] },
-      { name: "Cron Parser", href: "/cron-parser/", description: "Explain & preview cron expressions", keywords: ["crontab", "schedule", "quartz"] },
+      { name: "Cron Parser", href: "/cron-parser/", description: "Explain, test & share five-field schedules", keywords: ["crontab", "schedule", "next run", "kubernetes cronjob", "linux cron", "quartz"] },
     ]
   },
   {

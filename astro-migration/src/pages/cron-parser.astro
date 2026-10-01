@@ -1,16 +1,29 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const faqs = [
+  ['What timezone does this cron schedule use?', 'The next-run preview uses the timezone of the browser running it. Your server, Kubernetes cluster, CI system, or cron daemon can use a different timezone, so verify that system separately.'],
+  ['Is this a five-field Linux cron expression?', 'Yes. This page handles minute, hour, day of month, month, and day of week expressions used by traditional crontab and many Kubernetes schedules. Quartz six- or seven-field syntax is different.'],
+  ['What happens when both day of month and day of week are set?', 'Traditional Vixie cron treats those fields as an OR condition when both are restricted. Scheduler implementations vary, so check the documentation for the service that will run the job.'],
+  ['Can I share a cron schedule?', 'Yes. Share a non-sensitive schedule to let someone open the same expression and preview. Do not include secrets in a command that happens to be scheduled by cron.'],
+];
+const jsonLd = [
+  { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Cron Expression Parser and Generator', url: 'https://bugdays.com/cron-parser/', description: 'Explain a five-field cron expression, show its fields and next runs in the browser, copy it, and share a reproducible schedule.', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any', isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, featureList: ['Five-field cron parser', 'Human-readable schedule', 'Next execution preview', 'Cron field reference', 'Shareable schedules'] },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map(([name, text]) => ({ '@type': 'Question', name, acceptedAnswer: { '@type': 'Answer', text } })) },
+];
 ---
 
 <Layout
-  title="Cron Expression Parser & Generator"
-  description="Parse cron expressions to human-readable format and see next execution times. Free online cron expression tool for scheduling tasks in Linux, Kubernetes, and CI/CD."
+  title="Cron Expression Parser & Generator — Next Runs & Sharing"
+  description="Explain five-field cron expressions, preview upcoming runs, inspect every field, copy a schedule, and share a reproducible cron example. Free, browser-based, no signup."
   keywords="cron parser, cron expression generator, cron schedule explained, crontab parser, cron job scheduler, cron syntax, cron expression tester"
   breadcrumb={[{ name: "Network Tools", href: "/network-tools/" }, { name: "Cron Parser" }]}
   toolId="cron-parser"
+  jsonLd={jsonLd}
 >
   <div class="max-w-6xl mx-auto">
-    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Cron Parser</h1>
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-1">Cron Expression Parser &amp; Generator</h1>
+    <p class="mb-4 text-sm text-slate-600 dark:text-slate-300">Explain a five-field Linux or Kubernetes schedule, preview its next runs, then share the exact expression.</p>
 
     <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
       <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Cron Expression</label>
@@ -23,10 +36,11 @@ import Layout from '../layouts/Layout.astro';
           placeholder="* * * * *"
           value="0 9 * * 1-5"
         />
-        <button id="parse-btn" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
+        <button id="parse-btn" data-share-action="parse" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
           Parse
         </button>
       </div>
+      <div class="mt-3 flex flex-wrap gap-3 text-sm"><button id="copy-cron-btn" type="button" class="font-semibold text-indigo-600 hover:underline dark:text-indigo-300">Copy expression</button><button id="share-cron-btn" type="button" class="font-semibold text-indigo-600 hover:underline dark:text-indigo-300">Share schedule ↗</button><span class="text-slate-500 dark:text-slate-400">Preview uses this browser’s local timezone.</span></div>
       <div class="mt-3 flex flex-wrap gap-2">
         <span class="text-sm text-gray-500 dark:text-slate-400">Examples:</span>
         <button class="example-btn text-sm text-indigo-600 hover:underline" data-cron="* * * * *">Every minute</button>
@@ -74,7 +88,7 @@ import Layout from '../layouts/Layout.astro';
           <div class="p-2 bg-gray-50 dark:bg-slate-900 rounded border border-gray-200 dark:border-slate-700">
             <div id="field-dow" class="font-mono text-lg font-bold text-indigo-600">*</div>
             <div class="text-xs text-gray-500 dark:text-slate-400">Day (Week)</div>
-            <div class="text-xs text-gray-400 dark:text-slate-500">0-6</div>
+            <div class="text-xs text-gray-400 dark:text-slate-500">0-7 (Sun = 0/7)</div>
           </div>
         </div>
       </div>
@@ -102,7 +116,7 @@ import Layout from '../layouts/Layout.astro';
         <div>
           <h4 class="font-medium text-gray-700 dark:text-slate-200 mb-1">Day of Week</h4>
           <ul class="text-gray-600 dark:text-slate-300 space-y-1">
-            <li>0 = Sunday</li>
+            <li>0 or 7 = Sunday</li>
             <li>1-5 = Monday-Friday</li>
             <li>6 = Saturday</li>
           </ul>
@@ -110,84 +124,90 @@ import Layout from '../layouts/Layout.astro';
       </div>
     </div>
 
-    <div class="mt-8">
+    <div class="mt-8 max-w-4xl text-sm leading-7">
       <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online Cron Parser</h2>
-      <p class="text-gray-600 dark:text-slate-300">
-        Parse and explain cron expressions in human-readable format. See the next scheduled run times
-        and understand each field of your cron expression. All processing happens in your browser.
-      </p>
+      <p class="text-gray-600 dark:text-slate-300">Parse and explain cron expressions in human-readable format. See upcoming run times and understand each field without sending the schedule anywhere.</p>
+      <p class="mt-3 text-gray-600 dark:text-slate-300">A five-field expression is <code>minute hour day-of-month month day-of-week</code>. Kubernetes CronJobs normally use this format too, but deployment-specific timezone rules and Quartz syntax differ. For a practical walkthrough, see the <a href="/guides/cron-expression-next-run-timezone/" class="text-indigo-600 underline dark:text-indigo-400">cron expression and timezone guide</a>.</p>
+      <div class="mt-5 space-y-2">{faqs.map(([question, answer]) => <details class="rounded-lg border border-slate-200 p-3 dark:border-slate-700"><summary class="cursor-pointer font-semibold text-slate-800 dark:text-slate-100">{question}</summary><p class="mt-2 text-gray-600 dark:text-slate-300">{answer}</p></details>)}</div>
     </div>
   </div>
 </Layout>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cronstrue/2.48.0/cronstrue.min.js"></script>
-
 <script>
   import { ShareManager } from '../lib/share';
+  import cronstrue from 'cronstrue';
 
   const cronInput = document.getElementById('cron-input') as HTMLInputElement;
   const errorBox = document.getElementById('error-box');
   const humanOutput = document.getElementById('human-output');
   const nextRunsOutput = document.getElementById('next-runs');
+  const results = document.getElementById('results');
 
   ShareManager.register({
     tool: 'cron-parser',
+    actions: { parse: () => document.getElementById('parse-btn')?.click() },
     afterLoad: () => parseCron()
   });
+  document.getElementById('share-cron-btn')!.addEventListener('click', () => document.getElementById('share-btn')?.click());
+  document.getElementById('copy-cron-btn')!.addEventListener('click', () => navigator.clipboard.writeText(cronInput.value.trim()));
 
   const fieldIds = ['field-minute', 'field-hour', 'field-dom', 'field-month', 'field-dow'];
 
   function showError(msg: string) {
     errorBox.textContent = msg;
     errorBox.classList.remove('hidden');
+    results?.classList.add('hidden');
   }
 
   function hideError() {
     errorBox.classList.add('hidden');
+    results?.classList.remove('hidden');
   }
 
-  function parseField(field: string, min: number, max: number): number[] {
+  function parseField(field: string, min: number, max: number, normalize = (value: number) => value): number[] {
     const values: Set<number> = new Set();
 
     for (const part of field.split(',')) {
-      if (part === '*') {
-        for (let i = min; i <= max; i++) values.add(i);
-      } else if (part.includes('/')) {
-        const [range, stepStr] = part.split('/');
-        const step = parseInt(stepStr, 10);
-        let start = min, end = max;
+      const segments = part.split('/');
+      if (segments.length > 2 || !segments[0]) throw new Error(`Invalid value "${part}"`);
 
-        if (range !== '*') {
-          if (range.includes('-')) {
-            [start, end] = range.split('-').map(Number);
-          } else {
-            start = parseInt(range, 10);
-          }
-        }
+      const [range, stepValue] = segments;
+      const step = stepValue === undefined ? 1 : Number(stepValue);
+      if (!Number.isInteger(step) || step < 1) throw new Error(`Invalid step "${part}"`);
 
-        for (let i = start; i <= end; i += step) {
-          values.add(i);
-        }
-      } else if (part.includes('-')) {
-        const [start, end] = part.split('-').map(Number);
-        for (let i = start; i <= end; i++) values.add(i);
-      } else {
-        values.add(parseInt(part, 10));
+      let start = min;
+      let end = max;
+      if (range !== '*') {
+        const rangeMatch = /^(\d+)(?:-(\d+))?$/.exec(range);
+        if (!rangeMatch) throw new Error(`Invalid value "${part}"`);
+        start = Number(rangeMatch[1]);
+        end = rangeMatch[2] === undefined ? start : Number(rangeMatch[2]);
+      }
+
+      if (!Number.isInteger(start) || !Number.isInteger(end) || start < min || end > max || start > end) {
+        throw new Error(`Use values from ${min} to ${max}`);
+      }
+
+      for (let value = start; value <= end; value += step) {
+        values.add(normalize(value));
       }
     }
 
     return Array.from(values).sort((a, b) => a - b);
   }
 
-  function getNextRuns(cron: string, count: number): Date[] {
-    const parts = cron.trim().split(/\s+/);
-    if (parts.length !== 5) return [];
+  function parseFields(parts: string[]) {
+    return {
+      minutes: parseField(parts[0], 0, 59),
+      hours: parseField(parts[1], 0, 23),
+      daysOfMonth: parseField(parts[2], 1, 31),
+      months: parseField(parts[3], 1, 12),
+      daysOfWeek: parseField(parts[4], 0, 7, (value) => value === 7 ? 0 : value),
+    };
+  }
 
-    const minutes = parseField(parts[0], 0, 59);
-    const hours = parseField(parts[1], 0, 23);
-    const daysOfMonth = parseField(parts[2], 1, 31);
-    const months = parseField(parts[3], 1, 12);
-    const daysOfWeek = parseField(parts[4], 0, 6);
+  function getNextRuns(parts: string[], fields: ReturnType<typeof parseFields>, count: number): Date[] {
+    const { minutes, hours, daysOfMonth, months, daysOfWeek } = fields;
 
     const results: Date[] = [];
     const now = new Date();
@@ -237,6 +257,15 @@ import Layout from '../layouts/Layout.astro';
       return;
     }
 
+    let fields: ReturnType<typeof parseFields>;
+    try {
+      fields = parseFields(parts);
+      cronstrue.toString(cron);
+    } catch (error) {
+      showError(error instanceof Error ? `Invalid cron expression: ${error.message}` : 'Invalid cron expression.');
+      return;
+    }
+
     hideError();
 
     // Update field display
@@ -245,15 +274,10 @@ import Layout from '../layouts/Layout.astro';
     });
 
     // Human readable using cronstrue
-    try {
-      const humanReadable = (window as any).cronstrue.toString(cron);
-      humanOutput.textContent = humanReadable;
-    } catch (e) {
-      humanOutput.textContent = 'Unable to parse expression';
-    }
+    humanOutput.textContent = cronstrue.toString(cron);
 
     // Next run times
-    const nextRuns = getNextRuns(cron, 5);
+    const nextRuns = getNextRuns(parts, fields, 5);
     if (nextRuns.length === 0) {
       nextRunsOutput.innerHTML = '<p class="text-gray-500 dark:text-slate-400">No upcoming runs found</p>';
     } else {
