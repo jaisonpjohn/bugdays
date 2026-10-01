@@ -1,0 +1,48 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import JsonExample from '../../components/JsonExample.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+const guide = guideBySlug('compare-json-api-responses-ignore-array-order');
+---
+
+<GuideLayout guide={guide} imageWidth={1200} imageHeight={630} keywords="compare JSON API responses, JSON diff ignore array order, JSON compare ignore key order, nested JSON comparison, JSON configuration diff">
+  <p>An API response looks different after a deployment. Did the values change, or did the serializer just reorder the fields? A structural JSON comparison answers that question more directly than a line diff. Array positions need a separate decision: a reordered set of regions may be harmless, while a reordered event sequence is not.</p>
+
+  <h2>A JSON diff example with four changes—or two</h2>
+  <p>Open either runnable comparison below in the <a href="/json-diff/">JSON diff checker</a>. The same synthetic configuration appears in both links; only the array-order setting changes.</p>
+  <JsonExample kind="diff" />
+  <ul>
+    <li><strong>Default comparison:</strong> three modifications (<code>service.timeout</code>, <code>regions[0]</code>, <code>regions[1]</code>) and one addition (<code>retries</code>).</li>
+    <li><strong>Ignore array order:</strong> the regions match, leaving one modification and one addition.</li>
+  </ul>
+  <p>This gives you a useful baseline: a timeout changed from 15 to 30, and retries appeared. The array-order option determines whether swapping <code>"us"</code> and <code>"eu"</code> matters to the review.</p>
+
+  <h2>Choose object key order and array order independently</h2>
+  <p>JSON objects are unordered collections of members, while arrays are ordered sequences, as defined in <a href="https://www.rfc-editor.org/rfc/rfc8259">RFC 8259</a>. The default comparison ignores object key order but preserves array order.</p>
+  <p>For example, <code>{'{"name":"catalog","timeout":15}'}</code> and <code>{'{"timeout":15,"name":"catalog"}'}</code> match. Disable Ignore key order if you specifically want to review parsed property-order changes. This is not a byte-for-byte comparison: parsing normalizes some numeric representations and the ordering of integer-like property names. Use <a href="/text-diff/">Text Diff</a> for exact source lines.</p>
+  <p>Enable Ignore array order only when every array’s position is irrelevant to your question. It applies recursively, not just to the top-level array. Do not enable it for coordinates, ranked search results, or event histories.</p>
+
+  <h2>Duplicates and nested objects still matter</h2>
+  <p>An unordered comparison is not a set comparison that discards duplicates. <code>[1,1,2]</code> and <code>[1,2,2]</code> differ: one occurrence of 1 disappears and an occurrence of 2 is added. Equivalent items match once each, including objects whose key order differs when Ignore key order is enabled.</p>
+  <p>Unordered matching uses whole-item equality; it does not join records by an <code>id</code> field. If one object in an unordered array changes, it is reported as a removed item and an added item. For a field-by-field review of that record, put the two individual objects into the comparison panels.</p>
+
+  <h2>Read the paths and distinguish missing from null</h2>
+  <ol>
+    <li>Paste the earlier body into Original JSON and the later body into Modified JSON.</li>
+    <li>Select Compare JSON. Review the counts, then follow each path in the Changes Report.</li>
+    <li>Use the highlighted views to see old and new values in context. A repeated value is not necessarily the same field.</li>
+    <li>Select Swap to reverse the direction: an addition becomes a removal.</li>
+  </ol>
+  <p>Missing, null, and an empty string are different states. Adding <code>email: null</code> to an object that lacked email is an addition. Changing an existing email to null is a modification. The number <code>1</code> also differs from the string <code>"1"</code>. Property names containing dots use quoted bracket paths, so a key named <code>content.type</code> is not confused with a nested <code>content</code> object.</p>
+
+  <h2>Reduce noise without hiding a real regression</h2>
+  <p>Responses may contain generated timestamps or request IDs. Keep the original captures, then make a smaller comparison containing the fields relevant to the failure. This tool does not have an ignore-fields rule or keyed array join; remove irrelevant fields from the copied sample yourself and say what you removed.</p>
+  <p>Both inputs must be valid JSON. If one fails, use the <a href="/json-formatter/">JSON syntax validator</a> and check whether you copied HTML, a log prefix, or several JSON Lines records. Very large integer IDs should be strings because JavaScript parsing can round them. Duplicate object keys keep the last value, so this is not a duplicate-key detector.</p>
+
+  <h2>Share a comparison a teammate can reproduce</h2>
+  <p>After comparing, select Share comparison. The shared state includes both documents, the ordering options, and the Compare action. Embedded links carry that state in the URL fragment; optional short links store it for 30 days. Processing the comparison itself does not upload your input.</p>
+  <p>Use synthetic values before sharing, and include the expected result in your ticket or question—for example, “With array order ignored, only timeout and retries should differ.” The runnable link then supports your explanation rather than replacing it. Read the <a href="/guides/format-validate-json-api-response/">JSON formatting and jq path guide</a> if you need to isolate a nested value first.</p>
+
+  <a slot="related" href="/guides/format-validate-json-api-response/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Format and inspect an API response</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Validate syntax and copy a jq path from the JSON tree.</span></a>
+  <a slot="related" href="/api-client/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Capture a response with the REST client</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Send a request and inspect the response before comparing it.</span></a>
+</GuideLayout>

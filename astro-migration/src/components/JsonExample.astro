@@ -1,0 +1,22 @@
+---
+import { apiResponse, originalConfig, modifiedConfig, formatterExample, diffExample, unorderedExample } from '../lib/json-examples.ts';
+interface Props { kind: 'formatter' | 'diff'; }
+const { kind } = Astro.props;
+---
+<div class="my-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+  <div class="grid min-w-0 gap-3 md:grid-cols-2">
+    <div class="min-w-0"><p class="mb-2 text-xs font-semibold text-slate-600 dark:text-slate-300">{kind === 'formatter' ? 'Minified API response' : 'Original configuration'}</p><pre class="json-example-code">{kind === 'formatter' ? JSON.stringify(apiResponse) : JSON.stringify(originalConfig, null, 2)}</pre></div>
+    <div class="min-w-0"><p class="mb-2 text-xs font-semibold text-slate-600 dark:text-slate-300">{kind === 'formatter' ? 'Formatted JSON' : 'Modified configuration'}</p><pre class="json-example-code">{JSON.stringify(kind === 'formatter' ? apiResponse : modifiedConfig, null, 2)}</pre></div>
+  </div>
+  <div class="mt-3 flex flex-wrap gap-2">
+    <a href={kind === 'formatter' ? formatterExample : diffExample} class="json-example-primary inline-flex rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">{kind === 'formatter' ? 'Open this JSON example →' : 'Run this JSON comparison →'}</a>
+    {kind === 'diff' && <a href={unorderedExample} class="json-example-secondary inline-flex rounded-lg border border-indigo-200 px-3 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300">Try ignoring array order →</a>}
+  </div>
+  <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Synthetic data. These links contain the example and settings; no stored share is needed.</p>
+</div>
+<style>
+  .json-example-code { margin: 0; max-height: 19rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; border-radius: .5rem; background: #020617; padding: .9rem; color: #e2e8f0; font: .8rem/1.6 ui-monospace, monospace; }
+  .json-example-primary, :global(.dark) .json-example-primary { color: #fff; text-decoration: none; }
+  .json-example-secondary { color: #4338ca; text-decoration: none; }
+  :global(.dark) .json-example-secondary { color: #a5b4fc; }
+</style>

@@ -1,0 +1,51 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import JsonExample from '../../components/JsonExample.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+const guide = guideBySlug('format-validate-json-api-response');
+---
+
+<GuideLayout guide={guide} imageWidth={1200} imageHeight={630} keywords="format JSON API response, JSON pretty print, validate JSON online, JSON tree viewer, copy jq path, invalid JSON syntax">
+  <p>You have a one-line API response and need to answer a specific question: did the first order finish, and is there another page of results? Pretty-printing exposes the structure. A tree view then helps you find the field without confusing a property name with its value.</p>
+
+  <h2>Try a complete JSON formatting example</h2>
+  <p>This synthetic response contains an order array and pagination metadata. Open the example to load it into the <a href="/json-formatter/">JSON formatter and validator</a> and run Prettify automatically.</p>
+  <JsonExample kind="formatter" />
+  <p>The first order has <code>status: "paid"</code>; <code>hasNext: false</code> means this example has no next page. Neither field is nested directly under the root: the status belongs to an item in <code>orders</code>, while the boolean belongs to <code>pagination</code>.</p>
+
+  <h2>Format and validate your API response</h2>
+  <ol>
+    <li>Copy the response body, not HTTP headers or the surrounding log message. Paste it into JSON input.</li>
+    <li>Select <strong>Prettify</strong>. Successful parsing produces two-space indentation. An error leaves the input available to correct.</li>
+    <li>Use <strong>Compact</strong> when you need one-line JSON. Whitespace inside strings remains data; indentation outside them is removed.</li>
+    <li>Use Copy or Download to keep the text, or <strong>Share JSON</strong> to send a reproducible example.</li>
+  </ol>
+  <p>Keep the original response if exact digits or number spelling matter. The tool uses JavaScript parsing: <code>1.0</code> can become <code>1</code>, duplicate keys keep the last value, and integers above <code>9007199254740991</code> can round. An API should send long numeric IDs as strings.</p>
+
+  <h2>Copy a jq path from the JSON tree</h2>
+  <p>Select Tree View, then select the first order’s status value. The tooltip shows <code>.orders[0].status</code>; select the tooltip to copy it. To read that field from a local file with jq, use:</p>
+  <pre><code>{`jq '.orders[0].status' response.json
+# Output: "paid"
+
+jq '.pagination.hasNext' response.json
+# Output: false`}</code></pre>
+  <p>Array indexes begin at zero. A dot in a key is different from a nested object: for <code>{'{"content.type":"application/json"}'}</code>, the accessor is <code>.["content.type"]</code>, not <code>.content.type</code>. The tree quotes such keys for you. The <a href="https://jqlang.org/manual/#object-identifier-index">jq accessor documentation</a> explains this distinction. Bug Days copies accessors; it does not execute jq filters.</p>
+
+  <h2>When valid-looking JSON fails to parse</h2>
+  <p>A JavaScript object literal is not necessarily JSON. Change single quotes to double quotes, remove comments and trailing commas, and check escaping inside strings. The parser reports the error and, when available, its position. It does not guess a repair.</p>
+  <p>If the body starts with <code>&lt;html</code>, it may be a login page or server error rather than JSON. If several objects occupy separate lines, you may have JSON Lines, not one JSON document. If formatting returns a quoted string full of escaped quotes, the payload may contain JSON encoded <em>inside a JSON string</em>; inspect the parsed string before treating it as an object. The permitted syntax is defined by <a href="https://www.rfc-editor.org/rfc/rfc8259">RFC 8259</a>.</p>
+  <p>Syntax validation is not API contract validation. <code>{'{"status":"unexpected"}'}</code> parses correctly even when the API allows only specific statuses. Use the service’s schema or tests to verify required properties, formats, and allowed values.</p>
+
+  <h2>Pretty-print JSON locally with jq or Python</h2>
+  <p>For a repeated job, run the same basic formatting step from a terminal. Both commands fail on invalid syntax:</p>
+  <pre><code>{`jq '.' response.json
+python3 -m json.tool response.json`}</code></pre>
+  <p>To compact output with jq, use <code>jq -c '.' response.json</code>. These commands print to the terminal; they do not overwrite the source file. See the <a href="https://docs.python.org/3/library/json.html#command-line-interface">Python JSON command-line documentation</a> for file-output options. A pretty printer alone does not enforce a JSON Schema.</p>
+
+  <h2>Share the example, not a screenshot</h2>
+  <p>Replace tokens and customer values with synthetic data, run Prettify or Tree View, and select Share JSON. An embedded link carries the input and selected action in its URL fragment. The reader gets the same starting point without retyping anything; anyone with the link can read it. The separate short-link option stores the example for 30 days.</p>
+  <p>When the question is “what changed?”, send a <a href="/json-diff/">JSON comparison</a> instead. The <a href="/guides/compare-json-api-responses-ignore-array-order/">API response diff guide</a> demonstrates how ordering choices affect the result.</p>
+
+  <a slot="related" href="/guides/compare-json-api-responses-ignore-array-order/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Compare two API responses</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Separate value changes from reordered objects and arrays.</span></a>
+  <a slot="related" href="/guides/decode-base64-gzip-to-json/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Decode Base64 GZip before formatting</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Turn a compressed payload into readable JSON first.</span></a>
+</GuideLayout>

@@ -408,6 +408,13 @@ const allJsonLd = breadcrumbSchema ? [breadcrumbSchema, ...jsonLd] : jsonLd;
 
       initShare();
       document.addEventListener('astro:after-swap', initShare);
+      // A worked example can point at this same tool with a different fragment.
+      // That navigation does not reload the page, so restore it explicitly.
+      window.addEventListener('hashchange', () => {
+        if (document.body.dataset.toolId && /^#(?:lz|kv):/.test(location.hash)) {
+          ShareManager.loadFromUrl();
+        }
+      });
     </script>
 
     <!-- Feedback Button & Modal -->

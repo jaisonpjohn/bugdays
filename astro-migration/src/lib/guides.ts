@@ -15,6 +15,24 @@ export interface Guide {
 
 export const guides: Guide[] = [
   {
+    slug: 'format-validate-json-api-response',
+    title: 'How to Format and Validate a JSON API Response',
+    shortTitle: 'Format JSON and copy a jq path',
+    description: 'Pretty-print an API response, troubleshoot invalid JSON, copy jq paths from a tree view, and share a runnable example. Includes jq and Python commands.',
+    topic: 'JSON formatting and validation', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 5,
+    image: '/og-image.png', imageAlt: 'Bug Days browser-based developer tools',
+    toolHref: '/json-formatter/', toolName: 'JSON Formatter and Validator',
+  },
+  {
+    slug: 'compare-json-api-responses-ignore-array-order',
+    title: 'Compare JSON API Responses: Ignore Key Order and Array Order',
+    shortTitle: 'Compare JSON responses and reordered arrays',
+    description: 'Find changes in JSON API responses and configuration files. Try a shareable example, compare reordered arrays, and distinguish duplicates, nulls, and missing fields.',
+    topic: 'JSON comparison and debugging', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 5,
+    image: '/og-image.png', imageAlt: 'Bug Days browser-based developer tools',
+    toolHref: '/json-diff/', toolName: 'JSON Diff Checker',
+  },
+  {
     slug: 'diagnose-kafka-consumer-lag-stuck-partition',
     title: 'Diagnose Kafka Consumer Lag and a Stuck Partition',
     shortTitle: 'Diagnose Kafka consumer lag',

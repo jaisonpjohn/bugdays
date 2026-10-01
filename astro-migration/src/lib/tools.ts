@@ -24,8 +24,8 @@ export const toolGroups: ToolGroup[] = [
     icon: "star",
     alwaysOpen: true,
     items: [
-      { name: "JSON Formatter", href: "/json-formatter/", description: "Format, validate & view JSON", keywords: ["prettify", "beautify", "validate", "minify", "tree"] },
-      { name: "JSON Diff", href: "/json-diff/", description: "Compare two JSON documents", keywords: ["compare", "difference"] },
+      { name: "JSON Formatter", href: "/json-formatter/", description: "Format, validate & share JSON", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq", "api response"] },
+      { name: "JSON Diff", href: "/json-diff/", description: "Compare & share JSON changes", keywords: ["compare", "difference", "array order", "key order", "api response"] },
       { name: "Text Diff", href: "/text-diff/", description: "Compare two texts line by line", keywords: ["compare", "difference"] },
       { name: "Join Lines", href: "/join-lines/", description: "Join lines with a delimiter", keywords: ["merge", "concatenate", "comma"] },
       { name: "Compare Lists", href: "/list-compare/", description: "Set operations on two lists", keywords: ["intersection", "union", "difference", "set ops"] },
@@ -40,8 +40,8 @@ export const toolGroups: ToolGroup[] = [
     href: "/json-tools/",
     icon: "braces",
     items: [
-      { name: "JSON Formatter", href: "/json-formatter/", description: "Format, validate & view JSON", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq"] },
-      { name: "JSON Diff", href: "/json-diff/", description: "Compare two JSON documents", keywords: ["compare", "difference"] },
+      { name: "JSON Formatter", href: "/json-formatter/", description: "Format, validate & share JSON", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq", "api response"] },
+      { name: "JSON Diff", href: "/json-diff/", description: "Compare & share JSON changes", keywords: ["compare", "difference", "array order", "key order", "api response"] },
       { name: "YAML ↔ JSON", href: "/yaml-json-converter/", description: "Convert YAML to JSON and back", keywords: ["yml", "convert"] },
       { name: "CSV ↔ JSON", href: "/csv-json-converter/", description: "Convert CSV to JSON and back", keywords: ["spreadsheet", "excel", "convert"] },
     ]

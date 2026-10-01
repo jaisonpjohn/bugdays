@@ -58,8 +58,7 @@ test('opening a shared link reports share_opened', async ({ page, context }) => 
   const shareUrl = await page.evaluate(() => navigator.clipboard.readText());
   expect(shareUrl).toContain('#lz:');
 
-  // A same-page hash change would not re-run the restore, so land on another page first.
-  await page.goto('/uuid-generator/');
+  // Same-page links must restore too, without a document reload.
   await page.goto(shareUrl);
   await expect.poll(async () => (await events(page)).some((e: any) => e.event === 'share_opened')).toBeTruthy();
   const opened = (await events(page)).find((e: any) => e.event === 'share_opened');
