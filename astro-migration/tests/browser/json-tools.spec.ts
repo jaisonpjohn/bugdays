@@ -123,14 +123,18 @@ test('long JSON stays vertically and horizontally scrollable in both diff editor
   for (const selector of ['#json1', '#json2']) {
     const metrics = await page.locator(selector).evaluate(element => {
       const editor = element as HTMLTextAreaElement;
+      const code = editor.closest<HTMLElement>('[data-json-editor]')!.querySelector<HTMLElement>('[data-json-editor-code]')!;
       editor.scrollTop = editor.scrollHeight;
       editor.scrollLeft = editor.scrollWidth;
-      return { scrollHeight: editor.scrollHeight, clientHeight: editor.clientHeight, scrollTop: editor.scrollTop, scrollWidth: editor.scrollWidth, clientWidth: editor.clientWidth, scrollLeft: editor.scrollLeft };
+      editor.dispatchEvent(new Event('scroll'));
+      return { scrollHeight: editor.scrollHeight, clientHeight: editor.clientHeight, scrollTop: editor.scrollTop, scrollWidth: editor.scrollWidth, clientWidth: editor.clientWidth, scrollLeft: editor.scrollLeft, codeScrollHeight: code.scrollHeight, codeOverflow: getComputedStyle(code).overflow };
     });
     expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
     expect(metrics.scrollTop).toBeGreaterThan(0);
     expect(metrics.scrollWidth).toBeGreaterThan(metrics.clientWidth);
     expect(metrics.scrollLeft).toBeGreaterThan(0);
+    expect(metrics.codeScrollHeight).toBeGreaterThan(metrics.clientHeight);
+    expect(metrics.codeOverflow).toBe('visible');
   }
 });
 
