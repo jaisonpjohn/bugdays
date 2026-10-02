@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Formatted SQL query and schema review</title>
+  <desc id="desc">A dense SQL statement is transformed into a readable, structured query beside database tables.</desc>
+  <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#13233d"/><stop offset="1" stop-color="#172554"/></linearGradient></defs>
+  <rect width="1280" height="720" fill="url(#bg)"/><circle cx="1110" cy="100" r="210" fill="#0ea5e9" opacity=".15"/>
+  <text x="80" y="96" fill="#bae6fd" font-family="ui-sans-serif,system-ui" font-size="28" font-weight="700" letter-spacing="4">SQL REVIEW</text>
+  <rect x="80" y="145" width="695" height="470" rx="24" fill="#0b1220" stroke="#475569" stroke-width="2"/>
+  <text x="125" y="215" fill="#a5b4fc" font-family="ui-monospace,monospace" font-size="25" font-weight="700">SELECT</text><text x="250" y="215" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="24">o.id, o.created_at, c.email</text>
+  <text x="125" y="272" fill="#a5b4fc" font-family="ui-monospace,monospace" font-size="25" font-weight="700">FROM</text><text x="220" y="272" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="24">orders o</text>
+  <text x="125" y="329" fill="#a5b4fc" font-family="ui-monospace,monospace" font-size="25" font-weight="700">JOIN</text><text x="220" y="329" fill="#7dd3fc" font-family="ui-monospace,monospace" font-size="24">customers c</text><text x="390" y="329" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="24">ON c.id = o.customer_id</text>
+  <text x="125" y="386" fill="#a5b4fc" font-family="ui-monospace,monospace" font-size="25" font-weight="700">WHERE</text><text x="246" y="386" fill="#86efac" font-family="ui-monospace,monospace" font-size="24">o.status = 'paid'</text>
+  <text x="125" y="443" fill="#a5b4fc" font-family="ui-monospace,monospace" font-size="25" font-weight="700">ORDER BY</text><text x="287" y="443" fill="#fcd34d" font-family="ui-monospace,monospace" font-size="24">o.created_at DESC;</text>
+  <rect x="125" y="500" width="230" height="53" rx="16" fill="#2563eb"/><text x="158" y="535" fill="white" font-family="ui-sans-serif,system-ui" font-size="20" font-weight="700">DIALECT: POSTGRES</text>
+  <rect x="852" y="185" width="290" height="158" rx="18" fill="#172554" stroke="#60a5fa" stroke-width="2"/><text x="888" y="233" fill="#bfdbfe" font-family="ui-sans-serif,system-ui" font-size="22" font-weight="700">orders</text><path d="M886 263h215M886 293h165" stroke="#64748b" stroke-width="10" stroke-linecap="round"/><text x="888" y="320" fill="#94a3b8" font-family="ui-monospace,monospace" font-size="16">customer_id  →</text>
+  <rect x="852" y="411" width="290" height="158" rx="18" fill="#172554" stroke="#a78bfa" stroke-width="2"/><text x="888" y="459" fill="#ddd6fe" font-family="ui-sans-serif,system-ui" font-size="22" font-weight="700">customers</text><path d="M886 489h215M886 519h130" stroke="#64748b" stroke-width="10" stroke-linecap="round"/><path d="M996 343v68" stroke="#a78bfa" stroke-width="4" stroke-dasharray="10 10"/>
+  <text x="80" y="662" fill="#cbd5e1" font-family="ui-sans-serif,system-ui" font-size="24">Readable queries make reviews, handoffs, and schema work less error-prone.</text>
+</svg>

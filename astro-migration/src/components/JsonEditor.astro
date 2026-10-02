@@ -2,11 +2,10 @@
 interface Props {
   id: string;
   label: string;
-  placeholder?: string;
   shareKey?: string;
   height?: string;
 }
-const { id, label, placeholder = 'Paste JSON here…', shareKey, height = 'h-72' } = Astro.props;
+const { id, label, shareKey, height = 'h-72' } = Astro.props;
 ---
 
 <div class:list={['json-editor', height]} data-json-editor>
@@ -21,7 +20,6 @@ const { id, label, placeholder = 'Paste JSON here…', shareKey, height = 'h-72'
     autocomplete="off"
     autocorrect="off"
     spellcheck="false"
-    placeholder={placeholder}
   ></textarea>
 </div>
 
@@ -32,7 +30,6 @@ const { id, label, placeholder = 'Paste JSON here…', shareKey, height = 'h-72'
   .json-editor-code { grid-column: 2; grid-row: 1; z-index: 1; align-self: start; min-width: max-content; min-height: 100%; height: max-content; margin: 0; overflow: visible; padding: .75rem 1rem; color: #334155; pointer-events: none; white-space: pre; will-change: transform; }
   .json-editor-input { grid-column: 2; grid-row: 1; z-index: 2; width: 100%; min-width: 0; min-height: 0; height: 100%; resize: none; border: 0; outline: 0; background: transparent; padding: .75rem 1rem; color: transparent; caret-color: #0f172a; font: inherit; line-height: inherit; tab-size: inherit; white-space: pre; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
   .json-editor-input::selection { background: rgb(165 180 252 / .55); }
-  .json-editor-input::placeholder { color: #94a3b8; }
   :global(.dark) .json-editor { border-color: #475569; background: #1e293b; }
   :global(.dark) .json-editor-gutter { border-color: #334155; background: #0f172a; color: #64748b; }
   :global(.dark) .json-editor-code { color: #e2e8f0; }

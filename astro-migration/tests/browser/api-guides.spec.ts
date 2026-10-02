@@ -51,3 +51,18 @@ test('guide discovery and RSS surface the complete API testing cluster', async (
     expect(rss).toContain(`/guides/${guide.slug}/`);
   }
 });
+
+test('guide directory uses topical artwork and homepage guide cards are not duplicated', async ({ page }) => {
+  await page.goto('/guides/');
+  await expect(page.locator('img[src="/og-image.png"]')).toHaveCount(0);
+  const topicalImages = page.locator('img[src^="/og/guide-"]');
+  expect(await topicalImages.count()).toBeGreaterThanOrEqual(14);
+  for (const index of [0, 4, 8, 11]) {
+    await expect(topicalImages.nth(index)).not.toHaveAttribute('alt', '');
+  }
+
+  await page.goto('/');
+  const featuredHrefs = await page.locator('section article h3 a[href^="/guides/"]').evaluateAll(links => links.map(link => link.getAttribute('href')));
+  expect(featuredHrefs).toHaveLength(3);
+  expect(new Set(featuredHrefs).size).toBe(featuredHrefs.length);
+});

@@ -44,14 +44,14 @@ const jsonLd = [
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
         <div class="mb-2 flex items-center justify-between gap-3"><label for="json1" class="text-sm font-medium text-gray-700 dark:text-slate-200">Original JSON</label><button id="json1-file-btn" class="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-300">Open file</button></div>
         <input id="json1-file" type="file" accept="application/json,.json,.jsonc,text/plain" class="hidden" />
-        <JsonEditor id="json1" label="Original JSON" shareKey="json1" placeholder={'{"name": "John", "age": 30}'} height="h-56" />
+        <JsonEditor id="json1" label="Original JSON" shareKey="json1" height="h-56" />
         <p id="json1-file-status" class="mt-2 text-xs text-slate-500 dark:text-slate-400">Drop a local JSON file here.</p>
       </div>
 
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
         <div class="mb-2 flex items-center justify-between gap-3"><label for="json2" class="text-sm font-medium text-gray-700 dark:text-slate-200">Modified JSON</label><button id="json2-file-btn" class="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-300">Open file</button></div>
         <input id="json2-file" type="file" accept="application/json,.json,.jsonc,text/plain" class="hidden" />
-        <JsonEditor id="json2" label="Modified JSON" shareKey="json2" placeholder={'{"name": "Jane", "age": 25}'} height="h-56" />
+        <JsonEditor id="json2" label="Modified JSON" shareKey="json2" height="h-56" />
         <p id="json2-file-status" class="mt-2 text-xs text-slate-500 dark:text-slate-400">Drop a local JSON file here.</p>
       </div>
     </div>

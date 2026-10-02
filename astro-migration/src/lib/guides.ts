@@ -8,6 +8,8 @@ export interface Guide {
   updated: string;
   readingMinutes: number;
   image: string;
+  /** Purpose-built on-page artwork. Keep `image` as a broadly compatible social-card image. */
+  artImage?: string;
   imageAlt: string;
   toolHref: string;
   toolName: string;
@@ -20,7 +22,7 @@ export const guides: Guide[] = [
     shortTitle: 'Convert a cURL command into reviewed code',
     description: 'Translate a common cURL command into JavaScript Fetch, Python requests, or readable cURL; verify methods, headers and bodies without executing a request, then share a redacted reproducer safely.',
     topic: 'cURL conversion and API request handoff', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 6,
-    image: '/og-image.png', imageAlt: 'Bug Days cURL to code converter generating JavaScript Fetch and Python requests',
+    image: '/og-image.png', artImage: '/og/guide-api-request-workflow.svg', imageAlt: 'A cURL request translated into JavaScript Fetch and Python requests',
     toolHref: '/curl-to-code/', toolName: 'cURL to JavaScript Fetch and Python Requests Converter',
   },
   {
@@ -29,7 +31,7 @@ export const guides: Guide[] = [
     shortTitle: 'Validate JSON Lines and convert valid records',
     description: 'Understand JSONL and NDJSON, isolate malformed line numbers without losing valid records, inspect a selected record, and export a safe JSON array for the next debugging step.',
     topic: 'JSON Lines and NDJSON debugging', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 6,
-    image: '/og-image.png', imageAlt: 'Bug Days JSONL viewer validating records and highlighting line numbers',
+    image: '/og-image.png', artImage: '/og/guide-json-inspection.svg', imageAlt: 'A JSON Lines document being validated with records and paths highlighted',
     toolHref: '/jsonl-viewer/', toolName: 'JSONL Viewer and NDJSON Validator',
   },
   {
@@ -38,7 +40,7 @@ export const guides: Guide[] = [
     shortTitle: 'Format multi-dialect SQL and readable DDL',
     description: 'Choose the right SQL dialect, format queries and migrations for review, know the limits of pretty printing, and move CREATE TABLE scripts into an ER diagram workflow.',
     topic: 'SQL formatting and schema review', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 6,
-    image: '/og-image.png', imageAlt: 'Bug Days SQL formatter with a readable multi-line query',
+    image: '/og-image.png', artImage: '/og/guide-sql-formatting.svg', imageAlt: 'A formatted SQL query beside related database tables',
     toolHref: '/sql-formatter/', toolName: 'SQL Formatter and Beautifier',
   },
   {
@@ -47,7 +49,7 @@ export const guides: Guide[] = [
     shortTitle: 'Generate typed code from JSON',
     description: 'Turn a representative JSON response into TypeScript interfaces, Zod runtime schemas, or Pydantic models; learn how arrays, missing fields, nulls, and generated code need review.',
     topic: 'JSON type and model generation', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 6,
-    image: '/og-image.png', imageAlt: 'Bug Days JSON to code generator producing TypeScript, Zod, and Pydantic output',
+    image: '/og-image.png', artImage: '/og/guide-json-inspection.svg', imageAlt: 'A structured JSON document ready for validation and code generation',
     toolHref: '/json-to-code/', toolName: 'JSON to TypeScript, Zod, and Pydantic Generator',
   },
   {
@@ -65,7 +67,7 @@ export const guides: Guide[] = [
     shortTitle: 'Test cron next runs and timezone assumptions',
     description: 'Read five-field cron syntax, preview upcoming executions, avoid timezone surprises, and understand the day-of-month and day-of-week rule used by Linux cron and Kubernetes CronJobs.',
     topic: 'Cron schedules and job timing', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 6,
-    image: '/og-image.png', imageAlt: 'Bug Days Cron Expression Parser showing upcoming execution times',
+    image: '/og-image.png', artImage: '/og/guide-schedule-planner.svg', imageAlt: 'A cron expression with its upcoming scheduled run times',
     toolHref: '/cron-parser/', toolName: 'Cron Expression Parser and Generator',
   },
   {
@@ -74,7 +76,7 @@ export const guides: Guide[] = [
     shortTitle: 'Decode Base64, Base64URL, and UTF-8 safely',
     description: 'Convert UTF-8 text, Base64URL values, data URIs, and local files without corrupting bytes; understand padding, JWT segments, and H4sI GZip payloads.',
     topic: 'Base64 encoding and payload debugging', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 6,
-    image: '/og-image.png', imageAlt: 'Bug Days Base64 encoder and decoder running locally in the browser',
+    image: '/og-image.png', artImage: '/og/guide-payload-encoding.svg', imageAlt: 'UTF-8 text flowing through a Base64URL encoded byte payload',
     toolHref: '/base64-encoder-decoder/', toolName: 'Base64 Encoder and Decoder',
   },
   {
@@ -83,7 +85,7 @@ export const guides: Guide[] = [
     shortTitle: 'Format JSON and copy a jq path',
     description: 'Pretty-print an API response, troubleshoot invalid JSON, copy jq paths from a tree view, and share a runnable example. Includes jq and Python commands.',
     topic: 'JSON formatting and validation', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 5,
-    image: '/og-image.png', imageAlt: 'Bug Days browser-based developer tools',
+    image: '/og-image.png', artImage: '/og/guide-json-inspection.svg', imageAlt: 'A JSON document with validation and path inspection results',
     toolHref: '/json-formatter/', toolName: 'JSON Formatter and Validator',
   },
   {
@@ -92,7 +94,7 @@ export const guides: Guide[] = [
     shortTitle: 'Compare JSON responses and reordered arrays',
     description: 'Find changes in JSON API responses and configuration files. Try a shareable example, compare reordered arrays, and distinguish duplicates, nulls, and missing fields.',
     topic: 'JSON comparison and debugging', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 5,
-    image: '/og-image.png', imageAlt: 'Bug Days browser-based developer tools',
+    image: '/og-image.png', artImage: '/og/guide-json-inspection.svg', imageAlt: 'A JSON comparison showing a changed value at one path',
     toolHref: '/json-diff/', toolName: 'JSON Diff Checker',
   },
   {
@@ -101,7 +103,7 @@ export const guides: Guide[] = [
     shortTitle: 'Diagnose Kafka consumer lag',
     description: 'Compare committed offsets with partition ends, inspect group members and assignments, and examine the records around a stuck position before changing offsets.',
     topic: 'Kafka consumer diagnostics', published: '2026-09-24', updated: '2026-09-24', readingMinutes: 7,
-    image: '/og-image.png', imageAlt: 'Kafka consumer group diagnostic report with lag, member assignments, and a stuck partition',
+    image: '/og-image.png', artImage: '/og/guide-kafka-operations.svg', imageAlt: 'Kafka consumer group diagnostics showing per-partition lag and committed offsets',
     toolHref: '/kafka-diagnostics/', toolName: 'Kafka Consumer Diagnostics',
   },
   {
@@ -110,7 +112,7 @@ export const guides: Guide[] = [
     shortTitle: 'Browse Kafka records by offset or time',
     description: 'Read an exact Kafka offset range or start at a UTC timestamp, inspect key and headers, and understand retention and compaction gaps.',
     topic: 'Kafka message inspection', published: '2026-09-24', updated: '2026-09-24', readingMinutes: 6,
-    image: '/og-image.png', imageAlt: 'Kafka message browser showing partition, offset, timestamp, key, value, and headers',
+    image: '/og-image.png', artImage: '/og/guide-kafka-operations.svg', imageAlt: 'Kafka topic partitions with committed and end offsets for message inspection',
     toolHref: '/kafka-client/', toolName: 'Kafka Message Browser',
   },
   {
@@ -119,7 +121,7 @@ export const guides: Guide[] = [
     shortTitle: 'Replay Kafka messages safely',
     description: 'Copy a Kafka record or bounded offset range to the same or another cluster, preserving key, value, headers, and partition order where possible.',
     topic: 'Kafka message replay', published: '2026-09-24', updated: '2026-09-24', readingMinutes: 7,
-    image: '/og-image.png', imageAlt: 'Kafka message replay form selecting a source offset range and destination topic',
+    image: '/og-image.png', artImage: '/og/guide-kafka-operations.svg', imageAlt: 'Kafka topic partitions used to inspect and replay a bounded offset range',
     toolHref: '/kafka-client/', toolName: 'Kafka Message Browser',
   },
   {
@@ -146,7 +148,8 @@ export const guides: Guide[] = [
     updated: '2026-09-16',
     readingMinutes: 8,
     image: '/og-image.png',
-    imageAlt: 'DNS lookup report comparing public resolver answers with device and VPN DNS plus a PTR reverse lookup',
+    artImage: '/og/guide-network-investigation.svg',
+    imageAlt: 'An IP address connected to reverse DNS, ASN, and network range evidence',
     toolHref: '/dns-lookup/',
     toolName: 'DNS Lookup and Reverse DNS Checker',
   },
@@ -160,7 +163,8 @@ export const guides: Guide[] = [
     updated: '2026-09-15',
     readingMinutes: 8,
     image: '/og-image.png',
-    imageAlt: 'Bug Days IP address lookup report showing ISP, ASN, approximate location, reverse DNS, and cloud provider evidence',
+    artImage: '/og/guide-network-investigation.svg',
+    imageAlt: 'An IP address lookup connecting reverse DNS, ASN, and range evidence',
     toolHref: '/ip-lookup/',
     toolName: 'IP Address, ISP and Cloud Lookup',
   },
@@ -174,7 +178,8 @@ export const guides: Guide[] = [
     updated: '2026-09-15',
     readingMinutes: 8,
     image: '/og-image.png',
-    imageAlt: 'Bug Days network investigation workflow for matching access-log addresses to cloud, hosting, CDN, and crawler ranges',
+    artImage: '/og/guide-network-investigation.svg',
+    imageAlt: 'A network investigation connecting an IP address to provider and DNS evidence',
     toolHref: '/ip-lookup/',
     toolName: 'IP Address, ISP and Cloud Lookup',
   },

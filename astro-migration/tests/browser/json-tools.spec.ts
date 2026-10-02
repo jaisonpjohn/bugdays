@@ -138,6 +138,15 @@ test('long JSON stays vertically and horizontally scrollable in both diff editor
   }
 });
 
+test('diff editors show one clear empty state instead of an overlapping sample', async ({ page }) => {
+  await page.goto('/json-diff/');
+  for (const selector of ['#json1', '#json2']) {
+    await expect(page.locator(selector)).not.toHaveAttribute('placeholder');
+    const editor = page.locator(selector).locator('xpath=..');
+    await expect(editor.locator('[data-json-editor-code] .json-editor-placeholder')).toHaveText('Paste JSON here…');
+  }
+});
+
 test('runnable diff examples restore settings and share the actual comparison', async ({ page }) => {
   await page.goto(diffExample);
   await expect(page.locator('#stats')).toContainText('4 differences');

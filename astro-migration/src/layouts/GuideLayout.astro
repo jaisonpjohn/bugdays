@@ -12,6 +12,7 @@ interface Props {
 const { guide, keywords, imageWidth = 1280, imageHeight = 720 } = Astro.props;
 const guideUrl = `https://bugdays.com/guides/${guide.slug}/`;
 const imageUrl = `https://bugdays.com${guide.image}`;
+const displayImage = guide.artImage ?? guide.image;
 const publishedDateTime = `${guide.published}T09:00:00-07:00`;
 const modifiedDateTime = `${guide.updated}T09:00:00-07:00`;
 const formatDate = (value: string) => new Intl.DateTimeFormat('en-US', {
@@ -80,7 +81,7 @@ const jsonLd = [{
     </header>
 
     <figure class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm">
-      <img src={guide.image} alt={guide.imageAlt} width={imageWidth} height={imageHeight} fetchpriority="high" class="w-full aspect-video object-cover" />
+      <img src={displayImage} alt={guide.imageAlt} width={imageWidth} height={imageHeight} fetchpriority="high" class="w-full aspect-video object-cover" />
     </figure>
 
     <div class="guide-body mt-8 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-6 md:p-9">

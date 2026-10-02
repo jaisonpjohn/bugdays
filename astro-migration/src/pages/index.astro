@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import MagicBox from '../components/MagicBox.astro';
 import { guides } from '../lib/guides';
-const featuredGuides = [guides[0], ...guides.filter(guide => !guide.slug.includes('kafka')).slice(0, 2)];
+const featuredGuides = guides.filter(guide => !guide.slug.includes('kafka')).slice(0, 3);
 
 const jsonLd = [
   {
@@ -221,7 +221,7 @@ const categories = [
       <div class="grid md:grid-cols-3 gap-5">
         {featuredGuides.map((guide) => (
           <article class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm group">
-            <a href={`/guides/${guide.slug}/`} class="block overflow-hidden bg-slate-100 dark:bg-slate-900"><img src={guide.image} alt="" width="1280" height="720" loading="lazy" class="w-full aspect-video object-cover group-hover:scale-[1.02] transition-transform" /></a>
+            <a href={`/guides/${guide.slug}/`} class="block overflow-hidden bg-slate-100 dark:bg-slate-900"><img src={guide.artImage ?? guide.image} alt={guide.imageAlt} width="1280" height="720" loading="lazy" class="w-full aspect-video object-cover group-hover:scale-[1.02] transition-transform" /></a>
             <div class="p-5">
               <p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{guide.topic} · {guide.readingMinutes} min</p>
               <h3 class="mt-2 text-lg font-bold leading-snug text-slate-900 dark:text-white"><a href={`/guides/${guide.slug}/`} class="hover:text-indigo-600 dark:hover:text-indigo-400">{guide.shortTitle}</a></h3>

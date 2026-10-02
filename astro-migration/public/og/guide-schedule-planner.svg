@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">Cron schedule and upcoming run times</title>
+  <desc id="desc">A cron expression is visualized as upcoming scheduled times on a calendar-like timeline.</desc>
+  <defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#1e1b4b"/><stop offset="1" stop-color="#312e81"/></linearGradient></defs>
+  <rect width="1280" height="720" fill="url(#bg)"/><circle cx="1070" cy="105" r="205" fill="#a78bfa" opacity=".16"/>
+  <text x="80" y="96" fill="#ddd6fe" font-family="ui-sans-serif,system-ui" font-size="28" font-weight="700" letter-spacing="4">SCHEDULE PLANNER</text>
+  <rect x="80" y="150" width="1118" height="105" rx="22" fill="#111827" stroke="#6366f1" stroke-width="2"/><text x="127" y="216" fill="#fef3c7" font-family="ui-monospace,monospace" font-size="37">0 */6 * * 1-5</text><text x="554" y="215" fill="#c4b5fd" font-family="ui-sans-serif,system-ui" font-size="23">Every 6 hours · Weekdays</text>
+  <rect x="80" y="300" width="650" height="280" rx="24" fill="#111827" stroke="#475569" stroke-width="2"/>
+  <text x="124" y="353" fill="#a5b4fc" font-family="ui-sans-serif,system-ui" font-size="21" font-weight="700">NEXT RUNS (UTC)</text>
+  <path d="M141 435h515" stroke="#475569" stroke-width="6" stroke-linecap="round"/><circle cx="170" cy="435" r="17" fill="#38bdf8"/><circle cx="330" cy="435" r="17" fill="#818cf8"/><circle cx="490" cy="435" r="17" fill="#a78bfa"/><circle cx="650" cy="435" r="17" fill="#c4b5fd"/>
+  <text x="124" y="500" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="20">Mon 06:00</text><text x="284" y="500" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="20">Mon 12:00</text><text x="444" y="500" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="20">Mon 18:00</text><text x="604" y="500" fill="#e2e8f0" font-family="ui-monospace,monospace" font-size="20">Tue 00:00</text>
+  <circle cx="966" cy="441" r="139" fill="#172554" stroke="#a5b4fc" stroke-width="10"/><path d="M966 347v101l73 42" fill="none" stroke="#fef3c7" stroke-width="13" stroke-linecap="round" stroke-linejoin="round"/><circle cx="966" cy="441" r="15" fill="#38bdf8"/>
+  <text x="80" y="662" fill="#e2e8f0" font-family="ui-sans-serif,system-ui" font-size="24">Preview the actual next run—before a timezone assumption becomes an incident.</text>
+</svg>
