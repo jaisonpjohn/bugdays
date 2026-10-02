@@ -1,18 +1,35 @@
 ---
 import GuideLayout from '../../layouts/GuideLayout.astro';
 import { guideBySlug } from '../../lib/guides';
+import { accessLogExample, accessLogExampleHref } from '../../lib/guide-examples.ts';
 
 const guide = guideBySlug('identify-cloud-hosting-ips-in-access-logs');
+const exampleHref = await accessLogExampleHref();
 ---
 
 <GuideLayout guide={guide} keywords="hosting IP lookup, datacenter IP checker, cloud provider IP lookup, identify bot IP access logs, DigitalOcean IP lookup, Hetzner IP checker, OVH IP lookup, VPS IP checker, crawler IP ranges, bulk IP lookup">
   <p>An unfamiliar IP in an access log is not an answer by itself. The useful question is whether the address falls inside a network published by a cloud, hosting, CDN, service, or crawler operator—and what the requests from that address actually did.</p>
 
   <blockquote><strong>Infrastructure is evidence, not intent.</strong> A DigitalOcean, AWS, Hetzner, or OVHcloud match can explain where traffic originated, but it does not prove the visitor was a bot or that the request was malicious.</blockquote>
+  <div class="guide-note"><p><strong>Try a real workflow with fictional data:</strong> <a href={exampleHref} data-guide-example="logs">open this shareable access-log report</a>. It has six requests, three addresses, and three HTTP errors. The snapshot needs no live IP lookup.</p></div>
 
   <h2>Start with the right source IP</h2>
   <p>Before running a cloud or hosting IP lookup, confirm which log field represents the client. If a site sits behind Cloudflare, Fastly, a load balancer, or another reverse proxy, the socket address may identify that intermediary. Use the client-IP field produced by a trusted proxy configuration. Do not blindly trust an <code>X-Forwarded-For</code> value supplied by any Internet client.</p>
   <p>The <a href="/access-log-analyzer/">Bug Days access-log analyzer</a> accepts Nginx and Apache common or combined logs plus JSON Lines. It counts requests, paths, errors, time buckets, and normalized client IPs. Query strings are removed from shared path summaries.</p>
+  <p>For Nginx, configure trusted proxy addresses and the appropriate <code>real_ip_header</code>, as described in the <a href="https://nginx.org/en/docs/http/ngx_http_realip_module.html">real IP module documentation</a>. On Cloudflare, understand how <a href="https://developers.cloudflare.com/fundamentals/reference/http-headers/">CF-Connecting-IP and forwarded headers</a> reach your origin. Header names alone are not a trust boundary: an origin that accepts arbitrary direct connections may receive spoofed values.</p>
+
+  <h2>Worked Nginx/Apache combined-log example</h2>
+  <pre><code data-example-access-log>{accessLogExample}</code></pre>
+  <p>The example deliberately uses documentation ranges, not real visitors. All three IPs should be classified as special-use addresses, not AWS, Google, or residential networks. Copy the lines into the analyzer to reproduce the counts, or open the report link above to skip parsing and lookup.</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Address</th><th>Requests / errors</th><th>What to investigate</th></tr></thead>
+    <tbody>
+      <tr><td><code>192.0.2.10</code></td><td>2 / 0</td><td>Ordinary-looking page navigation; not proof of a human visitor.</td></tr>
+      <tr><td><code>198.51.100.20</code></td><td>3 / 3</td><td>Rapid probes for an environment file, a CMS login, and an application login.</td></tr>
+      <tr><td><code>203.0.113.30</code></td><td>1 / 0</td><td>A Googlebot claim in the user agent that still needs verification.</td></tr>
+    </tbody>
+  </table></div>
+  <p>The second address is worth investigating because of the request sequence, not because of a provider label. Check a longer time window, whether those paths belong to your application, and whether the source is an authorized scanner. The current analyzer aggregates IPs, paths, statuses, and time buckets; it does not authenticate user agents or identify a person.</p>
 
   <h2>Official ranges and BGP origin ranges answer different questions</h2>
   <div class="table-scroll"><table>
@@ -42,9 +59,19 @@ const guide = guideBySlug('identify-cloud-hosting-ips-in-access-logs');
     <li>Many requests for <code>/.env</code>, login pages, or unrelated CMS paths often indicate broad automated scanning.</li>
     <li>A burst of 404 and 403 responses from one hosted address may deserve a rate limit, but check legitimate integrations first.</li>
     <li>A crawler-range match should be compared with the operator’s verification guidance and the observed user agent. An easily forged user-agent string is not sufficient verification.</li>
-    <li>A Cloudflare or Fastly match usually means the logged field captured an intermediary instead of the original client.</li>
+    <li>A Cloudflare or Fastly match can indicate that the log captured an intermediary. It can also be traffic originating from an edge application; inspect the actual request path through your infrastructure.</li>
     <li>A published cloud region describes a provider range, not the physical location of a person.</li>
   </ul>
+
+  <h2>Verify a Googlebot claim with more than a user agent</h2>
+  <p>A request can put anything in its <code>User-Agent</code> header. Google documents verification using published IP ranges or reverse DNS followed by a forward lookup in its <a href="https://developers.google.com/crawling/docs/crawlers-fetchers/verify-google-requests">crawler verification guide</a>.</p>
+  <ol>
+    <li>Start with the trusted client IP, not a client-supplied forwarding header.</li>
+    <li>Check the appropriate published crawler range, or resolve the IP’s PTR record.</li>
+    <li>For the DNS route, validate the returned hostname against Google’s documented suffix for that crawler category. A substring such as <code>googlebot.com.attacker.example</code> is not a match.</li>
+    <li>Resolve that hostname’s A or AAAA records and require the original IP among the answers. A PTR label alone is insufficient.</li>
+  </ol>
+  <p>The <a href="/dns-lookup/">DNS and reverse-DNS checker</a> helps with that forward-confirmation workflow. Different crawler and user-triggered fetcher categories use different ranges and naming conventions; a Google Cloud hosting match is not automatically a Googlebot match. The fictional Googlebot line above cannot pass verification as a public crawler source.</p>
 
   <h2>What leaves the browser</h2>
   <p>The analyzer extracts unique normalized IP addresses locally and sends only those addresses to the Bug Days range lookup API. Raw log lines, request paths, query strings, headers, and user-agent strings are not part of the lookup request. Matching results return as a small set of CIDRs; counting, timing, filtering, and report construction remain in the browser.</p>
@@ -52,7 +79,8 @@ const guide = guideBySlug('identify-cloud-hosting-ips-in-access-logs');
   <p>This design also avoids downloading a multi-megabyte global prefix catalog for a lookup that may contain only one address. The report records the dataset timestamp and evidence used, so a shared result can be interpreted later.</p>
 
   <h2>Share a finding without sharing the whole incident</h2>
-  <p>Use the address-detail share button when a teammate needs one finding. Use the main share button after filtering when they need a provider group or suspicious subset. Shared reports contain the visible IP evidence and summary totals, not the original pasted log. If IP addresses themselves are restricted in your environment, export the report to your approved internal channel instead.</p>
+  <p>Use the address-detail share button when a teammate needs one finding. Use the main share button after filtering when they need a provider group or suspicious subset. Shared reports contain IP evidence and aggregate summaries, not the original pasted log. Filtered IP rows do not mean every summary was filtered: report totals and top-path summaries can still describe the full analysis. Review the shared result before posting it.</p>
+  <p>Keep the useful evidence together: time window, trusted source field, range-feed timestamp, provider match, request counts, status codes, and the reason for the finding. Share a synthetic example publicly and keep incident-specific reports in the appropriate team channel. That gives a teammate something reproducible without claiming that every cloud address is a bot or that every unmatched address is safe.</p>
 
   <a slot="related" href="/access-log-analyzer/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Analyze Nginx and Apache logs</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Connect network evidence to paths, errors, bursts, and request volume.</span></a>
   <a slot="related" href="/ip-lookup/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Run a bulk hosting IP lookup</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Check cloud, VPS, CDN, service, and crawler ranges.</span></a>

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+<title id="title">Base64 vs Base64URL</title><desc id="desc">Different alphabet. Same bytes.</desc>
+<rect width="1280" height="720" fill="#0f172a"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="70" y="82" fill="#a5b4fc" font-size="22" letter-spacing="2">ENCODING / WORKED EXAMPLE</text>
+<text x="70" y="156" fill="#f8fafc" font-size="48" font-weight="700">Base64 vs Base64URL</text>
+<text x="70" y="208" fill="#cbd5e1" font-size="27">Different alphabet. Same bytes.</text>
+
+  <rect x="70" y="265" width="300" height="295" rx="20" fill="#1e293b" stroke="#475569"/>
+  <text x="100" y="320" fill="#a5b4fc" font-size="22">ORIGINAL BYTES</text>
+  <text x="100" y="405" font-family="monospace" font-size="54" fill="#fff">FB FF</text>
+  <text x="100" y="470" font-size="23" fill="#94a3b8">Binary, not UTF-8 text</text>
+  <path d="M395 415h100" stroke="#818cf8" stroke-width="5"/><path d="m480 403 16 12-16 12" fill="none" stroke="#818cf8" stroke-width="5"/>
+  <rect x="525" y="265" width="685" height="135" rx="20" fill="#312e81"/>
+  <text x="555" y="310" font-size="22" fill="#c7d2fe">STANDARD BASE64</text>
+  <text x="555" y="368" font-size="44" font-family="monospace" fill="#fff">+/8=</text>
+  <rect x="525" y="425" width="685" height="135" rx="20" fill="#1e293b" stroke="#818cf8"/>
+  <text x="555" y="470" font-size="22" fill="#c7d2fe">BASE64URL · UNPADDED</text>
+  <text x="555" y="528" font-size="44" font-family="monospace" fill="#fff">-_8</text>
+<text x="70" y="630" fill="#cbd5e1" font-size="24">Check the alphabet, padding, and text encoding separately.</text>
+<text x="70" y="682" fill="#a5b4fc" font-size="22" font-weight="600">BUG DAYS · Developer guides</text>
+</g></svg>

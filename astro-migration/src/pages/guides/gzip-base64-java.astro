@@ -1,0 +1,110 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import GzipExample from '../../components/GzipExample.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+import { gzipExamples } from '../../lib/gzip-examples.ts';
+const guide = guideBySlug('gzip-base64-java');
+const example = gzipExamples[1];
+const java = `import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+public class GzipBase64 {
+    public static String encode(String text) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (GZIPOutputStream gzip = new GZIPOutputStream(bytes)) {
+            gzip.write(text.getBytes(StandardCharsets.UTF_8));
+        } // Close finishes the GZip trailer before we read the bytes.
+        return Base64.getEncoder().encodeToString(bytes.toByteArray());
+    }
+
+    public static String decode(String encoded, int maxOutputBytes)
+            throws IOException {
+        if (maxOutputBytes < 0) {
+            throw new IllegalArgumentException("Negative output limit");
+        }
+        byte[] compressed = Base64.getDecoder().decode(encoded);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (GZIPInputStream gzip = new GZIPInputStream(
+                new ByteArrayInputStream(compressed))) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = gzip.read(buffer)) != -1) {
+                if (read > maxOutputBytes - output.size()) {
+                    throw new IOException("Decompressed data exceeds limit");
+                }
+                output.write(buffer, 0, read);
+            }
+        }
+        // Report invalid UTF-8 instead of replacing damaged characters.
+        return StandardCharsets.UTF_8.newDecoder()
+                .decode(ByteBuffer.wrap(output.toByteArray())).toString();
+    }
+
+    public static void main(String[] args) throws IOException {
+        if (args.length > 0) {
+            System.out.println(decode(args[0], 1024 * 1024));
+            return;
+        }
+        String text = "{\\"message\\":\\"Hello, café ☕\\",\\"city\\":\\"Montréal\\"}";
+        String encoded = encode(text);
+        System.out.println(encoded);
+        System.out.println(decode(encoded, 1024 * 1024));
+    }
+}`;
+---
+<GuideLayout guide={guide} keywords="Java GZip Base64 decode, Java Base64 GZIPInputStream, compress string GZIPOutputStream Base64, Java gzip to string UTF-8, Not in GZIP format Java">
+  <p>To decode a Base64 GZip string in Java, use <code>Base64.getDecoder()</code> to recover the compressed bytes, read them through <code>GZIPInputStream</code>, then decode the result as UTF-8. Encoding reverses that order: UTF-8 bytes, GZip compression, then Base64. The standard JDK has everything needed; no Apache Commons or other dependency is required.</p>
+
+  <h2>Try a Base64 GZip example before writing code</h2>
+  <p>This JSON fixture includes an accented character and an emoji, so it also checks your text encoding. Open the runnable link to see the expected result in the <a href="/gzip-base64/">online GZip Base64 decoder</a>. You can copy that same link into a ticket alongside the input and expected output.</p>
+  <GzipExample example={example} />
+
+  <h2>Complete Java example: compress and decompress a string</h2>
+  <p>Save this as <code>GzipBase64.java</code>. It uses Java 8 APIs and was checked with a Java 21 JDK. The example limits decompressed output to 1 MiB; choose a limit appropriate to your application rather than trusting compressed size to predict memory use.</p>
+  <pre><code data-recipe="java">{java}</code></pre>
+  <pre><code>{`javac -encoding UTF-8 GzipBase64.java
+java -Dfile.encoding=UTF-8 GzipBase64`}</code></pre>
+  <p>The first line is the encoded payload. The second must be <code>{example.text}</code>. To test the fixture above, pass its Base64 string as a single quoted command-line argument. In a real service, read payloads from the request body or a stream instead of command-line arguments.</p>
+  <p>Read the stream to its end: GZip checksum and trailer errors can appear late. Also cap the incoming request size before calling this method. Its output limit bounds decompression, but <code>Base64.decode</code> still allocates memory for the entire compressed input.</p>
+
+  <h2>Why closing GZIPOutputStream matters</h2>
+  <p><code>flush()</code> is not the same as finishing a GZip member. Reading the byte array before <code>close()</code> or <code>finish()</code> can leave the checksum and length trailer missing. The try-with-resources block above finishes the stream before Base64 encoding begins. Closing a <code>ByteArrayOutputStream</code> does not discard its stored bytes.</p>
+
+  <h2>Choose the right Java Base64 decoder</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Producer format</th><th>Java decoder</th><th>Check first</th></tr></thead>
+    <tbody>
+      <tr><td>Standard Base64 using <code>+</code> and <code>/</code></td><td><code>Base64.getDecoder()</code></td><td>No surrounding JSON quotes or MIME line breaks.</td></tr>
+      <tr><td>Base64URL using <code>-</code> and <code>_</code></td><td><code>Base64.getUrlDecoder()</code></td><td>Common in URLs and tokens; not necessarily compressed.</td></tr>
+      <tr><td>MIME-wrapped Base64</td><td><code>Base64.getMimeDecoder()</code></td><td>Use only for an expected MIME format; it tolerates non-alphabet characters.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Java’s basic decoder accepts valid unpadded final groups, but incorrect supplied padding still fails. Do not fix every decode error by switching to the forgiving MIME decoder. It can hide copying mistakes. See the <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Base64.Decoder.html">JDK Base64 decoder contract</a> and our <a href="/guides/base64-utf8-base64url-file-decoder/">Base64 vs Base64URL guide</a>.</p>
+
+  <h2>Fix “Not in GZIP format,” truncated streams, and broken text</h2>
+  <div class="table-scroll"><table>
+    <thead><tr><th>Failure</th><th>Likely layer</th><th>Next check</th></tr></thead>
+    <tbody>
+      <tr><td><code>IllegalArgumentException</code> decoding Base64</td><td>Text encoding</td><td>Variant, padding, quotes, spaces that replaced plus signs, or incomplete input.</td></tr>
+      <tr><td><code>Not in GZIP format</code></td><td>Compression header</td><td>Decoded GZip bytes start with <code>1f 8b 08</code>. ZIP, zlib, raw DEFLATE, and plain JSON are different formats.</td></tr>
+      <tr><td>EOF or corrupt-trailer error</td><td>Compressed stream</td><td>Truncation, altered bytes, or a producer that did not finish the stream.</td></tr>
+      <tr><td>UTF-8 decoding error</td><td>Decompressed bytes</td><td>The payload may be binary or a different character encoding, not UTF-8 text.</td></tr>
+    </tbody>
+  </table></div>
+  <p>The <a href="https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/zip/GZIPInputStream.html">GZIPInputStream documentation</a> describes format and I/O errors. Isolate the failing layer before altering input. A payload beginning with <code>H4sI</code> suggests a GZip header, but does not prove the rest is intact.</p>
+
+  <h2>Interoperate with Python, Node.js, and HTTP clients</h2>
+  <p>Equivalent inputs can produce different valid compressed bytes because implementations choose different headers or compression settings. Compare the decoded text or original bytes, not just the Base64 strings. The <a href="/guides/gzip-base64-python-nodejs/">Python and Node.js recipes</a> use the same Unicode fixture as this Java example.</p>
+  <p>An HTTP <code>Content-Encoding: gzip</code> body is normally raw compressed bytes, not Base64 text, and your HTTP library may already decompress it. A JSON property that contains Base64 GZip is a different contract. Only perform the steps your producer actually used.</p>
+
+  <h2>Share a Java decoding bug with a runnable input</h2>
+  <p>Reduce the failing payload to fictional data, open it in the decoder, then use <strong>Share</strong> and choose the embedded-data link. Include the Java version, exception, expected text, and encoding order in the ticket. The link carries the input and operation; the reader does not need to recreate your project just to check the payload. Anyone with the link can read its data, so use a reproducer rather than a production token or customer record.</p>
+  <a slot="related" href="/guides/gzip-base64-python-nodejs/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong>Python and Node.js equivalents</strong><span class="block text-sm mt-1">Check the same payload across language boundaries.</span></a>
+  <a slot="related" href="/guides/fix-base64-gzip-decode-errors/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong>Troubleshoot GZip and Base64 errors</strong><span class="block text-sm mt-1">Separate padding, header, truncation, and text problems.</span></a>
+</GuideLayout>

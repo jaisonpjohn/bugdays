@@ -6,7 +6,7 @@ import { gzipSync, gunzipSync } from 'node:zlib';
 import LZString from 'lz-string';
 import { gzipExamples } from '../src/lib/gzip-examples.ts';
 
-const slugs = ['decode-base64-gzip-to-json', 'gzip-base64-python-nodejs', 'fix-base64-gzip-decode-errors'];
+const slugs = ['decode-base64-gzip-to-json', 'gzip-base64-python-nodejs', 'fix-base64-gzip-decode-errors', 'gzip-base64-java'];
 const unescape = (value) => value.replace(/&(?:amp|lt|gt|quot|apos|#39|#x27);/g, (entity) => ({
   '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&apos;': "'", '&#39;': "'", '&#x27;': "'",
 }[entity]));

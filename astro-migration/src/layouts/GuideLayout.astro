@@ -73,6 +73,7 @@ const jsonLd = [{
         <a href="/about/" rel="author" class="font-semibold text-slate-700 dark:text-slate-200 hover:text-indigo-600 dark:hover:text-indigo-400">Bug Days</a>
         <span aria-hidden="true">·</span>
         <time datetime={guide.published}>{formatDate(guide.published)}</time>
+        {guide.updated !== guide.published && <span>· Updated <time datetime={guide.updated}>{formatDate(guide.updated)}</time></span>}
         <span aria-hidden="true">·</span>
         <span>{guide.readingMinutes} minute read</span>
         <span aria-hidden="true">·</span>

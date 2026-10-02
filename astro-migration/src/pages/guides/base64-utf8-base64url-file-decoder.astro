@@ -1,33 +1,76 @@
 ---
 import GuideLayout from '../../layouts/GuideLayout.astro';
 import { guideBySlug } from '../../lib/guides.ts';
+import { base64ExampleHref, base64UrlExampleHref } from '../../lib/guide-examples.ts';
 const guide = guideBySlug('base64-utf8-base64url-file-decoder');
 const greeting = 'Hello, café ☕';
 const encoded = 'SGVsbG8sIGNhZsOpIOKYlQ==';
 ---
 
 <GuideLayout guide={guide} keywords="Base64 UTF-8 encode decode, Base64URL decoder, Base64 file encoder, Base64 padding, decode JWT Base64URL, data URI Base64">
-  <p>Base64 is simple only when the bytes are ASCII. The moment a payload contains an emoji, a binary file, a JWT segment, or compressed data, a copy-pasted browser snippet can give you the wrong answer. The fix is to identify the bytes and the Base64 variant before you decode.</p>
+  <p>Base64 and Base64URL encode the same bytes with slightly different alphabets. Standard Base64 uses <code>+</code> and <code>/</code>; Base64URL uses <code>-</code> and <code>_</code>. Padding and text encoding are separate questions. Choose the alphabet first, recover the original bytes, and only then interpret them as UTF-8, a file, or compressed data.</p>
+  <div class="guide-note"><p><strong>Try and share:</strong> <a href={base64ExampleHref} data-guide-example="base64">decode a UTF-8 example</a> or <a href={base64UrlExampleHref} data-guide-example="base64url">normalize a Base64URL value</a>. Both links contain fictional sample data and restore the operation automatically.</p></div>
 
   <h2>Try a UTF-8 Base64 round trip</h2>
   <p>Paste <code>{greeting}</code> into the <a href="/base64-encoder-decoder/">Base64 encoder and decoder</a> and choose <strong>Encode UTF-8 → Base64</strong>. The result is <code>{encoded}</code>. Decode that value to recover the exact text, including the accented character and emoji.</p>
-  <p>A legacy <code>btoa('café')</code> call throws because it accepts a byte-oriented string, not arbitrary Unicode text. A safe implementation encodes a JavaScript string to UTF-8 bytes first, then encodes those bytes as Base64.</p>
+  <p><code>btoa('café')</code> actually succeeds, but treats <code>é</code> as the single byte <code>e9</code> rather than the UTF-8 bytes <code>c3 a9</code>. Its output, <code>Y2Fm6Q==</code>, is therefore not UTF-8 Base64 for that word; the UTF-8 result is <code>Y2Fmw6k=</code>. Characters outside the byte range, such as <code>☕</code>, throw instead. Encode text with <code>TextEncoder</code> before calling <code>btoa</code>.</p>
+  <pre><code data-recipe="browser-base64">{`function encodeUtf8(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary);
+}
+
+function decodeUtf8(base64) {
+  const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+  return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+}
+
+const encoded = encodeUtf8('Hello, café ☕');
+console.log(encoded);
+console.log(decodeUtf8(encoded));`}</code></pre>
+  <p>This small-payload example avoids spreading a large byte array into a function call, which can exceed JavaScript’s argument limit. For large files, use a binary/file workflow rather than repeatedly constructing strings. The strict UTF-8 decoder reports invalid bytes instead of silently inserting replacement characters.</p>
 
   <h2>Base64URL is not a different payload format</h2>
-  <p>Base64URL carries the same bytes as Base64. It substitutes <code>-</code> for <code>+</code> and <code>_</code> for <code>/</code>, which avoids URL escaping. It also commonly removes trailing <code>=</code> padding. JWT header and payload sections are Base64URL; they are not encrypted merely because they are compact.</p>
-  <pre><code>{`standard Base64: eyJzdWIiOiIxMjMifQ==
-Base64URL:        eyJzdWIiOiIxMjMifQ`}</code></pre>
+  <p>For a visible alphabet difference, encode the two bytes <code>fb ff</code>. They are binary data, not valid UTF-8 text:</p>
+  <pre><code>{`original bytes:  fb ff
+standard Base64: +/8=
+Base64URL:       -_8=   (padded)
+Base64URL:       -_8    (unpadded)`}</code></pre>
+  <p><a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a> defines both alphabets. Base64URL does not universally forbid padding; the protocol using it decides whether padding is required or omitted. Do not change a signed token’s representation in place just to make it look consistent.</p>
   <p>Use the tool’s <strong>Base64URL ↔ Base64</strong> action to normalize either form. To inspect a complete token, use the <a href="/jwt-decoder/">JWT decoder</a>; it separates the header, claims, and signature rather than treating the whole token as one Base64 string.</p>
+
+  <h2>Restore missing padding without accepting damaged input</h2>
+  <p>After validating the unpadded alphabet, count the characters modulo four. A remainder of two needs <code>==</code>; three needs <code>=</code>; zero needs nothing. A remainder of one cannot encode a complete byte sequence. Appending arbitrary padding cannot repair a truncated payload.</p>
+  <pre><code data-recipe="base64url-normalize">{`function base64UrlToBase64(value) {
+  // This function deliberately accepts UNPADDED Base64URL only.
+  if (!/^[A-Za-z0-9_-]*$/.test(value) || value.length % 4 === 1) {
+    throw new Error('Invalid unpadded Base64URL');
+  }
+  const standard = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = standard + '='.repeat((4 - standard.length % 4) % 4);
+  // Reject nonzero unused bits rather than silently normalizing them.
+  if (btoa(atob(padded)) !== padded) throw new Error('Noncanonical Base64URL');
+  return padded;
+}
+console.log(base64UrlToBase64('-_8')); // +/8=`}</code></pre>
+  <p>For an API accepting padded input, validate the allowed placement and count of existing padding too; do not indiscriminately strip punctuation. If a query parser changed <code>+</code> to a space, fix how the producer URL-encodes the parameter or use the expected Base64URL contract.</p>
+
+  <h2>Decode a JWT segment, not the whole token</h2>
+  <p>A compact signed JWT normally has three dot-separated segments: header, payload, and signature. The header and payload contain Base64URL-encoded JSON. For example, <code>eyJzdWIiOiIxMjMifQ</code> decodes to <code>{'{"sub":"123"}'}</code>. Dots are separators, not Base64 alphabet characters. Encrypted compact JWTs use a different, five-part layout; decoding is not decryption.</p>
+  <p>Readable claims do not prove authenticity. Verifying the signature requires the intended algorithm, trusted key, and application checks such as issuer, audience, and expiry. The <a href="https://www.rfc-editor.org/rfc/rfc7515.html">JWS specification</a> explains the signed representation. Share a made-up token when reporting an encoding problem, not a working login token.</p>
 
   <h2>Encode a file as bytes, not as text</h2>
   <p>Images, certificates, compressed payloads, and other files need a binary read. Choose <strong>Encode local file</strong>; the page reads the bytes on your device and produces Base64. Do not decode those bytes into text unless you know their character encoding. A binary-looking result is often correct.</p>
   <p>A data URI has a prefix such as <code>data:image/png;base64,</code>. The decoder accepts that form and removes the prefix before decoding the payload. For image workflows, continue to the <a href="/image-base64/">image-to-Base64 converter</a>.</p>
+  <p>Not every data URI uses Base64: the <code>;base64</code> marker matters. Likewise, a certificate’s PEM boundaries are framing around encoded certificate bytes. Use the <a href="/certificate-inspector/">certificate inspector</a> to interpret X.509 fields rather than expecting a DER certificate to become readable text.</p>
 
   <h2>Recognize compressed Base64</h2>
   <p>Many GZip byte streams start with hexadecimal <code>1f 8b 08</code>, commonly rendered as <code>H4sI</code> in Base64. Base64 decoding succeeds but produces compressed bytes—not readable text. Send that value to the <a href="/gzip-base64/">GZip Base64 decoder</a>, which performs the second decompression step.</p>
 
   <h2>Share a synthetic reproducer</h2>
   <p>A shared link can preserve the input and selected conversion operation. That is helpful for a small synthetic example in a ticket or technical question, but it is not a secret store: anybody with the link can read its included input. Replace real API tokens, customer values, and private file contents before sharing.</p>
+  <p>Include both the encoded value and expected bytes or text in the ticket, with the runnable link beside them. That preserves the question even if the reader cannot open the tool. For compressed Java payloads, continue with the <a href="/guides/gzip-base64-java/">Java GZip Base64 example</a>.</p>
 
   <a slot="related" href="/guides/decode-base64-gzip-to-json/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Decode Base64 GZip to JSON</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Understand H4sI, decompression, and JSON formatting.</span></a>
   <a slot="related" href="/guides/format-validate-json-api-response/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Format decoded JSON</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Validate and inspect an API payload after decoding.</span></a>

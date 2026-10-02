@@ -29,8 +29,31 @@ const guide = guideBySlug('check-tls-certificate-chain-any-port');
 openssl s_client \
   -connect 10.20.4.8:9093 \
   -servername broker-1.example.internal \
-  -showcerts</code></pre>
+  -verify_hostname broker-1.example.internal \
+  -verify_return_error -showcerts</code></pre>
+  <p><code>-servername</code> selects the SNI name; <code>-verify_hostname</code> checks the certificate against it. They are separate controls. <code>-verify_return_error</code> makes verification failures abort instead of letting <code>s_client</code> continue as a diagnostic convenience. For a private CA, add <code>-CAfile organization-root.pem</code> with the trust anchor your application is supposed to trust.</p>
   <p>If the client genuinely verifies an IP address, that address must appear as an IP Subject Alternative Name. A DNS SAN containing the textual IP is not equivalent. Likewise, a PTR hostname discovered from reverse DNS is a clue, not automatic permission to substitute a different identity.</p>
+  <pre><code># Verify an IP identity, without sending a DNS SNI name
+openssl s_client \
+  -connect 10.20.4.8:9093 \
+  -noservername -verify_ip 10.20.4.8 \
+  -verify_return_error -showcerts</code></pre>
+  <p>A server that requires SNI may reject the handshake before presenting any certificate. In that case there is no certificate to label “SAN mismatch.” Retry with the DNS identity the application actually uses to inspect the presented chain, while keeping clear that this is a different handshake.</p>
+
+  <h2>Check LDAPS, SMTP, and IMAP with the right handshake</h2>
+  <p>For direct TLS, change the connection port without adding an application-level upgrade. These examples verify the DNS name as well as requesting the chain:</p>
+  <pre><code>openssl s_client -connect directory.example.com:636 \
+  -servername directory.example.com -verify_hostname directory.example.com \
+  -verify_return_error -showcerts
+
+openssl s_client -connect mail.example.com:993 \
+  -servername mail.example.com -verify_hostname mail.example.com \
+  -verify_return_error -showcerts</code></pre>
+  <p>For SMTP on port 587, the client must speak SMTP before upgrading. OpenSSL supports that negotiation; the Bug Days direct-TLS checker does not:</p>
+  <pre><code>openssl s_client -starttls smtp -connect mail.example.com:587 \
+  -servername mail.example.com -verify_hostname mail.example.com \
+  -verify_return_error -showcerts</code></pre>
+  <p>Use the matching <code>-starttls imap</code> or <code>-starttls ldap</code> mode for those protocols on their upgrade ports. Port numbers are conventions, not proof of configuration. Check the service’s listener settings and the <a href="https://docs.openssl.org/3.5/man1/openssl-s_client/">OpenSSL s_client reference</a>.</p>
 
   <h2>Read SANs before the Common Name</h2>
   <p>Modern hostname verification uses Subject Alternative Names. For a DNS name, an exact SAN is simplest. A wildcard such as <code>*.example.com</code> covers one leftmost label such as <code>api.example.com</code>; it does not cover <code>example.com</code> or <code>v2.api.example.com</code>.</p>
@@ -44,6 +67,13 @@ openssl s_client \
   <h2>Check expiry across the entire chain</h2>
   <p>The leaf’s expiration date gets the most attention, but an expired intermediate can also break validation. Record the not-before and not-after dates for every presented certificate. Alert thresholds often begin at 30 days, but the right renewal margin depends on automation, change windows, and how widely a certificate is deployed.</p>
   <p>A “not yet valid” result can indicate a newly issued certificate deployed too early or a bad system clock. Treat those causes separately.</p>
+  <p>Save each PEM certificate block from <code>-showcerts</code> as a separate file and inspect it. The following command examines one certificate, not every certificate in a concatenated bundle:</p>
+  <pre><code>openssl x509 -in leaf.pem -noout -subject -issuer -dates \
+  -ext subjectAltName -fingerprint -sha256
+
+# Exit status 0 means this certificate does not expire within 30 days.
+openssl x509 -in leaf.pem -noout -checkend 2592000</code></pre>
+  <p>Repeat the expiry check for each intermediate. <code>-checkend</code> alone does not validate hostname coverage, signatures, trust, revocation, or the not-before date. The <a href="https://docs.openssl.org/3.5/man1/openssl-x509/">x509 reference</a> documents the individual checks.</p>
 
   <h2>Recognize an incomplete or misordered chain</h2>
   <p>Servers normally present the leaf followed by intermediate certificates. They usually omit the root because clients already carry trust anchors. The issuer of certificate 1 should match the subject of certificate 2, and so on.</p>
@@ -53,6 +83,8 @@ openssl s_client \
     <li><strong>Root included:</strong> usually unnecessary, though not automatically the cause of failure.</li>
     <li><strong>Private CA:</strong> the chain may be correct but absent from the device trust store.</li>
   </ul>
+
+  <p>Matching issuer and subject names is a useful structural hint, not cryptographic proof: different CA certificates can share a name. Actual path validation checks signatures, constraints, usage, time, and an accepted trust anchor. Likewise, <code>-showcerts</code> displays the chain sent by the server, not a verified chain reconstructed by the client.</p>
 
   <h2>Separate chain trust from service identity</h2>
   <p>A certificate can chain to a trusted root and still fail because the requested hostname is missing from SAN. It can cover the right hostname and still fail because an intermediate is absent. It can pass both checks and still be rejected by an application using a different trust store, Java runtime, container image, or certificate policy.</p>
@@ -70,6 +102,8 @@ openssl s_client \
 
   <h2>Export evidence another engineer can reproduce</h2>
   <p>A useful certificate incident report includes the connection target, port, SNI name, peer address, TLS version, cipher suite, presented chain order, expiry dates, SAN result, trust error, and SHA-256 fingerprints. Share a Bug Days snapshot when the public certificate data is suitable for sharing, or export CSV, Excel, JSON, PEM, and a printable PDF for a ticket.</p>
+  <p><strong>Try it without a server:</strong> open the <a href="/certificate-inspector/">certificate inspector</a>, choose <strong>Sample</strong> in the pasted-certificate view, and inspect its SANs and validity dates. Use the prominent <strong>Share</strong> action for a reproducible certificate example. A pasted certificate can demonstrate its fields; it cannot prove which chain a live server presented or which trust store a teammate uses.</p>
+  <p>For a live check, start the local bridge and connect from the network where the problem occurs, including a VPN if needed. If a service requires a client certificate, this checker cannot complete an authenticated mTLS investigation. Use the application’s approved client identity with a suitable TLS client; a server certificate alone says nothing about whether that client will be authorized.</p>
 
   <div class="guide-note"><p><strong>Scope:</strong> the checker diagnoses direct TLS handshakes. It does not perform STARTTLS negotiation, client-certificate authentication, revocation checks, or Certificate Transparency monitoring.</p></div>
 

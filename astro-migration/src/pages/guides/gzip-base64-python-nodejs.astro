@@ -43,6 +43,7 @@ console.log(decoded);`;
   <p>Two services can agree to use “GZip and Base64” and still disagree about the bytes. One compresses a UTF-8 string; another Base64-encodes first. A third produces zlib data instead of a GZip stream. A small round-trip test makes that contract explicit.</p>
 
   <blockquote><strong>The contract for these examples:</strong> UTF-8 text → GZip bytes → standard Base64 string. Decoding must recover exactly the original text, including accented characters and emoji.</blockquote>
+  <p>Working with a JVM service? The <a href="/guides/gzip-base64-java/">Java GZip Base64 recipe</a> uses this same Unicode fixture with <code>GZIPInputStream</code>, including an output-size limit and troubleshooting for incomplete streams.</p>
 
   <h2>Python: compress, encode, decode, and verify</h2>
   <p>Run this as a Python 3 script. It needs no third-party packages. The input deliberately includes <code>café</code>, <code>Montréal</code>, and an emoji, so an ASCII-only implementation cannot pass unnoticed.</p>

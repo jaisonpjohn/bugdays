@@ -1,0 +1,83 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+import { kafkaExampleHref } from '../../lib/guide-examples.ts';
+const guide = guideBySlug('reset-kafka-consumer-group-offsets');
+---
+<GuideLayout guide={guide} keywords="Kafka reset consumer group offsets, kafka-consumer-groups reset-offsets, to-earliest to-latest to-offset, reset Kafka offset timestamp, shift-by by-duration from-file">
+  <p>Reset Kafka consumer offsets by stopping the group, choosing a topic and partitions, previewing the new positions, and applying the reviewed plan. An offset reset changes where that group resumes; it does not delete records, copy messages, or undo side effects from earlier processing.</p>
+  <div class="guide-note"><p><strong>Investigate first:</strong> <a href={kafkaExampleHref} data-guide-example="kafka">open a shareable, fictional lag report</a> with one stalled partition and one unexpected member. It works without a cluster or local bridge and cannot execute an offset reset.</p></div>
+
+  <h2>Understand what an offset reset changes</h2>
+  <p>A group’s committed offset is its restart position for a particular topic-partition. Committing <code>9310</code> means resume at offset 9310, or the next available record if that position is no longer present. Offsets are not global message IDs: partition 0 and partition 2 can both contain an offset 9310 with unrelated data.</p>
+  <p>Moving backward can reprocess records and duplicate downstream actions. Moving forward can skip records for this group. Other groups retain their own positions. If you only want to inspect a suspect message, use the <a href="/kafka-client/">Kafka message browser</a>; you do not need to move the application’s offsets.</p>
+
+  <h2>All eight offset-reset modes</h2>
+  <p>The <a href="/kafka-diagnostics/">Kafka consumer diagnostics tool</a> exposes the following modes through the Bug Days Local Bridge. The command-line equivalents are part of Apache Kafka’s <a href="https://kafka.apache.org/43/operations/basic-kafka-operations/">consumer-group operations</a>.</p>
+  <div class="table-scroll"><table>
+    <thead><tr><th>CLI option</th><th>Use it for</th><th>Important distinction</th></tr></thead>
+    <tbody>
+      <tr><td><code>--to-offset 9310</code></td><td>An exact position</td><td>That number is applied to each selected partition, not to the topic globally.</td></tr>
+      <tr><td><code>--to-earliest</code></td><td>Replay all retained data</td><td>Earliest is not necessarily zero. Deleted records cannot be restored.</td></tr>
+      <tr><td><code>--to-latest</code></td><td>Skip the existing backlog</td><td>Latest is the end position, after the last currently available record.</td></tr>
+      <tr><td><code>--to-current</code></td><td>Retain current commits</td><td>The bridge uses latest where no commit exists; inspect every row.</td></tr>
+      <tr><td><code>--shift-by -100</code></td><td>Move back 100 offsets</td><td>A positive shift moves forward. Offset gaps mean this is not exactly 100 messages.</td></tr>
+      <tr><td><code>--to-datetime</code></td><td>Resume from a timestamp</td><td>Resolves a position independently for each partition.</td></tr>
+      <tr><td><code>--by-duration PT2H</code></td><td>Resume from two hours ago</td><td>Relative to planning time, so a later preview can produce a different result.</td></tr>
+      <tr><td><code>--from-file offsets.csv</code></td><td>Different exact offsets per partition</td><td>Review topic, partition, and offset in every CSV row.</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2>Preview an exact offset for selected partitions</h2>
+  <p>Run commands from your Kafka distribution. Replace the illustrative broker, group, and topic with your own values. For authenticated clusters, add <code>--command-config client.properties</code> using an approved local configuration file; do not paste credentials into a shared command.</p>
+  <pre><code># Inspect membership before stopping the application.
+bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --describe --group checkout-workers --members --verbose
+
+# After stopping ALL instances, verify that the group is inactive.
+bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --describe --group checkout-workers --state
+
+# Preview only partition 2. This does not execute the reset.
+bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --group checkout-workers --topic orders.events:2 \
+  --reset-offsets --to-offset 9310 --dry-run</code></pre>
+  <p>Use <code>orders.events:0,2</code> to select partitions 0 and 2. Omitting the partition suffix selects the topic’s partitions. Check for old deployments, scheduled jobs, and autoscalers that might reconnect after you stop the visible application.</p>
+
+  <h2>Save the old positions and apply a reviewed CSV</h2>
+  <p>Capture the group’s offsets before changing anything. With the group inactive, this command exports the current positions for the selected topic. If any partition has no commit, <code>--to-current</code> may supply a fallback position; the export cannot preserve “no commit” as an offset.</p>
+  <pre><code>bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --group checkout-workers --topic orders.events \
+  --reset-offsets --to-current --export &gt; before-offsets.csv</code></pre>
+  <p>A separate, headerless <code>reviewed-offsets.csv</code> can contain this exact plan. The example changes only partition 2:</p>
+  <pre><code>orders.events,2,9310</code></pre>
+  <pre><code># Review the file-based plan.
+bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --group checkout-workers --reset-offsets \
+  --from-file reviewed-offsets.csv --dry-run
+
+# This command changes the group's stored offsets.
+bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
+  --group checkout-workers --reset-offsets \
+  --from-file reviewed-offsets.csv --execute</code></pre>
+  <p>Using exact positions avoids silently recomputing “latest” or “two hours ago” between review and execution. Confirm the CLI output and the group’s stored offsets, then restart the application and watch progress. Reverting to an old offset does not reverse database writes or notifications already produced, and retention may make an old position unavailable.</p>
+
+  <h2>Reset by timestamp or duration without guessing the timezone</h2>
+  <p>For the Kafka CLI, use an explicit UTC timestamp, such as <code>--to-datetime 2026-10-01T12:00:00.000Z</code>, and preview it with your installed version. In Bug Days, the datetime field is UTC; enter <code>2026-10-01T12:00:00Z</code>. The duration field accepts examples such as <code>PT30M</code>, <code>PT24H</code>, or <code>P7D</code>.</p>
+  <p>The broker searches record timestamps, which can represent producer create time or broker append time depending on topic configuration. They are not necessarily the business-event time inside the JSON. If no matching timestamp exists, the bridge plans the current end offset. A reset specifies a start position only; for a bounded time window use the <a href="/guides/browse-kafka-messages-by-offset-time/">message browsing workflow</a>.</p>
+
+  <h2>Use the browser preview and share the diagnosis</h2>
+  <ol>
+    <li>Start an up-to-date local bridge, connect your cluster, and select the group and topic in Kafka diagnostics.</li>
+    <li>Take a snapshot and export the partition table. Stop every consumer in the group before preparing a reset.</li>
+    <li>Enter a comma-separated partition selection, choose a mode, and preview. Compare the current, proposed, earliest, and latest positions.</li>
+    <li>Apply the plan only after review. It expires after five minutes; the bridge rechecks that the group is inactive and its offsets have not changed.</li>
+    <li>Restart consumers and take fresh snapshots. Share the report so teammates can compare what changed.</li>
+  </ol>
+  <p>The bridge rejects targets outside the retained range instead of silently clamping them. CLI behavior can differ, so always read its preview. A shared Bug Days report omits connection credentials and anonymizes group/member identifiers; it does not carry an executable reset plan.</p>
+
+  <h2>Why auto.offset.reset is not this operation</h2>
+  <p><code>auto.offset.reset=earliest</code> does not rewind a group with valid committed offsets. It controls the fallback when there is no usable position, as described in the <a href="https://kafka.apache.org/41/configuration/consumer-configs/">Kafka consumer configuration</a>. Change stored group positions deliberately when a replay is intended. For Kafka Streams applications, use the application-specific reset procedure as well: consumer offsets alone do not reset local state stores or internal topics.</p>
+  <a slot="related" href="/guides/diagnose-kafka-consumer-lag-stuck-partition/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong>Diagnose before resetting</strong><span class="block text-sm mt-1">Distinguish slow processing, unexpected members, and stalled commits.</span></a>
+  <a slot="related" href="/guides/replay-kafka-messages-between-topics/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong>Replay selected records instead</strong><span class="block text-sm mt-1">Copy messages without rewinding an entire consumer group.</span></a>
+</GuideLayout>

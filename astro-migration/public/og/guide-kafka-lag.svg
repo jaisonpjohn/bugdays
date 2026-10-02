@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+<title id="title">Is it slow, or is it stuck?</title><desc id="desc">Compare commits and partition ends across snapshots.</desc>
+<rect width="1280" height="720" fill="#0f172a"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="70" y="82" fill="#a5b4fc" font-size="22" letter-spacing="2">KAFKA / CONSUMER DIAGNOSTICS</text>
+<text x="70" y="156" fill="#f8fafc" font-size="48" font-weight="700">Is it slow, or is it stuck?</text>
+<text x="70" y="208" fill="#cbd5e1" font-size="27">Compare commits and partition ends across snapshots.</text>
+
+  <rect x="70" y="265" width="1140" height="300" rx="20" fill="#1e293b" stroke="#475569"/>
+  <g font-size="24" fill="#c7d2fe"><text x="110" y="322">PARTITION 2</text><text x="480" y="322">12:00 UTC</text><text x="845" y="322">12:01 UTC</text></g>
+  <path d="M100 350H1180" stroke="#475569"/>
+  <g font-size="31" fill="#f8fafc"><text x="110" y="405">Committed offset</text><text x="480" y="405">9310</text><text x="845" y="405">9310</text>
+  <text x="110" y="462">Partition end</text><text x="480" y="462">9360</text><text x="845" y="462">9389</text></g>
+  <g font-size="31" fill="#fbbf24"><text x="110" y="520">Lag</text><text x="480" y="520">50</text><text x="845" y="520">79</text></g>
+<text x="70" y="630" fill="#cbd5e1" font-size="24">No commit progress is a lead—not proof of a poison-pill message.</text>
+<text x="70" y="682" fill="#a5b4fc" font-size="22" font-weight="600">BUG DAYS · Developer guides</text>
+</g></svg>

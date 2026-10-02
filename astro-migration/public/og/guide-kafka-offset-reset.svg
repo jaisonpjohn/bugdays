@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+<title id="title">Preview the move. Then apply.</title><desc id="desc">One consumer group. One reviewed plan.</desc>
+<rect width="1280" height="720" fill="#0f172a"/>
+<g font-family="Arial, Helvetica, sans-serif">
+<text x="70" y="82" fill="#a5b4fc" font-size="22" letter-spacing="2">KAFKA / OFFSET RESET</text>
+<text x="70" y="156" fill="#f8fafc" font-size="48" font-weight="700">Preview the move. Then apply.</text>
+<text x="70" y="208" fill="#cbd5e1" font-size="27">One consumer group. One reviewed plan.</text>
+
+  <rect x="70" y="265" width="1140" height="300" rx="20" fill="#1e293b" stroke="#475569"/>
+  <text x="105" y="318" font-size="24" fill="#c7d2fe">PARTITION 2</text>
+  <path d="M160 405H1120" stroke="#475569" stroke-width="8" stroke-linecap="round"/>
+  <path d="M500 405H845" stroke="#818cf8" stroke-width="8"/>
+  <path d="m824 389 22 16-22 16" fill="none" stroke="#818cf8" stroke-width="6"/>
+  <circle cx="160" cy="405" r="12" fill="#94a3b8"/>
+  <circle cx="500" cy="405" r="16" fill="#a5b4fc"/>
+  <circle cx="860" cy="405" r="16" fill="#34d399"/>
+  <circle cx="1120" cy="405" r="12" fill="#94a3b8"/>
+  <g font-size="23" text-anchor="middle"><text x="160" y="467" fill="#fff">9000</text><text x="500" y="467" fill="#fff">9310</text><text x="860" y="467" fill="#fff">9350</text><text x="1120" y="467" fill="#fff">9389</text>
+  <text x="160" y="506" fill="#94a3b8">Earliest</text><text x="500" y="506" fill="#a5b4fc">Current</text><text x="860" y="506" fill="#6ee7b7">Proposed</text><text x="1120" y="506" fill="#94a3b8">Latest</text></g>
+<text x="70" y="630" fill="#cbd5e1" font-size="24">Stop consumers → Review partition targets → Apply → Verify</text>
+<text x="70" y="682" fill="#a5b4fc" font-size="22" font-weight="600">BUG DAYS · Developer guides</text>
+</g></svg>
