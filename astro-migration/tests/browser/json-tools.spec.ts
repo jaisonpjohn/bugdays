@@ -115,6 +115,25 @@ test('formatter provides syntax colors, line numbers, search, local files, and a
   expect(await page.locator('#editor').evaluate(element => document.activeElement === element && (element as HTMLTextAreaElement).selectionStart > 0)).toBeTruthy();
 });
 
+test('long JSON stays vertically and horizontally scrollable in both diff editors', async ({ page }) => {
+  await page.goto('/json-diff/');
+  const longJson = JSON.stringify({ rows: Array.from({ length: 450 }, (_, index) => ({ index, value: `record-${index}`, payload: 'x'.repeat(260) })) }, null, 2);
+  await page.locator('#json1').fill(longJson);
+  await page.locator('#json2').fill(longJson);
+  for (const selector of ['#json1', '#json2']) {
+    const metrics = await page.locator(selector).evaluate(element => {
+      const editor = element as HTMLTextAreaElement;
+      editor.scrollTop = editor.scrollHeight;
+      editor.scrollLeft = editor.scrollWidth;
+      return { scrollHeight: editor.scrollHeight, clientHeight: editor.clientHeight, scrollTop: editor.scrollTop, scrollWidth: editor.scrollWidth, clientWidth: editor.clientWidth, scrollLeft: editor.scrollLeft };
+    });
+    expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+    expect(metrics.scrollTop).toBeGreaterThan(0);
+    expect(metrics.scrollWidth).toBeGreaterThan(metrics.clientWidth);
+    expect(metrics.scrollLeft).toBeGreaterThan(0);
+  }
+});
+
 test('runnable diff examples restore settings and share the actual comparison', async ({ page }) => {
   await page.goto(diffExample);
   await expect(page.locator('#stats')).toContainText('4 differences');
