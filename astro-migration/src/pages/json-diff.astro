@@ -9,7 +9,7 @@ const jsonLd = [
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "JSON Diff - Compare JSON Online",
-    "description": "Compare JSON documents by structure, inspect and navigate changed values and paths, search both inputs, ignore key or array order, export a report, and share a reproducible comparison.",
+    "description": "Compare JSON files with exact numbers, match arrays by ID, ignore fields, inspect changed paths, export JSON Patch or a report, and share a reproducible comparison.",
     "url": "https://bugdays.com/json-diff/",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any",
@@ -18,7 +18,7 @@ const jsonLd = [
       "price": "0",
       "priceCurrency": "USD"
     },
-    "featureList": ["JSON comparison", "Semantic diff", "Deep object comparison", "Array order ignore", "Color-coded diff", "Change navigation", "JSON report export", "Local JSON file comparison"]
+    "featureList": ["Exact numeric comparison", "Match JSON arrays by ID", "Ignore fields and JSON Pointers", "Ignore key or array order", "Color-coded diff", "Change navigation", "RFC 6902 JSON Patch export", "Shareable comparison", "Cancellable local processing"]
   },
   {
     "@context": "https://schema.org",
@@ -29,28 +29,41 @@ const jsonLd = [
 ---
 
 <Layout
-  title="JSON Diff & Compare — Navigate Changes, Export & Share"
-  description="Compare two JSON documents, API responses, or config files. Navigate changed paths, search both files, ignore key or array order, export a diff report, and share the comparison locally."
-  keywords="JSON diff, JSON compare, JSON comparison, JSON difference, compare JSON online, diff JSON, JSON diff checker, compare two JSON, JSON comparator, semantic JSON diff, API response compare, JSON file compare"
+  title="JSON Diff — Compare Files, Match Arrays by ID & Share"
+  description="Compare JSON files online with exact numbers. Match arrays by ID, ignore fields or array order, inspect changed paths, export JSON Patch, and share the comparison."
+  keywords="JSON diff, JSON compare, compare JSON files online, JSON diff ignore fields, compare JSON arrays by id, ignore array order, JSON Patch generator, semantic JSON diff, API response compare"
+  image="/og/json-diff.png" imageAlt="JSON records matched by ID with a status change and exact large-number difference" imageWidth={1280} imageHeight={720}
   breadcrumb={[{ name: "JSON Tools", href: "/json-tools/" }, { name: "JSON Diff" }]}
   toolId="json-diff"
   jsonLd={jsonLd}
 >
-  <div class="max-w-6xl mx-auto">
+  <div id="diff-workspace" class="max-w-6xl mx-auto min-w-0">
     <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-1">JSON Diff — Compare JSON Online</h1>
-    <p class="mb-4 text-sm text-slate-600 dark:text-slate-300">Find and navigate changed values in API responses or configuration files, download a report, then share a comparison someone else can reproduce.</p>
+    <p class="mb-3 text-sm text-slate-600 dark:text-slate-300">Compare API responses and config files. Match records by ID, keep numeric digits exact, and share a comparison your teammate can reopen.</p>
+
+    <div class="mb-3 flex flex-wrap items-center gap-2 text-sm">
+      <button id="compare-btn" data-share-action="compare" class="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700 disabled:opacity-50">Compare JSON</button>
+      <button id="format-btn" class="diff-button">Format Both</button>
+      <button id="swap-btn" class="diff-button">Swap</button>
+      <button id="sample-btn" class="diff-button">Load Sample</button>
+      <button id="diff-find-btn" class="diff-button">Find</button>
+      <button id="clear-btn" class="diff-button">Clear</button>
+      <button id="cancel-diff-btn" class="diff-button hidden">Cancel</button>
+      <button id="share-diff-btn" class="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 sm:ml-auto">Share comparison ↗</button>
+    </div>
+    <p id="diff-status" role="status" class="mb-3 text-xs text-slate-500 dark:text-slate-400">Local processing · up to 10 MiB per file · try the sample to start</p>
 
     <div class="grid md:grid-cols-2 gap-4 mb-4">
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
         <div class="mb-2 flex items-center justify-between gap-3"><label for="json1" class="text-sm font-medium text-gray-700 dark:text-slate-200">Original JSON</label><button id="json1-file-btn" class="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-300">Open file</button></div>
-        <input id="json1-file" type="file" accept="application/json,.json,.jsonc,text/plain" class="hidden" />
+        <input id="json1-file" type="file" accept="application/json,.json,text/plain" class="hidden" />
         <JsonEditor id="json1" label="Original JSON" shareKey="json1" height="h-56" />
         <p id="json1-file-status" class="mt-2 text-xs text-slate-500 dark:text-slate-400">Drop a local JSON file here.</p>
       </div>
 
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
         <div class="mb-2 flex items-center justify-between gap-3"><label for="json2" class="text-sm font-medium text-gray-700 dark:text-slate-200">Modified JSON</label><button id="json2-file-btn" class="text-xs font-semibold text-indigo-600 hover:underline dark:text-indigo-300">Open file</button></div>
-        <input id="json2-file" type="file" accept="application/json,.json,.jsonc,text/plain" class="hidden" />
+        <input id="json2-file" type="file" accept="application/json,.json,text/plain" class="hidden" />
         <JsonEditor id="json2" label="Modified JSON" shareKey="json2" height="h-56" />
         <p id="json2-file-status" class="mt-2 text-xs text-slate-500 dark:text-slate-400">Drop a local JSON file here.</p>
       </div>
@@ -68,26 +81,13 @@ const jsonLd = [
           <span class="text-sm text-gray-700 dark:text-slate-200">Ignore array order</span>
         </label>
       </div>
-    </div>
-
-    <div class="flex flex-wrap gap-3 mb-4">
-      <button id="compare-btn" data-share-action="compare" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
-        Compare JSON
-      </button>
-      <button id="format-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-        Format Both
-      </button>
-      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-        Clear
-      </button>
-      <button id="swap-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-        Swap
-      </button>
-      <button id="sample-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-        Load Sample
-      </button>
-      <button id="diff-find-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">Find</button>
-      <button id="share-diff-btn" class="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700">Share comparison ↗</button>
+      <details id="diff-advanced" class="mt-3 border-t border-slate-200 pt-3 dark:border-slate-700">
+        <summary class="cursor-pointer text-sm font-semibold text-indigo-700 dark:text-indigo-300">Match records by ID &amp; ignore fields</summary>
+        <div class="mt-3 grid gap-4 md:grid-cols-2">
+          <div><label for="array-key" class="block text-sm font-medium text-slate-700 dark:text-slate-200">Array identity field <span class="font-normal text-slate-500 dark:text-slate-400">(optional)</span></label><input id="array-key" data-share-key="arrayKey" maxlength="200" placeholder="id, sku, or another unique field" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100" /><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Pairs records by this field, even when reordered. Applies to every object array; primitive arrays keep the ordering option above.</p></div>
+          <div><label for="ignored-paths" class="block text-sm font-medium text-slate-700 dark:text-slate-200">Ignore fields or JSON Pointers <span class="font-normal text-slate-500 dark:text-slate-400">(optional)</span></label><textarea id="ignored-paths" data-share-key="ignoredPaths" rows="2" maxlength="100100" placeholder="updatedAt&#10;/meta/requestId" class="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 font-mono text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"></textarea><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">One pointer per line; field names can be comma-separated. Names apply at every depth; /pointers target exact source paths. No wildcards. Ignoring does not redact shared inputs.</p></div>
+        </div>
+      </details>
     </div>
 
     <div id="diff-find-bar" class="hidden mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
@@ -107,11 +107,14 @@ const jsonLd = [
     <!-- Diff Results -->
     <div id="results" class="hidden">
       <div id="change-nav" class="hidden mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-900 dark:bg-indigo-950/30">
-        <span id="change-position" class="mr-auto text-sm font-semibold text-indigo-900 dark:text-indigo-100">Change 1 / 1</span>
+        <span id="change-position" class="mr-auto min-w-0 break-all text-sm font-semibold text-indigo-900 dark:text-indigo-100">Change 1 / 1</span>
         <button id="change-prev" class="rounded border border-indigo-300 px-3 py-1.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-200 dark:hover:bg-indigo-900/60">Previous</button>
         <button id="change-next" class="rounded bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700">Next</button>
         <button id="export-report-btn" class="rounded border border-indigo-300 px-3 py-1.5 text-sm font-semibold text-indigo-800 hover:bg-indigo-100 dark:border-indigo-700 dark:text-indigo-200 dark:hover:bg-indigo-900/60">Download report</button>
+        <button id="export-patch-btn" class="diff-button disabled:opacity-50">Download JSON Patch</button>
+        <button id="share-result-btn" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-indigo-700">Share result ↗</button>
       </div>
+      <div class="mb-3 flex flex-wrap items-start gap-3"><p id="patch-note" class="min-w-0 flex-1 text-xs text-slate-500 dark:text-slate-400"></p><label class="inline-flex shrink-0 items-center gap-2 text-xs text-slate-600 dark:text-slate-300"><input id="sync-previews" type="checkbox" checked class="rounded text-indigo-600" />Sync previews</label></div>
       <!-- Side-by-side JSON view with highlighting -->
       <div class="grid md:grid-cols-2 gap-4 mb-4">
         <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
@@ -138,8 +141,14 @@ const jsonLd = [
 
       <!-- Textual Changes Report -->
       <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Changes Report <span class="font-normal text-slate-500 dark:text-slate-400">Select a path to reveal it.</span></label>
+        <div class="mb-3 flex flex-wrap items-center gap-2"><h2 class="mr-auto text-sm font-semibold text-slate-800 dark:text-slate-100">Changes Report</h2><label class="sr-only" for="change-filter">Filter changes</label><input id="change-filter" type="search" placeholder="Filter changed paths" class="min-w-0 w-44 rounded border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-900" /></div>
         <div id="changes-list" class="space-y-2 max-h-80 overflow-auto break-words"></div>
+        <button id="changes-more" class="diff-button mt-2 hidden">Load more changes</button>
+        <div id="selected-change" class="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900">
+          <p id="selected-path" class="mb-2 break-all font-mono text-xs text-slate-700 dark:text-slate-200"></p>
+          <div class="flex flex-wrap gap-2"><button id="copy-old-btn" class="diff-button disabled:opacity-50">Copy old value</button><button id="copy-new-btn" class="diff-button disabled:opacity-50">Copy new value</button><button id="copy-pointer-btn" class="diff-button">Copy JSON Pointer</button><button id="jump-old-btn" class="diff-button disabled:opacity-50">Jump to original</button><button id="jump-new-btn" class="diff-button disabled:opacity-50">Jump to modified</button></div>
+          <p id="selected-value" class="mt-2 max-h-40 overflow-auto break-all whitespace-pre-wrap font-mono text-xs text-slate-600 dark:text-slate-300"></p>
+        </div>
       </div>
     </div>
 
@@ -150,532 +159,14 @@ const jsonLd = [
 
 
 <script>
-  import { track } from '../lib/analytics.ts';
-  import { ShareManager } from '../lib/share.ts';
-  import { createJsonEditor, jsonErrorLocation, type JsonEditor } from '../lib/json-editor.ts';
-
-  document.getElementById('share-diff-btn')!.addEventListener('click', () => document.getElementById('share-btn')?.click());
-
-  const json1Input = document.getElementById('json1') as HTMLTextAreaElement;
-  const json2Input = document.getElementById('json2') as HTMLTextAreaElement;
-  const originalEditor = createJsonEditor(json1Input);
-  const modifiedEditor = createJsonEditor(json2Input);
-
-  ShareManager.register({
-    tool: 'json-diff',
-    actions: {
-      compare: () => document.getElementById('compare-btn')?.click(),
-    }
-  });
-  const ignoreKeyOrder = document.getElementById('ignore-key-order') as HTMLInputElement;
-  const ignoreArrayOrder = document.getElementById('ignore-array-order') as HTMLInputElement;
-  const diffLeft = document.getElementById('diff-left');
-  const diffRight = document.getElementById('diff-right');
-  const changesList = document.getElementById('changes-list');
-  const results = document.getElementById('results');
-  const stats = document.getElementById('stats');
-  const errorBox = document.getElementById('error-box')!;
-  const errorText = document.getElementById('diff-error-text')!;
-  const errorJump = document.getElementById('diff-error-jump') as HTMLButtonElement;
-  const changeNav = document.getElementById('change-nav')!;
-  const changePosition = document.getElementById('change-position')!;
-  let errorEditor: JsonEditor | null = null;
-  let errorPosition: number | null = null;
-  let currentChanges: Change[] = [];
-  let activeChange = 0;
-
-  const sample1 = {
-    name: "John Doe",
-    age: 30,
-    email: "john@example.com",
-    address: {
-      street: "123 Main St",
-      city: "New York",
-      zip: "10001"
-    },
-    hobbies: ["reading", "gaming", "hiking"],
-    active: true
-  };
-
-  const sample2 = {
-    name: "John Smith",
-    age: 31,
-    phone: "555-1234",
-    address: {
-      street: "123 Main St",
-      city: "Boston",
-      zip: "02101"
-    },
-    hobbies: ["reading", "cooking", "hiking"],
-    active: false
-  };
-
-  function showError(msg: string, editor: JsonEditor | null = null, position: number | null = null) {
-    errorText.textContent = msg;
-    errorEditor = editor;
-    errorPosition = position;
-    errorJump.classList.toggle('hidden', !editor || position === null);
-    errorBox.classList.remove('hidden');
-    results.classList.add('hidden');
-    stats.classList.add('hidden');
-    changeNav.classList.add('hidden');
-  }
-
-  function hideError() {
-    errorBox.classList.add('hidden');
-    errorEditor?.clearError();
-    errorEditor = null;
-    errorPosition = null;
-  }
-
-  errorJump.addEventListener('click', () => {
-    if (errorEditor && errorPosition !== null) errorEditor.focusPosition(errorPosition);
-  });
-  json1Input.addEventListener('input', () => { if (errorEditor === originalEditor) hideError(); });
-  json2Input.addEventListener('input', () => { if (errorEditor === modifiedEditor) hideError(); });
-
-  function showPanelError(label: string, value: string, editor: JsonEditor, error: unknown) {
-    const location = jsonErrorLocation(value, error);
-    editor.showError(location.position);
-    const detail = error instanceof Error ? error.message : String(error);
-    const at = location.line && location.column ? ` at line ${location.line}, column ${location.column}` : '';
-    showError(`Invalid JSON in ${label}${at}: ${detail}`, editor, location.position);
-  }
-
-  function sortObject(obj: any): any {
-    if (obj === null || typeof obj !== 'object') return obj;
-    if (Array.isArray(obj)) {
-      return ignoreArrayOrder.checked
-        ? obj.map(sortObject).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
-        : obj.map(sortObject);
-    }
-    const sorted: any = Object.create(null);
-    (ignoreKeyOrder.checked ? Object.keys(obj).sort() : Object.keys(obj)).forEach(key => {
-      sorted[key] = sortObject(obj[key]);
-    });
-    return sorted;
-  }
-
-  interface Change {
-    type: 'added' | 'removed' | 'modified';
-    path: string;
-    oldValue?: any;
-    newValue?: any;
-    changeIndex?: number;
-  }
-
-  function propertyPath(path: string, key: string): string {
-    return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)
-      ? (path ? `${path}.${key}` : key)
-      : `${path}[${JSON.stringify(key)}]`;
-  }
-
-  function findChanges(obj1: any, obj2: any, path: string = ''): Change[] {
-    const changes: Change[] = [];
-
-    if (obj1 === obj2) return changes;
-    if (obj1 === null && obj2 !== null) {
-      return [{ type: 'modified', path: path || '(root)', oldValue: null, newValue: obj2 }];
-    }
-    if (obj1 !== null && obj2 === null) {
-      return [{ type: 'modified', path: path || '(root)', oldValue: obj1, newValue: null }];
-    }
-
-    if (typeof obj1 !== 'object' || typeof obj2 !== 'object') {
-      if (obj1 !== obj2) {
-        changes.push({ type: 'modified', path: path || '(root)', oldValue: obj1, newValue: obj2 });
-      }
-      return changes;
-    }
-
-    if (Array.isArray(obj1) && Array.isArray(obj2)) {
-      if (ignoreArrayOrder.checked) {
-        // Match each occurrence once so duplicate counts remain significant.
-        const stringify = (v: any) => JSON.stringify(sortObject(v));
-        const set1 = obj1.map((v, i) => ({ val: v, str: stringify(v), idx: i }));
-        const set2 = obj2.map((v, i) => ({ val: v, str: stringify(v), idx: i }));
-
-        const remaining = new Map<string, typeof set2>();
-        for (const item of set2) {
-          const bucket = remaining.get(item.str) || [];
-          bucket.push(item);
-          remaining.set(item.str, bucket);
-        }
-        const removed = set1.filter(item => {
-          const bucket = remaining.get(item.str);
-          if (bucket?.length) { bucket.pop(); return false; }
-          return true;
-        });
-        for (const item of removed) {
-          const itemPath = path ? `${path}[${item.idx}]` : `[${item.idx}]`;
-          changes.push({ type: 'removed', path: itemPath, oldValue: item.val });
-        }
-
-        // Find items in obj2 that are not in obj1 (added)
-        const added = [...remaining.values()].flat();
-        for (const item of added) {
-          const itemPath = path ? `${path}[${item.idx}]` : `[${item.idx}]`;
-          changes.push({ type: 'added', path: itemPath, newValue: item.val });
-        }
-      } else {
-        // Compare by position
-        const maxLen = Math.max(obj1.length, obj2.length);
-        for (let i = 0; i < maxLen; i++) {
-          const itemPath = path ? `${path}[${i}]` : `[${i}]`;
-          if (i >= obj1.length) {
-            changes.push({ type: 'added', path: itemPath, newValue: obj2[i] });
-          } else if (i >= obj2.length) {
-            changes.push({ type: 'removed', path: itemPath, oldValue: obj1[i] });
-          } else {
-            changes.push(...findChanges(obj1[i], obj2[i], itemPath));
-          }
-        }
-      }
-      return changes;
-    }
-
-    if (Array.isArray(obj1) !== Array.isArray(obj2)) {
-      changes.push({ type: 'modified', path: path || '(root)', oldValue: obj1, newValue: obj2 });
-      return changes;
-    }
-
-    const keys1 = new Set(Object.keys(obj1));
-    const keys2 = new Set(Object.keys(obj2));
-    if (!ignoreKeyOrder.checked && keys1.size === keys2.size && [...keys1].every(key => keys2.has(key)) && [...keys1].some((key, index) => key !== [...keys2][index])) {
-      changes.push({ type: 'modified', path: path || '(root)', oldValue: obj1, newValue: obj2 });
-      return changes;
-    }
-
-    // Removed keys
-    for (const key of keys1) {
-      if (!keys2.has(key)) {
-        const keyPath = propertyPath(path, key);
-        changes.push({ type: 'removed', path: keyPath, oldValue: obj1[key] });
-      }
-    }
-
-    // Added keys
-    for (const key of keys2) {
-      if (!keys1.has(key)) {
-        const keyPath = propertyPath(path, key);
-        changes.push({ type: 'added', path: keyPath, newValue: obj2[key] });
-      }
-    }
-
-    // Modified keys
-    for (const key of keys1) {
-      if (keys2.has(key)) {
-        const keyPath = propertyPath(path, key);
-        changes.push(...findChanges(obj1[key], obj2[key], keyPath));
-      }
-    }
-
-    return changes;
-  }
-
-  function escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  // Render from structure rather than searching for values in text. Repeated
-  // values, quoted keys, and changed objects must highlight the correct node.
-  function annotateJson(obj: any, changes: Change[], isOriginal: boolean): string {
-    const changedPaths = new Map<string, Change>();
-    for (const change of changes) {
-      if (change.type === 'modified' || (isOriginal ? change.type === 'removed' : change.type === 'added')) {
-        changedPaths.set(change.path, change);
-      }
-    }
-    const indent = (depth: number) => '  '.repeat(depth);
-    const plain = (value: any, depth: number) => escapeHtml(JSON.stringify(value, null, 2).replace(/\n/g, `\n${indent(depth)}`));
-    const highlight = (content: string, change: Change) => {
-      const colors = {
-        added: 'background-color: #bbf7d0; color: #14532d; border: 1px solid #22c55e;',
-        removed: 'background-color: #fecaca; color: #7f1d1d; border: 1px solid #ef4444; text-decoration: line-through solid #7f1d1d;',
-        modified: 'background-color: #e9d5ff; color: #581c87; border: 1px solid #a855f7;',
-      };
-      const title = escapeHtml(change.path).replace(/"/g, '&quot;');
-      return `<mark data-change-index="${change.changeIndex ?? -1}" style="${colors[change.type]} border-radius: 2px; padding: 0 1px;" title="${title}">${content}</mark>`;
-    };
-    function render(value: any, path: string, depth: number): string {
-      const change = changedPaths.get(path || '(root)');
-      if (change) return highlight(plain(value, depth), change);
-      if (value === null || typeof value !== 'object') return plain(value, depth);
-      const isArray = Array.isArray(value);
-      const entries = Object.keys(value);
-      if (!entries.length) return isArray ? '[]' : '{}';
-      const lines = entries.map(key => {
-        const childPath = isArray ? `${path}[${key}]` : propertyPath(path, key);
-        const keyText = isArray ? '' : `${escapeHtml(JSON.stringify(key))}: `;
-        const childChange = changedPaths.get(childPath);
-        const content = !isArray && childChange && childChange.type !== 'modified'
-          ? highlight(keyText + plain(value[key], depth + 1), childChange)
-          : keyText + render(value[key], childPath, depth + 1);
-        return indent(depth + 1) + content;
-      });
-      return `${isArray ? '[' : '{'}\n${lines.join(',\n')}\n${indent(depth)}${isArray ? ']' : '}'}`;
-    }
-    return '<pre class="whitespace-pre-wrap break-words text-sm">' + render(obj, '', 0) + '</pre>';
-  }
-
-  function focusChange(index: number, scroll = true) {
-    if (!currentChanges.length) return;
-    activeChange = ((index % currentChanges.length) + currentChanges.length) % currentChanges.length;
-    const change = currentChanges[activeChange];
-    changePosition.textContent = `Change ${activeChange + 1} / ${currentChanges.length} · ${change.path}`;
-    document.querySelectorAll('#diff-left mark, #diff-right mark').forEach(mark => mark.classList.remove('diff-focus'));
-    const matches = document.querySelectorAll<HTMLElement>(`mark[data-change-index="${activeChange}"]`);
-    matches.forEach(mark => mark.classList.add('diff-focus'));
-    changesList?.querySelectorAll<HTMLElement>('[data-change-index]').forEach(button => {
-      const selected = Number(button.dataset.changeIndex) === activeChange;
-      button.classList.toggle('font-bold', selected);
-      button.setAttribute('aria-current', selected ? 'true' : 'false');
-    });
-    if (scroll) matches[0]?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-  }
-
-  function updateChangeNavigator() {
-    changeNav.classList.toggle('hidden', currentChanges.length === 0);
-    if (currentChanges.length) focusChange(0, false);
-  }
-
-  function compare() {
-    hideError();
-    originalEditor.clearError();
-    modifiedEditor.clearError();
-
-    const str1 = originalEditor.getValue().trim();
-    const str2 = modifiedEditor.getValue().trim();
-
-    if (!str1 || !str2) {
-      showError('Please enter JSON in both fields');
-      return;
-    }
-
-    let obj1: any, obj2: any;
-    try {
-      obj1 = JSON.parse(str1);
-    } catch (e) {
-      showPanelError('left panel', str1, originalEditor, e);
-      return;
-    }
-    try {
-      obj2 = JSON.parse(str2);
-    } catch (e) {
-      showPanelError('right panel', str2, modifiedEditor, e);
-      return;
-    }
-
-    const changes = findChanges(obj1, obj2);
-    changes.forEach((change, index) => change.changeIndex = index);
-    currentChanges = changes;
-    activeChange = 0;
-
-    // Stats
-    const added = changes.filter(c => c.type === 'added').length;
-    const removed = changes.filter(c => c.type === 'removed').length;
-    const modified = changes.filter(c => c.type === 'modified').length;
-
-    if (changes.length === 0) {
-      stats.innerHTML = '✓ <strong>No differences</strong> - JSON objects are equal';
-      stats.className = 'mb-4 p-3 bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-lg text-sm text-green-800 dark:text-green-300';
-    } else {
-      const parts = [];
-      if (added > 0) parts.push(`<span class="text-green-700 dark:text-green-300 font-medium">+${added} added</span>`);
-      if (removed > 0) parts.push(`<span class="text-red-700 dark:text-red-300 font-medium">−${removed} removed</span>`);
-      if (modified > 0) parts.push(`<span class="text-purple-700 dark:text-purple-300 font-medium">~${modified} changed</span>`);
-      stats.innerHTML = `Found <strong>${changes.length} difference${changes.length !== 1 ? 's' : ''}</strong>: ${parts.join(', ')}`;
-      stats.className = 'mb-4 p-3 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 rounded-lg text-sm text-gray-800 dark:text-slate-100';
-    }
-    stats.classList.remove('hidden');
-
-    // Render diffs with inline annotations
-    diffLeft.innerHTML = annotateJson(obj1, changes, true);
-    diffRight.innerHTML = annotateJson(obj2, changes, false);
-
-    // Changes list - show useful detailed output
-    if (changes.length === 0) {
-      changesList.innerHTML = '<div class="text-gray-500 dark:text-slate-400 text-sm">No differences - the JSON objects are equal</div>';
-    } else {
-      const formatVal = (v: any) => {
-        const s = JSON.stringify(v);
-        return s.length > 80 ? s.slice(0, 80) + '...' : s;
-      };
-
-      changesList.innerHTML = changes.map((c, index) => {
-        const colorClasses = c.type === 'added' ? 'bg-green-50 dark:bg-green-950/40 border-green-500' : c.type === 'removed' ? 'bg-red-50 dark:bg-red-950/40 border-red-500' : 'bg-purple-50 dark:bg-purple-950/40 border-purple-500';
-        const icon = c.type === 'added' ? '+' : c.type === 'removed' ? '−' : '~';
-        const iconColorStyle = c.type === 'added' ? 'color: #16a34a;' : c.type === 'removed' ? 'color: #dc2626;' : 'color: #9333ea;';
-
-        let content = `<span style="${iconColorStyle} font-weight: bold; margin-right: 0.5rem;">${icon}</span>`;
-        content += `<button type="button" data-change-index="${index}" class="text-left text-indigo-700 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-900 dark:text-indigo-300 dark:hover:text-indigo-100"><code>${escapeHtml(c.path)}</code></button>`;
-
-        if (c.type === 'added') {
-          content += `<span class="text-gray-500 dark:text-slate-400 mx-2">=</span><span class="text-green-700 dark:text-green-300">${escapeHtml(formatVal(c.newValue))}</span>`;
-        } else if (c.type === 'removed') {
-          content += `<span class="text-gray-500 dark:text-slate-400 mx-2">was</span><span class="text-red-700 dark:text-red-300">${escapeHtml(formatVal(c.oldValue))}</span>`;
-        } else {
-          content += `<span class="text-gray-500 dark:text-slate-400 mx-2">changed from</span><span class="text-red-700 dark:text-red-300">${escapeHtml(formatVal(c.oldValue))}</span>`;
-          content += `<span class="text-gray-500 dark:text-slate-400 mx-2">→</span><span class="text-green-700 dark:text-green-300">${escapeHtml(formatVal(c.newValue))}</span>`;
-        }
-        return `<div class="p-3 rounded-lg border-l-4 font-mono text-sm leading-relaxed mb-2 ${colorClasses}">${content}</div>`;
-      }).join('');
-    }
-
-    results.classList.remove('hidden');
-    updateChangeNavigator();
-
-    // Sync scroll
-    diffLeft.onscroll = () => { diffRight.scrollTop = diffLeft.scrollTop; };
-    diffRight.onscroll = () => { diffLeft.scrollTop = diffRight.scrollTop; };
-  }
-
-  document.getElementById('compare-btn').addEventListener('click', compare);
-
-  document.getElementById('format-btn').addEventListener('click', () => {
-    try {
-      if (originalEditor.getValue().trim()) {
-        originalEditor.setValue(JSON.stringify(JSON.parse(originalEditor.getValue()), null, 2));
-      }
-    } catch {}
-    try {
-      if (modifiedEditor.getValue().trim()) {
-        modifiedEditor.setValue(JSON.stringify(JSON.parse(modifiedEditor.getValue()), null, 2));
-      }
-    } catch {}
-  });
-
-  document.getElementById('clear-btn').addEventListener('click', () => {
-    originalEditor.setValue('');
-    modifiedEditor.setValue('');
-    currentChanges = [];
-    results.classList.add('hidden');
-    stats.classList.add('hidden');
-    changeNav.classList.add('hidden');
-    hideError();
-  });
-
-  document.getElementById('swap-btn').addEventListener('click', () => {
-    const temp = originalEditor.getValue();
-    originalEditor.setValue(modifiedEditor.getValue());
-    modifiedEditor.setValue(temp);
-    if (!results.classList.contains('hidden')) compare();
-  });
-
-  document.getElementById('sample-btn').addEventListener('click', () => {
-    originalEditor.setValue(JSON.stringify(sample1, null, 2));
-    modifiedEditor.setValue(JSON.stringify(sample2, null, 2));
-    hideError();
-  });
-
-  function downloadReport() {
-    if (!currentChanges.length) return;
-    const report = {
-      format: 'bugdays-json-diff-report/v1',
-      comparedAt: new Date().toISOString(),
-      options: { ignoreKeyOrder: ignoreKeyOrder.checked, ignoreArrayOrder: ignoreArrayOrder.checked },
-      changes: currentChanges.map(({ changeIndex, ...change }) => change),
-    };
-    track('export_used', { tool: 'json-diff', format: 'json' });
-    const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'json-diff-report.json';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
-
-  document.getElementById('change-prev')!.addEventListener('click', () => focusChange(activeChange - 1));
-  document.getElementById('change-next')!.addEventListener('click', () => focusChange(activeChange + 1));
-  document.getElementById('export-report-btn')!.addEventListener('click', downloadReport);
-  changesList?.addEventListener('click', event => {
-    const target = (event.target as HTMLElement).closest<HTMLElement>('[data-change-index]');
-    if (target?.dataset.changeIndex) focusChange(Number(target.dataset.changeIndex));
-  });
-
-  async function loadLocalFile(file: File, editor: JsonEditor, status: HTMLElement, label: string) {
-    if (file.size > 10 * 1024 * 1024) {
-      showError('Choose a JSON file smaller than 10 MB.');
-      return;
-    }
-    const text = await file.text();
-    editor.setValue(text);
-    status.textContent = `Loaded ${Math.max(1, Math.round(file.size / 1024))} KB locally. Nothing was uploaded.`;
-    try { JSON.parse(text); hideError(); }
-    catch (error) { showPanelError(label, text, editor, error); }
-  }
-
-  function enableFileInput(inputId: string, buttonId: string, editor: JsonEditor, statusId: string, label: string) {
-    const input = document.getElementById(inputId) as HTMLInputElement;
-    const status = document.getElementById(statusId)!;
-    document.getElementById(buttonId)!.addEventListener('click', () => input.click());
-    input.addEventListener('change', () => {
-      const file = input.files?.[0];
-      if (file) void loadLocalFile(file, editor, status, label);
-      input.value = '';
-    });
-    const shell = editor.element.closest<HTMLElement>('[data-json-editor]')!;
-    ['dragenter', 'dragover'].forEach(type => shell.addEventListener(type, event => { event.preventDefault(); shell.classList.add('json-editor-drop-target'); }));
-    ['dragleave', 'drop'].forEach(type => shell.addEventListener(type, event => { event.preventDefault(); shell.classList.remove('json-editor-drop-target'); }));
-    shell.addEventListener('drop', event => {
-      const file = event.dataTransfer?.files?.[0];
-      if (file) void loadLocalFile(file, editor, status, label);
-    });
-  }
-
-  enableFileInput('json1-file', 'json1-file-btn', originalEditor, 'json1-file-status', 'the Original JSON panel');
-  enableFileInput('json2-file', 'json2-file-btn', modifiedEditor, 'json2-file-status', 'the Modified JSON panel');
-
-  const findBar = document.getElementById('diff-find-bar')!;
-  const findInput = document.getElementById('diff-find-input') as HTMLInputElement;
-  const findScope = document.getElementById('diff-find-scope') as HTMLSelectElement;
-  const findCount = document.getElementById('diff-find-count')!;
-  let findTargets: Array<{ editor: JsonEditor; index: number }> = [];
-  let findIndex = 0;
-
-  function refreshFind(focus = false) {
-    const query = findInput.value;
-    const useOriginal = findScope.value !== 'modified';
-    const useModified = findScope.value !== 'original';
-    const originalCount = useOriginal ? originalEditor.setSearch(query) : (originalEditor.setSearch(''), 0);
-    const modifiedCount = useModified ? modifiedEditor.setSearch(query) : (modifiedEditor.setSearch(''), 0);
-    findTargets = [
-      ...Array.from({ length: originalCount }, (_, index) => ({ editor: originalEditor, index })),
-      ...Array.from({ length: modifiedCount }, (_, index) => ({ editor: modifiedEditor, index })),
-    ];
-    if (!query) {
-      findCount.textContent = '';
-      return;
-    }
-    if (!findTargets.length) {
-      findCount.textContent = 'No matches';
-      return;
-    }
-    findIndex = ((findIndex % findTargets.length) + findTargets.length) % findTargets.length;
-    findCount.textContent = `${findIndex + 1} / ${findTargets.length}${findTargets.length === 500 ? '+' : ''}`;
-    if (focus) findTargets[findIndex].editor.focusMatch(findTargets[findIndex].index);
-  }
-
-  function openFind() { findBar.classList.remove('hidden'); findInput.focus(); findInput.select(); refreshFind(); }
-  function closeFind() { findBar.classList.add('hidden'); findInput.value = ''; findIndex = 0; refreshFind(); }
-  document.getElementById('diff-find-btn')!.addEventListener('click', openFind);
-  document.getElementById('diff-find-close')!.addEventListener('click', closeFind);
-  findInput.addEventListener('input', () => { findIndex = 0; refreshFind(); });
-  findScope.addEventListener('change', () => { findIndex = 0; refreshFind(); });
-  document.getElementById('diff-find-next')!.addEventListener('click', () => { if (findTargets.length) { findIndex++; refreshFind(true); } });
-  document.getElementById('diff-find-prev')!.addEventListener('click', () => { if (findTargets.length) { findIndex--; refreshFind(true); } });
-  document.addEventListener('keydown', event => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f') { event.preventDefault(); openFind(); }
-    if (event.key === 'Escape' && !findBar.classList.contains('hidden')) closeFind();
-  });
-
-  // Re-compare when options change
-  ignoreKeyOrder.addEventListener('change', () => {
-    if (!results.classList.contains('hidden')) compare();
-  });
-  ignoreArrayOrder.addEventListener('change', () => {
-    if (!results.classList.contains('hidden')) compare();
-  });
+  import '../lib/json-diff-ui.ts';
 </script>
+<style>
+  .diff-button { border: 1px solid #cbd5e1; border-radius: .5rem; padding: .4rem .7rem; background: #fff; color: #334155; font-size: .8rem; font-weight: 600; }
+  .diff-button:hover { background: #f1f5f9; }
+  :global(.dark) .diff-button { border-color: #475569; background: #1e293b; color: #e2e8f0; }
+  :global(.dark) .diff-button:hover { background: #334155; }
+  :global(#diff-workspace mark.diff-focus) { outline: 2px solid #4f46e5; outline-offset: 2px; }
+  :global(#diff-workspace button:focus-visible), :global(#diff-workspace summary:focus-visible) { outline: 2px solid #6366f1; outline-offset: 3px; }
+  :global(#diff-left), :global(#diff-right) { overflow-wrap: anywhere; }
+</style>

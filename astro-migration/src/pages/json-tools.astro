@@ -4,7 +4,7 @@ import Layout from '../layouts/Layout.astro';
 const tools = [
   { name: 'JSON Schema Doctor', href: '/json-schema-validator/', description: 'Validate JSON against a schema, locate failing fields, and share a reproducible example' },
   { name: 'JSON Formatter', href: '/json-formatter/', description: 'Format without rounding IDs or dropping duplicate keys; validate, explore a tree, copy paths, and share' },
-  { name: 'JSON Diff', href: '/json-diff/', description: 'Compare API responses and nested JSON, control key and array order, and share highlighted changes' },
+  { name: 'JSON Diff', href: '/json-diff/', description: 'Compare exact values, match arrays by ID, ignore fields, export JSON Patch, and share changes' },
   { name: 'JSON to Code', href: '/json-to-code/', description: 'Generate TypeScript interfaces, Zod schemas, and Pydantic models from a JSON example' },
   { name: 'JSONL Viewer', href: '/jsonl-viewer/', description: 'Validate, filter, inspect, and export newline-delimited JSON or NDJSON records' },
   { name: 'YAML ↔ JSON', href: '/yaml-json-converter/', description: 'Bidirectional conversion between YAML and JSON formats' },
@@ -47,6 +47,10 @@ const tools = [
     <section class="mt-6">
       <h2 class="mb-3 text-lg font-semibold text-slate-800 dark:text-slate-100">Practical JSON guides</h2>
       <div class="grid gap-4 md:grid-cols-2">
+        <a href="/guides/compare-json-arrays-by-id-ignore-fields/" class="rounded-lg border border-slate-200 bg-white p-4 hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-800">
+          <h3 class="font-semibold text-indigo-600 dark:text-indigo-400">Compare JSON arrays by ID and ignore timestamps</h3>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">A runnable two-change comparison, exact numeric IDs, and JSON Patch export.</p>
+        </a>
         <a href="/guides/json-large-integers-duplicate-keys/" class="rounded-lg border border-slate-200 bg-white p-4 hover:border-indigo-400 dark:border-slate-700 dark:bg-slate-800">
           <h3 class="font-semibold text-indigo-600 dark:text-indigo-400">Why JSON numbers change and duplicate keys disappear</h3>
           <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">An exact-number reproducer and a lossless formatting workflow.</p>

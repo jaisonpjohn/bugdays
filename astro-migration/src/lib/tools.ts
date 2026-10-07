@@ -25,7 +25,7 @@ export const toolGroups: ToolGroup[] = [
     alwaysOpen: true,
     items: [
       { name: "JSON Formatter", href: "/json-formatter/", description: "Lossless formatting, validation & sharing", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq", "json pointer", "large integer", "duplicate keys", "api response"] },
-      { name: "JSON Diff", href: "/json-diff/", description: "Compare & share JSON changes", keywords: ["compare", "difference", "array order", "key order", "api response"] },
+      { name: "JSON Diff", href: "/json-diff/", description: "Match arrays by ID, ignore fields & share changes", keywords: ["compare", "difference", "array order", "key order", "api response", "array id", "ignore fields", "json patch", "exact numbers"] },
       { name: "Text Diff", href: "/text-diff/", description: "Compare two texts line by line", keywords: ["compare", "difference"] },
       { name: "Join Lines", href: "/join-lines/", description: "Join lines with a delimiter", keywords: ["merge", "concatenate", "comma"] },
       { name: "Compare Lists", href: "/list-compare/", description: "Set operations on two lists", keywords: ["intersection", "union", "difference", "set ops"] },
@@ -41,7 +41,7 @@ export const toolGroups: ToolGroup[] = [
     icon: "braces",
     items: [
       { name: "JSON Formatter", href: "/json-formatter/", description: "Lossless formatting, validation & sharing", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq", "json pointer", "large integer", "duplicate keys", "api response"] },
-      { name: "JSON Diff", href: "/json-diff/", description: "Compare & share JSON changes", keywords: ["compare", "difference", "array order", "key order", "api response"] },
+      { name: "JSON Diff", href: "/json-diff/", description: "Match arrays by ID, ignore fields & share changes", keywords: ["compare", "difference", "array order", "key order", "api response", "array id", "ignore fields", "json patch", "exact numbers"] },
       { name: "JSON to Code", href: "/json-to-code/", description: "Generate TypeScript, Zod & Pydantic", keywords: ["types", "interface", "schema", "python", "model", "code generator"] },
       { name: "JSON Schema Doctor", href: "/json-schema-validator/", description: "Validate schemas, locate errors & share", keywords: ["json schema validator", "draft 7", "2020-12", "structured output", "openai", "required", "additionalProperties"] },
       { name: "JSONL Viewer", href: "/jsonl-viewer/", description: "Validate, filter & export JSON Lines", keywords: ["ndjson", "json lines", "newline delimited json", "logs", "parser"] },

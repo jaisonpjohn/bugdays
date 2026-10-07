@@ -5,7 +5,7 @@ import { guideBySlug } from '../../lib/guides.ts';
 const guide = guideBySlug('compare-json-api-responses-ignore-array-order');
 ---
 
-<GuideLayout guide={guide} imageWidth={1200} imageHeight={630} keywords="compare JSON API responses, JSON diff ignore array order, JSON compare ignore key order, nested JSON comparison, JSON configuration diff">
+<GuideLayout guide={guide} imageWidth={1280} imageHeight={720} keywords="compare JSON API responses, JSON diff ignore array order, JSON compare ignore key order, nested JSON comparison, JSON configuration diff">
   <p>An API response looks different after a deployment. Did the values change, or did the serializer just reorder the fields? A structural JSON comparison answers that question more directly than a line diff. Array positions need a separate decision: a reordered set of regions may be harmless, while a reordered event sequence is not.</p>
 
   <h2>A JSON diff example with four changes—or two</h2>
@@ -19,12 +19,12 @@ const guide = guideBySlug('compare-json-api-responses-ignore-array-order');
 
   <h2>Choose object key order and array order independently</h2>
   <p>JSON objects are unordered collections of members, while arrays are ordered sequences, as defined in <a href="https://www.rfc-editor.org/rfc/rfc8259">RFC 8259</a>. The default comparison ignores object key order but preserves array order.</p>
-  <p>For example, <code>{'{"name":"catalog","timeout":15}'}</code> and <code>{'{"timeout":15,"name":"catalog"}'}</code> match. Disable Ignore key order if you specifically want to review parsed property-order changes. This is not a byte-for-byte comparison: parsing normalizes some numeric representations and the ordering of integer-like property names. Use <a href="/text-diff/">Text Diff</a> for exact source lines.</p>
+  <p>For example, <code>{'{"name":"catalog","timeout":15}'}</code> and <code>{'{"timeout":15,"name":"catalog"}'}</code> match. Disable Ignore key order if you specifically want to review source property-order changes, including integer-like names. Numbers compare by exact mathematical value, so <code>1</code> and <code>1.0</code> match. Use <a href="/text-diff/">Text Diff</a> for exact source lines or numeric spelling.</p>
   <p>Enable Ignore array order only when every array’s position is irrelevant to your question. It applies recursively, not just to the top-level array. Do not enable it for coordinates, ranked search results, or event histories.</p>
 
   <h2>Duplicates and nested objects still matter</h2>
   <p>An unordered comparison is not a set comparison that discards duplicates. <code>[1,1,2]</code> and <code>[1,2,2]</code> differ: one occurrence of 1 disappears and an occurrence of 2 is added. Equivalent items match once each, including objects whose key order differs when Ignore key order is enabled.</p>
-  <p>Unordered matching uses whole-item equality; it does not join records by an <code>id</code> field. If one object in an unordered array changes, it is reported as a removed item and an added item. For a field-by-field review of that record, put the two individual objects into the comparison panels.</p>
+  <p>Ignore array order uses whole-item equality. If one object changes, it appears as a removed item and an added item. For field-by-field changes in reordered records, set the optional Array identity field to <code>id</code> instead. Read the <a href="/guides/compare-json-arrays-by-id-ignore-fields/">array ID matching and ignored-fields guide</a> for a runnable example.</p>
 
   <h2>Read the paths and distinguish missing from null</h2>
   <ol>
@@ -36,8 +36,8 @@ const guide = guideBySlug('compare-json-api-responses-ignore-array-order');
   <p>Missing, null, and an empty string are different states. Adding <code>email: null</code> to an object that lacked email is an addition. Changing an existing email to null is a modification. The number <code>1</code> also differs from the string <code>"1"</code>. Property names containing dots use quoted bracket paths, so a key named <code>content.type</code> is not confused with a nested <code>content</code> object.</p>
 
   <h2>Reduce noise without hiding a real regression</h2>
-  <p>Responses may contain generated timestamps or request IDs. Keep the original captures, then make a smaller comparison containing the fields relevant to the failure. This tool does not have an ignore-fields rule or keyed array join; remove irrelevant fields from the copied sample yourself and say what you removed.</p>
-  <p>Both inputs must be valid JSON. If one fails, use the <a href="/json-formatter/">JSON syntax validator</a> and check whether you copied HTML, a log prefix, or several JSON Lines records. Very large integer IDs should be strings because JavaScript parsing can round them. Duplicate object keys keep the last value, so this is not a duplicate-key detector.</p>
+  <p>Responses may contain generated timestamps or request IDs. Ignore a field name such as <code>updatedAt</code> recursively, or target an exact JSON Pointer such as <code>/meta/requestId</code>. A “No differences” result means equality with those settings, not equality of every field. These rules do not remove data from share links.</p>
+  <p>Both inputs must be valid JSON. If one fails, use the <a href="/json-formatter/">JSON syntax validator</a> and check whether you copied HTML, a log prefix, or several JSON Lines records. This comparison preserves exact numeric tokens and distinguishes large integer IDs without JavaScript rounding. Duplicate object keys are rejected as ambiguous rather than silently discarded. See the <a href="/guides/json-large-integers-duplicate-keys/">number precision and duplicate-key guide</a>.</p>
 
   <h2>Share a comparison a teammate can reproduce</h2>
   <p>After comparing, select Share comparison. The shared state includes both documents, the ordering options, and the Compare action. Embedded links carry that state in the URL fragment; optional short links store it for 30 days. Processing the comparison itself does not upload your input.</p>

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+ <title id="title">JSON Diff — match records, reveal changes</title><desc id="desc">Two reordered orders pair by ID. Their status and exact numeric total changes are visible; timestamps are ignored.</desc>
+ <rect width="1280" height="720" fill="#0f172a"/><circle cx="1240" cy="30" r="340" fill="#312e81" opacity=".35"/>
+ <g font-family="Arial, sans-serif"><text x="64" y="72" fill="#a5b4fc" font-size="20" font-weight="700">BUG DAYS / JSON DIFF</text><text x="64" y="136" fill="#f8fafc" font-size="43" font-weight="700">Match records. Reveal the real changes.</text>
+ <text x="64" y="179" fill="#cbd5e1" font-size="22">Arrays by ID · Ignore fields · Exact numbers · Share the comparison</text>
+ <rect x="64" y="226" width="548" height="325" rx="18" fill="#1e293b" stroke="#475569"/><rect x="668" y="226" width="548" height="325" rx="18" fill="#1e293b" stroke="#475569"/>
+ <text x="90" y="272" fill="#94a3b8" font-size="18" font-weight="700">ORIGINAL / items[0]</text><text x="694" y="272" fill="#94a3b8" font-size="18" font-weight="700">MODIFIED / items[1]</text>
+ <g font-family="monospace" font-size="22"><text x="92" y="323" fill="#a5b4fc">id: "ORD-42"</text><text x="696" y="323" fill="#a5b4fc">id: "ORD-42"</text>
+ <rect x="84" y="349" width="508" height="46" rx="7" fill="#581c87"/><rect x="688" y="349" width="508" height="46" rx="7" fill="#581c87"/>
+ <text x="96" y="380" fill="#f3e8ff">status: "queued"</text><text x="700" y="380" fill="#f3e8ff">status: "paid"</text>
+ <rect x="84" y="414" width="508" height="46" rx="7" fill="#581c87"/><rect x="688" y="414" width="508" height="46" rx="7" fill="#581c87"/>
+ <text x="96" y="445" fill="#f3e8ff">total: 9007199254740993</text><text x="700" y="445" fill="#f3e8ff">total: 9007199254740994</text></g>
+ <text x="90" y="511" fill="#94a3b8" font-size="18">updatedAt ignored — still in the input</text><text x="694" y="511" fill="#94a3b8" font-size="18">Reordered, not removed and re-added</text>
+ <rect x="64" y="587" width="796" height="72" rx="14" fill="#172554" stroke="#6366f1"/><text x="90" y="633" fill="#e0e7ff" font-size="24" font-weight="700">2 changes · exact old / new values · JSON Pointer paths</text>
+ <rect x="884" y="587" width="332" height="72" rx="14" fill="#4f46e5"/><text x="913" y="633" fill="#fff" font-size="24" font-weight="700">Share comparison ↗</text></g>
+</svg>

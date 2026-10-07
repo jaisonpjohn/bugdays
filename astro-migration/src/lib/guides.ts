@@ -17,6 +17,15 @@ export interface Guide {
 
 export const guides: Guide[] = [
   {
+    slug: 'compare-json-arrays-by-id-ignore-fields',
+    title: 'Compare JSON Arrays by ID, Ignore Fields, and Export JSON Patch',
+    shortTitle: 'Compare JSON records by ID, not position',
+    description: 'Compare reordered JSON API records by a unique ID, ignore timestamps and request IDs, preserve exact numeric values, and share a runnable two-change example.',
+    topic: 'JSON array matching and filtered comparisons', published: '2026-10-07', updated: '2026-10-07', readingMinutes: 6,
+    image: '/og/json-diff.png', artImage: '/og/json-diff.svg', imageAlt: 'Reordered JSON records matched by ID, revealing a status change and exact large-number change while ignoring a timestamp',
+    toolHref: '/json-diff/', toolName: 'JSON Diff and Compare',
+  },
+  {
     slug: 'json-large-integers-duplicate-keys',
     title: 'Why JSON Numbers Change and Duplicate Keys Disappear When Formatting',
     shortTitle: 'Keep exact JSON numbers and duplicate keys',
@@ -130,8 +139,8 @@ export const guides: Guide[] = [
     title: 'Compare JSON API Responses: Ignore Key Order and Array Order',
     shortTitle: 'Compare JSON responses and reordered arrays',
     description: 'Find changes in JSON API responses and configuration files. Try a shareable example, compare reordered arrays, and distinguish duplicates, nulls, and missing fields.',
-    topic: 'JSON comparison and debugging', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 5,
-    image: '/og-image.png', artImage: '/og/guide-json-inspection.svg', imageAlt: 'A JSON comparison showing a changed value at one path',
+    topic: 'JSON comparison and debugging', published: '2026-10-01', updated: '2026-10-07', readingMinutes: 5,
+    image: '/og/json-diff.png', artImage: '/og/json-diff.svg', imageAlt: 'JSON records matched by ID with exact changed values and shareable comparison settings',
     toolHref: '/json-diff/', toolName: 'JSON Diff Checker',
   },
   {

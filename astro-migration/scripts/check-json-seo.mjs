@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import LZString from 'lz-string';
-import { apiResponse, originalConfig, modifiedConfig, exactJsonExample } from '../src/lib/json-examples.ts';
+import { apiResponse, originalConfig, modifiedConfig, exactJsonExample, keyedDiffOriginal, keyedDiffModified } from '../src/lib/json-examples.ts';
 import { formatJson } from '../src/lib/json-formatter.ts';
+import { compareJson } from '../src/lib/json-diff.ts';
 import { gzipSync } from 'node:zlib';
 
 const read = path => readFile(new URL(`../dist/${path}`, import.meta.url), 'utf8');
@@ -29,7 +30,7 @@ for (const entry of entries) {
   assert.equal(schemas.find(schema => schema['@type'] === 'WebApplication').url, `https://bugdays.com${path}`);
   const questions = schemas.find(schema => schema['@type'] === 'FAQPage').mainEntity;
   assert.equal(questions.length, 5);
-  assert.equal((html.match(/<details /g) || []).length, entry.tool === 'json-formatter' ? 6 : 5);
+  assert.equal((html.match(/<details /g) || []).length, 6);
 
   const guidePath = `/guides/${entry.guide}/`;
   const guide = await read(`guides/${entry.guide}/index.html`);
@@ -57,8 +58,15 @@ for (const entry of entries) {
         else assert.deepEqual(JSON.parse(state.d.json), apiResponse);
       }
       else {
-        assert.deepEqual(JSON.parse(state.d.json1), originalConfig);
-        assert.deepEqual(JSON.parse(state.d.json2), modifiedConfig);
+        if (state.d.arrayKey === 'id') {
+          assert.equal(state.d.json1, keyedDiffOriginal); assert.equal(state.d.json2, keyedDiffModified);
+          assert.equal(state.d.ignoredPaths, 'updatedAt');
+          assert.equal(compareJson(state.d.json1, state.d.json2, state.d).changes.length, 2);
+        } else {
+          assert.deepEqual(JSON.parse(state.d.json1), originalConfig);
+          assert.deepEqual(JSON.parse(state.d.json2), modifiedConfig);
+          assert.equal(compareJson(state.d.json1, state.d.json2, state.d).changes.length, state.d.ignoreArrayOrder ? 2 : 4);
+        }
         assert.equal(state.d.ignoreKeyOrder, true);
         assert.equal(typeof state.d.ignoreArrayOrder, 'boolean');
       }
@@ -90,3 +98,24 @@ for (const [, path] of scripts) {
   console.log(`JSON initial script: ${path} (${bytes} B gzip)`);
 }
 console.log('Exact-number guide, original share state, relevant social art and script budgets passed.');
+const keyedPath = '/guides/compare-json-arrays-by-id-ignore-fields/';
+const keyedGuide = await read('guides/compare-json-arrays-by-id-ignore-fields/index.html');
+const diffHtml = await read('json-diff/index.html');
+for (const page of [index, rss, sitemap, category, diffHtml]) assert.ok(page.includes(keyedPath));
+assert.ok(keyedGuide.includes(`rel="canonical" href="https://bugdays.com${keyedPath}"`));
+assert.ok(keyedGuide.includes('"@type":"Article"')); assert.ok(keyedGuide.includes('"dateModified":"2026-10-07'));
+for (const term of ['JSON Patch', 'JSON Pointer', '9007199254740993', 'Share comparison', 'RFC 6902']) assert.ok(keyedGuide.includes(term));
+assert.ok(keyedGuide.includes('https://www.rfc-editor.org/rfc/rfc6901')); assert.ok(keyedGuide.includes('https://www.rfc-editor.org/rfc/rfc6902'));
+assert.ok(diffHtml.includes('https://bugdays.com/og/json-diff.png'));
+const diffPng = await readFile(new URL('../dist/og/json-diff.png', import.meta.url));
+assert.equal(diffPng.readUInt32BE(16), 1280); assert.equal(diffPng.readUInt32BE(20), 720);
+const keyedLink = keyedGuide.match(/href="\/json-diff\/#lz:([^\"]+)"/); assert.ok(keyedLink);
+const keyedState = JSON.parse(LZString.decompressFromEncodedURIComponent(keyedLink[1]));
+assert.equal(keyedState.d.json1, keyedDiffOriginal); assert.equal(keyedState.d.json2, keyedDiffModified);
+const keyedResult = compareJson(keyedState.d.json1, keyedState.d.json2, keyedState.d); assert.equal(keyedResult.changes.length, 2); assert.equal(keyedResult.patch, null);
+for (const [, path] of diffHtml.matchAll(/<script[^>]+src="(\/_astro\/[^\"]+)"/g)) {
+  const bytes = gzipSync(await readFile(new URL(`../dist${path}`, import.meta.url))).length;
+  assert.ok(bytes < 30_000, `JSON Diff initial script ${path}: exceeds 30 KB gzip budget`);
+  console.log(`JSON Diff initial script: ${path} (${bytes} B gzip)`);
+}
+console.log('ID-matching guide, precise runnable examples, discovery and JSON Diff asset budgets passed.');

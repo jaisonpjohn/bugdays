@@ -309,7 +309,7 @@ export function createJsonEditor(element: HTMLTextAreaElement): JsonEditor {
     getValue: () => element.value,
     setValue(value) { element.value = value; errorPosition = null; matches = searchOccurrences(value, query); activeMatch = matches.length ? 0 : -1; refresh(); },
     refresh,
-    setSearch(nextQuery, nextActive = 0) { query = nextQuery; matches = searchOccurrences(element.value, query); activeMatch = matches.length ? ((nextActive % matches.length) + matches.length) % matches.length : -1; refresh(); return matches.length; },
+    setSearch(nextQuery, nextActive = 0) { query = nextQuery; matches = searchOccurrences(element.value, query); activeMatch = matches.length && nextActive >= 0 ? ((nextActive % matches.length) + matches.length) % matches.length : -1; refresh(); return matches.length; },
     getMatches: () => [...matches],
     focusMatch(index) { if (!matches.length) return; activeMatch = ((index % matches.length) + matches.length) % matches.length; refresh(); focusPosition(matches[activeMatch]); },
     showError(position) { errorPosition = position; refresh(); },
