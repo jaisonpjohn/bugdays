@@ -3,6 +3,7 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
+    "test:json-formatter": "node --test tests/json-formatter.test.mjs",
     "test:soap-body": "node --test tests/soap-body.test.mjs",
     "test:soap-seo": "node scripts/check-soap-client.mjs",
     "test:schema-doctor": "node --test tests/schema-doctor.test.mjs",

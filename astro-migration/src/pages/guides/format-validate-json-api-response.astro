@@ -5,7 +5,7 @@ import { guideBySlug } from '../../lib/guides.ts';
 const guide = guideBySlug('format-validate-json-api-response');
 ---
 
-<GuideLayout guide={guide} imageWidth={1200} imageHeight={630} keywords="format JSON API response, JSON pretty print, validate JSON online, JSON tree viewer, copy jq path, invalid JSON syntax">
+<GuideLayout guide={guide} imageWidth={1280} imageHeight={720} keywords="format JSON API response, JSON pretty print, validate JSON online, JSON tree viewer, copy jq path, invalid JSON syntax">
   <p>You have a one-line API response and need to answer a specific question: did the first order finish, and is there another page of results? Pretty-printing exposes the structure. A tree view then helps you find the field without confusing a property name with its value.</p>
 
   <h2>Try a complete JSON formatting example</h2>
@@ -16,14 +16,14 @@ const guide = guideBySlug('format-validate-json-api-response');
   <h2>Format and validate your API response</h2>
   <ol>
     <li>Copy the response body, not HTTP headers or the surrounding log message. Paste it into JSON input.</li>
-    <li>Select <strong>Prettify</strong>. Successful parsing produces two-space indentation. An error leaves the input available to correct.</li>
+    <li>Choose two spaces, four spaces, or tabs, then select <strong>Prettify</strong>. An error leaves the input unchanged. <strong>Validate</strong> checks syntax without formatting.</li>
     <li>Use <strong>Compact</strong> when you need one-line JSON. Whitespace inside strings remains data; indentation outside them is removed.</li>
     <li>Use Copy or Download to keep the text, or <strong>Share JSON</strong> to send a reproducible example.</li>
   </ol>
-  <p>Keep the original response if exact digits or number spelling matter. The tool uses JavaScript parsing: <code>1.0</code> can become <code>1</code>, duplicate keys keep the last value, and integers above <code>9007199254740991</code> can round. An API should send long numeric IDs as strings.</p>
+  <p>This formatter changes only whitespace between JSON tokens: <code>1.0</code>, large numeric IDs, exponents, string escapes, and duplicate keys stay intact. Undo restores the text before formatting. Interoperability notes identify values other parsers may discard or round; see the <a href="/guides/json-large-integers-duplicate-keys/">exact-number and duplicate-key walkthrough</a>.</p>
 
   <h2>Copy a jq path from the JSON tree</h2>
-  <p>Select Tree View, then select the first order’s status value. The tooltip shows <code>.orders[0].status</code>; select the tooltip to copy it. To read that field from a local file with jq, use:</p>
+  <p>Select Tree &amp; Fold, then select the first order’s status value. The selected-value panel shows <code>.orders[0].status</code>; select that button to copy it. You can also copy the JSON Pointer <code>/orders/0/status</code>, or the exact JSON value. To read that field from a local file with jq, use:</p>
   <pre><code>{`jq '.orders[0].status' response.json
 # Output: "paid"
 

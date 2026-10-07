@@ -17,6 +17,15 @@ export interface Guide {
 
 export const guides: Guide[] = [
   {
+    slug: 'json-large-integers-duplicate-keys',
+    title: 'Why JSON Numbers Change and Duplicate Keys Disappear When Formatting',
+    shortTitle: 'Keep exact JSON numbers and duplicate keys',
+    description: 'Reproduce JSON.parse integer rounding and duplicate-key loss, then inspect and share JSON with exact digits, decimal notation, and every duplicate intact.',
+    topic: 'JSON number precision and duplicate keys', published: '2026-10-07', updated: '2026-10-07', readingMinutes: 6,
+    image: '/og/json-formatter.png', artImage: '/og/json-formatter.svg', imageAlt: 'JSON formatting preserves a large numeric ID and both duplicate status keys',
+    toolHref: '/json-formatter/', toolName: 'JSON Formatter and Validator',
+  },
+  {
     slug: 'validate-json-against-schema',
     title: 'Validate JSON Against a Schema: Find and Fix the Failing Field',
     shortTitle: 'Diagnose JSON Schema validation errors',
@@ -112,8 +121,8 @@ export const guides: Guide[] = [
     title: 'How to Format and Validate a JSON API Response',
     shortTitle: 'Format JSON and copy a jq path',
     description: 'Pretty-print an API response, troubleshoot invalid JSON, copy jq paths from a tree view, and share a runnable example. Includes jq and Python commands.',
-    topic: 'JSON formatting and validation', published: '2026-10-01', updated: '2026-10-01', readingMinutes: 5,
-    image: '/og-image.png', artImage: '/og/guide-json-inspection.svg', imageAlt: 'A JSON document with validation and path inspection results',
+    topic: 'JSON formatting and validation', published: '2026-10-01', updated: '2026-10-07', readingMinutes: 5,
+    image: '/og/json-formatter.png', artImage: '/og/json-formatter.svg', imageAlt: 'A JSON formatter preserving exact numeric digits and duplicate keys',
     toolHref: '/json-formatter/', toolName: 'JSON Formatter and Validator',
   },
   {

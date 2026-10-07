@@ -9,7 +9,7 @@ const jsonLd = [
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "name": "JSON Formatter & Validator",
-    "description": "Format, validate, minify, search, and inspect JSON locally with syntax colors, line numbers, precise errors, a collapsible tree, and copied jq paths.",
+    "description": "Format, minify and validate JSON without rounding large numbers or dropping duplicate keys. Explore a lazy tree, copy jq paths and JSON Pointers, and share examples.",
     "url": "https://bugdays.com/json-formatter/",
     "applicationCategory": "DeveloperApplication",
     "operatingSystem": "Any",
@@ -18,7 +18,7 @@ const jsonLd = [
       "price": "0",
       "priceCurrency": "USD"
     },
-    "featureList": ["JSON formatting", "JSON beautifying", "JSON validation with line and column errors", "JSON minification", "Syntax highlighting", "JSON search", "Tree view", "jq path extraction", "Local JSON file open"]
+    "featureList": ["Lossless JSON formatting and minification", "2-space, 4-space and tab indentation", "JSON syntax validation with line and column errors", "Duplicate-key detection", "Large integer preservation", "Line numbers and search", "Lazy tree viewer", "jq paths and JSON Pointer", "Local file loading", "Undo formatting", "Shareable JSON examples"]
   },
   {
     "@context": "https://schema.org",
@@ -29,59 +29,67 @@ const jsonLd = [
 ---
 
 <Layout
-  title="JSON Formatter & Validator — Line Numbers, Search & Tree"
-  description="Format, validate, and minify JSON with line numbers, syntax colors, error locations, search, and tree view. Open local JSON files, copy jq paths, and share a reproducible example."
+  title="JSON Formatter & Validator — Beautify, Minify & Share"
+  description="Format, validate and minify JSON online without rounding large numbers. Find errors, explore a JSON tree, copy paths, and share examples. Free, browser-local."
+  image="/og/json-formatter.png" imageAlt="JSON formatter preserving a large numeric ID and duplicate keys, with a shareable tree view" imageWidth={1280} imageHeight={720}
   keywords="JSON formatter, JSON beautifier, JSON prettify, JSON validator, JSON pretty print, format JSON online, JSON beautify, validate JSON, JSON viewer, JSON parser, minify JSON, JSON lint, JSON checker"
   breadcrumb={[{ name: "JSON Tools", href: "/json-tools/" }, { name: "JSON Formatter" }]}
   toolId="json-formatter"
   jsonLd={jsonLd}
 >
-  <div class="max-w-6xl mx-auto">
+  <div class="max-w-6xl mx-auto" id="formatter-workspace">
     <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-1">JSON Formatter & Validator</h1>
-    <p class="mb-4 text-sm text-slate-600 dark:text-slate-300">Pretty-print an API response with line numbers and precise errors, explore its tree, then share the exact example. Processing stays in your browser.</p>
+    <p class="mb-4 text-sm text-slate-600 dark:text-slate-300">Beautify, minify, or explore JSON. Exact numbers and duplicate keys stay intact. Everything runs in your browser.</p>
 
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700">
+    <div class="min-w-0 overflow-hidden bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
       <!-- Toolbar -->
       <div class="flex flex-wrap items-center gap-2 p-3 border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900">
         <div id="text-buttons" class="flex flex-wrap gap-2">
           <button id="prettify-btn" data-share-action="prettify" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
             Prettify
           </button>
-          <button id="compact-btn" data-share-action="compact" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+          <button id="compact-btn" data-share-action="compact" class="json-secondary">
             Compact
           </button>
-          <button id="tree-btn" data-share-action="tree" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
+          <button id="validate-btn" data-share-action="validate" class="json-secondary">Validate</button>
+          <button id="tree-btn" data-share-action="tree" class="json-secondary">
             Tree & Fold
           </button>
         </div>
         <div id="tree-buttons" class="hidden flex flex-wrap gap-2">
           <button id="back-btn" class="px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition-colors text-sm font-medium">
-            Back to Raw Text
+            Back to text
           </button>
-          <button id="expand-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+          <button id="expand-btn" class="json-secondary">
             Expand All
           </button>
-          <button id="collapse-btn" class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors text-sm font-medium">
+          <button id="collapse-btn" class="json-secondary">
             Collapse All
           </button>
         </div>
 
         <div class="flex-1"></div>
+        <button id="cancel-btn" class="json-secondary hidden">Cancel</button>
+        <button id="share-json-btn" class="rounded bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Share JSON ↗</button>
+      </div>
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-200 px-3 py-2 dark:border-slate-700">
+        <label for="json-indent" class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">Indent <select id="json-indent" data-share-key="indent" class="rounded border border-slate-300 bg-white px-2 py-1.5 text-sm dark:border-slate-600 dark:bg-slate-800"><option value="2">2 spaces</option><option value="4">4 spaces</option><option value="tab">Tabs</option></select></label>
         <button id="find-btn" class="rounded px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700">Find</button>
         <button id="file-btn" class="rounded px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700">Open file</button>
-        <input id="json-file" type="file" accept="application/json,.json,.jsonc,text/plain" class="hidden" />
+        <input id="json-file" type="file" accept="application/json,.json,text/plain" class="hidden" />
         <button id="sample-btn" class="rounded px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700">Load sample</button>
-        <button id="share-json-btn" class="rounded bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Share JSON ↗</button>
+        <button id="undo-btn" class="json-secondary" disabled>Undo</button><button id="clear-btn" class="json-secondary">Clear</button>
+        <div class="flex-1"></div>
 
         <div class="relative">
-          <button id="copy-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Copy">
+          <button id="copy-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Copy JSON" aria-label="Copy JSON">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
             </svg>
           </button>
           <span id="copied-msg" class="hidden absolute -top-8 left-1/2 -translate-x-1/2 bg-green-500 text-white text-xs px-2 py-1 rounded whitespace-nowrap">Copied!</span>
         </div>
-        <button id="download-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Download">
+        <button id="download-btn" class="p-2 text-gray-600 dark:text-slate-300 hover:text-indigo-600 hover:bg-gray-100 dark:hover:bg-slate-700 rounded transition-colors" title="Download JSON" aria-label="Download JSON">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
           </svg>
@@ -100,24 +108,28 @@ const jsonLd = [
         <label for="formatter-find-input" class="text-sm font-medium text-slate-700 dark:text-slate-200">Find keys or values</label>
         <input id="formatter-find-input" type="search" class="min-w-0 flex-1 rounded border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100" placeholder="Search this JSON" />
         <span id="formatter-find-count" class="min-w-20 text-right text-xs text-slate-500 dark:text-slate-400" aria-live="polite"></span>
-        <button id="formatter-find-prev" class="rounded border border-slate-300 px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700" title="Previous match">↑</button>
-        <button id="formatter-find-next" class="rounded border border-slate-300 px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700" title="Next match">↓</button>
+        <button id="formatter-find-prev" class="rounded border border-slate-300 px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700" title="Previous match" aria-label="Previous match">↑</button>
+        <button id="formatter-find-next" class="rounded border border-slate-300 px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-200 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700" title="Next match" aria-label="Next match">↓</button>
         <button id="formatter-find-close" class="rounded px-2 py-1 text-sm text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700" aria-label="Close find">×</button>
       </div>
 
       <!-- Editor area -->
-      <div id="editor-view">
-        <JsonEditor id="editor" label="JSON input" shareKey="json" height="min-h-[400px] max-h-[600px]" />
-        <p id="file-status" class="px-4 pb-3 text-xs text-slate-500 dark:text-slate-400">Drop a JSON file into the editor or choose Open file. It stays on this device.</p>
+      <div id="editor-view" class="p-3">
+        <JsonEditor id="editor" label="JSON input" shareKey="json" height="h-[420px] sm:h-[480px]" />
+        <p id="file-status" class="mt-2 text-xs text-slate-500 dark:text-slate-400">Drop a JSON file here or choose Open file. Nothing is uploaded.</p>
       </div>
 
       <!-- Tree View -->
-      <div id="tree-view" class="hidden p-4 min-h-[400px] max-h-[600px] overflow-auto font-mono text-sm"></div>
+      <div id="tree-view" class="hidden p-4 h-[420px] sm:h-[480px] overflow-auto font-mono text-sm" aria-label="JSON tree"></div>
 
       <!-- Path tooltip -->
-      <div id="path-tooltip" class="hidden fixed bg-slate-800 dark:bg-slate-700 text-white px-3 py-1.5 rounded shadow-lg z-50 text-xs font-mono cursor-pointer hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors" title="Click to copy">
-        <span id="path-text"></span>
+      <div id="path-tooltip" class="hidden border-t border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-900 dark:bg-indigo-950/30">
+        <p class="mb-2 text-xs text-slate-600 dark:text-slate-300">Selected value · copy a path or the exact JSON</p>
+        <div class="flex flex-wrap gap-2"><button id="path-copy-btn" class="json-secondary min-w-0 max-w-full break-all text-left" aria-label="Copy jq path"><span class="text-xs">jq </span><code id="path-text"></code></button><button id="pointer-copy-btn" class="json-secondary">Copy JSON Pointer</button><button id="value-copy-btn" class="json-secondary">Copy value</button></div>
+        <p id="pointer-text" class="mt-2 break-all font-mono text-xs text-slate-500 dark:text-slate-400"></p>
       </div>
+      <div class="flex flex-wrap gap-x-3 gap-y-1 border-t border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><p id="formatter-status" role="status" class="min-w-0 flex-1">Paste JSON, open a file, or try the sample.</p><span id="json-size"></span></div>
+      <details id="json-findings" class="hidden border-t border-slate-200 p-3 text-xs dark:border-slate-700"><summary id="json-findings-summary" class="cursor-pointer font-semibold text-slate-700 dark:text-slate-200"></summary><ul id="json-findings-list" class="mt-2 space-y-2 break-words text-slate-600 dark:text-slate-300"></ul></details>
     </div>
 
     <JsonToolContent tool="formatter" />
@@ -125,287 +137,21 @@ const jsonLd = [
   </div>
 </Layout>
 
-<script>
-  import { track } from '../lib/analytics.ts';
-  import { ShareManager } from '../lib/share.ts';
-  import { createJsonEditor, jsonErrorLocation } from '../lib/json-editor.ts';
-
-  const editor = document.getElementById('editor') as HTMLTextAreaElement;
-  const jsonEditor = createJsonEditor(editor);
-  const treeView = document.getElementById('tree-view')!;
-  const editorView = document.getElementById('editor-view')!;
-  const textButtons = document.getElementById('text-buttons')!;
-  const treeButtons = document.getElementById('tree-buttons')!;
-  const errorBox = document.getElementById('error-box')!;
-  const errorText = document.getElementById('error-text')!;
-  const errorJumpButton = document.getElementById('error-jump-btn') as HTMLButtonElement;
-  const copiedMsg = document.getElementById('copied-msg')!;
-  const fileStatus = document.getElementById('file-status')!;
-  let errorPosition: number | null = null;
-
-  let originalText = '';
-  document.getElementById('share-json-btn')!.addEventListener('click', () => document.getElementById('share-btn')?.click());
-  document.getElementById('sample-btn')!.addEventListener('click', () => {
-    document.getElementById('back-btn')?.click();
-    jsonEditor.setValue('{"orders":[{"id":"ORD-42","status":"paid","total":29.5,"items":["notebook","pen"]}],"pagination":{"page":1,"hasNext":false}}');
-    document.getElementById('prettify-btn')?.click();
-    ShareManager.setLastAction('prettify');
-  });
-
-  ShareManager.register({
-    tool: 'json-formatter',
-    actions: {
-      prettify: () => { showTextView(); document.getElementById('prettify-btn')?.click(); },
-      compact: () => { showTextView(); document.getElementById('compact-btn')?.click(); },
-      tree: () => document.getElementById('tree-btn')?.click(),
-    }
-  });
-
-  function showTextView() {
-    treeView.classList.add('hidden');
-    editorView.classList.remove('hidden');
-    treeButtons.classList.add('hidden');
-    textButtons.classList.remove('hidden');
-    document.getElementById('path-tooltip')?.classList.add('hidden');
-  }
-
-  function showError(text: string, error: unknown) {
-    const location = jsonErrorLocation(text, error);
-    errorPosition = location.position;
-    const prefix = location.line && location.column ? `Line ${location.line}, column ${location.column}: ` : '';
-    errorText.textContent = prefix + (error instanceof Error ? error.message : String(error));
-    errorBox.classList.remove('hidden');
-    errorJumpButton.classList.toggle('hidden', location.position === null);
-    jsonEditor.showError(location.position);
-  }
-
-  function hideError() {
-    errorBox.classList.add('hidden');
-    errorPosition = null;
-    jsonEditor.clearError();
-  }
-
-  errorJumpButton.addEventListener('click', () => { if (errorPosition !== null) jsonEditor.focusPosition(errorPosition); });
-  editor.addEventListener('input', () => { if (!errorBox.classList.contains('hidden')) hideError(); });
-
-  function escapeHtml(text: string) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  const escapeAttribute = (text: string) => escapeHtml(text).replace(/"/g, '&quot;');
-
-  document.getElementById('prettify-btn')!.addEventListener('click', () => {
-    hideError();
-    const text = jsonEditor.getValue();
-    if (!text.trim()) {
-      showError(text, new Error('Paste a JSON document first.'));
-      return;
-    }
-    try {
-      const parsed = JSON.parse(text);
-      jsonEditor.setValue(JSON.stringify(parsed, null, 2));
-    } catch (e: any) {
-      showError(text, e);
-    }
-  });
-
-  document.getElementById('compact-btn')!.addEventListener('click', () => {
-    hideError();
-    const text = jsonEditor.getValue();
-    if (!text.trim()) return;
-    try {
-      const parsed = JSON.parse(text);
-      jsonEditor.setValue(JSON.stringify(parsed));
-    } catch (e: any) {
-      showError(text, e);
-    }
-  });
-
-  document.getElementById('tree-btn')!.addEventListener('click', () => {
-    hideError();
-    const text = jsonEditor.getValue();
-    try {
-      const obj = JSON.parse(text);
-      originalText = text;
-      treeView.innerHTML = buildTreeHtml(obj);
-      editorView.classList.add('hidden');
-      treeView.classList.remove('hidden');
-      textButtons.classList.add('hidden');
-      treeButtons.classList.remove('hidden');
-    } catch (e: any) {
-      showError(text, e);
-    }
-  });
-
-  document.getElementById('back-btn')!.addEventListener('click', () => {
-    showTextView();
-    jsonEditor.setValue(originalText);
-  });
-
-  function buildTreeHtml(obj: any, path = '', level = 0): string {
-    if (obj === null) return `<span class="text-orange-600 dark:text-orange-400 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 px-0.5 rounded" data-path="${escapeAttribute(path)}">null</span>`;
-    if (typeof obj !== 'object') {
-      if (typeof obj === 'string') return `<span class="text-green-700 dark:text-green-400 cursor-pointer hover:bg-green-100 dark:hover:bg-green-900/30 px-0.5 rounded" data-path="${escapeAttribute(path)}">"${escapeHtml(obj)}"</span>`;
-      if (typeof obj === 'number') return `<span class="text-blue-600 dark:text-blue-400 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 px-0.5 rounded" data-path="${escapeAttribute(path)}">${obj}</span>`;
-      if (typeof obj === 'boolean') return `<span class="text-purple-600 dark:text-purple-400 cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 px-0.5 rounded" data-path="${escapeAttribute(path)}">${obj}</span>`;
-      return String(obj);
-    }
-
-    const isArray = Array.isArray(obj);
-    const keys = Object.keys(obj);
-    if (keys.length === 0) return isArray ? '[]' : '{}';
-
-    const id = 'n' + Math.random().toString(36).substr(2, 6);
-    let html = `<div class="tree-node" data-id="${id}">`;
-    html += `<button onclick="toggleNode('${id}')" class="text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200 mr-1">`;
-    html += `<span class="arrow">▼</span></button>`;
-    html += isArray ? `<span class="text-gray-500 dark:text-slate-400">[${keys.length}]</span>` : `<span class="text-gray-500 dark:text-slate-400">{${keys.length}}</span>`;
-    html += `<div class="children ml-4 border-l-2 border-gray-200 dark:border-slate-700 pl-3">`;
-
-    for (const key of keys) {
-      const keyPath = isArray ? `${path || '.'}[${key}]`
-        : /^[A-Za-z_][A-Za-z0-9_]*$/.test(key) ? `${path ? path + '.' : '.'}${key}` : `${path || '.'}[${JSON.stringify(key)}]`;
-      const keyDisplay = isArray
-        ? `<span class="text-gray-400 dark:text-slate-500 cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 px-0.5 rounded" data-path="${escapeAttribute(keyPath)}">${key}</span>`
-        : `<span class="text-blue-800 dark:text-blue-300 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-900/30 px-0.5 rounded" data-path="${escapeAttribute(keyPath)}">"${escapeHtml(key)}"</span>`;
-      html += `<div class="py-0.5">${keyDisplay}: ${buildTreeHtml(obj[key], keyPath, level + 1)}</div>`;
-    }
-
-    html += '</div></div>';
-    return html;
-  }
-
-  (window as any).toggleNode = function(id: string) {
-    const node = document.querySelector(`[data-id="${id}"]`);
-    const children = node?.querySelector('.children');
-    const arrow = node?.querySelector('.arrow');
-    if (children?.classList.contains('hidden')) {
-      children.classList.remove('hidden');
-      if (arrow) arrow.textContent = '▼';
-    } else {
-      children?.classList.add('hidden');
-      if (arrow) arrow.textContent = '▶';
-    }
-  };
-
-  document.getElementById('expand-btn')!.addEventListener('click', () => {
-    document.querySelectorAll('.children').forEach(el => el.classList.remove('hidden'));
-    document.querySelectorAll('.arrow').forEach(el => el.textContent = '▼');
-  });
-
-  document.getElementById('collapse-btn')!.addEventListener('click', () => {
-    document.querySelectorAll('.children').forEach(el => el.classList.add('hidden'));
-    document.querySelectorAll('.arrow').forEach(el => el.textContent = '▶');
-  });
-
-  document.getElementById('copy-btn')!.addEventListener('click', () => {
-    const text = jsonEditor.getValue() || originalText;
-    navigator.clipboard.writeText(text);
-    copiedMsg.classList.remove('hidden');
-    setTimeout(() => copiedMsg.classList.add('hidden'), 1500);
-  });
-
-  document.getElementById('download-btn')!.addEventListener('click', () => {
-    const text = jsonEditor.getValue() || originalText;
-    track('export_used', { tool: 'json-formatter', format: 'json' });
-    const blob = new Blob([text], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'formatted.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  });
-
-  async function loadLocalFile(file: File) {
-    if (file.size > 10 * 1024 * 1024) {
-      showError('', new Error('Choose a JSON file smaller than 10 MB.'));
-      return;
-    }
-    const text = await file.text();
-    showTextView();
-    jsonEditor.setValue(text);
-    fileStatus.textContent = `Loaded ${Math.max(1, Math.round(file.size / 1024))} KB locally. Nothing was uploaded.`;
-    try { JSON.parse(text); hideError(); }
-    catch (error) { showError(text, error); }
-  }
-
-  const fileInput = document.getElementById('json-file') as HTMLInputElement;
-  document.getElementById('file-btn')!.addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', () => { const file = fileInput.files?.[0]; if (file) void loadLocalFile(file); fileInput.value = ''; });
-  const editorShell = editor.closest<HTMLElement>('[data-json-editor]')!;
-  ['dragenter', 'dragover'].forEach(type => editorShell.addEventListener(type, event => { event.preventDefault(); editorShell.classList.add('json-editor-drop-target'); }));
-  ['dragleave', 'drop'].forEach(type => editorShell.addEventListener(type, event => { event.preventDefault(); editorShell.classList.remove('json-editor-drop-target'); }));
-  editorShell.addEventListener('drop', event => { const file = event.dataTransfer?.files?.[0]; if (file) void loadLocalFile(file); });
-
-  const findBar = document.getElementById('formatter-find-bar')!;
-  const findInput = document.getElementById('formatter-find-input') as HTMLInputElement;
-  const findCount = document.getElementById('formatter-find-count')!;
-  let findIndex = 0;
-  function refreshFind(focus = false) {
-    const count = jsonEditor.setSearch(findInput.value, findIndex);
-    if (!findInput.value) findCount.textContent = '';
-    else findCount.textContent = count ? `${(findIndex % count) + 1} / ${count}${count === 500 ? '+' : ''}` : 'No matches';
-    if (focus && count) jsonEditor.focusMatch(findIndex);
-  }
-  function openFind() {
-    if (editorView.classList.contains('hidden')) {
-      showTextView();
-      jsonEditor.setValue(originalText);
-    }
-    findBar.classList.remove('hidden');
-    findInput.focus();
-    findInput.select();
-    refreshFind();
-  }
-  function closeFind() { findBar.classList.add('hidden'); findInput.value = ''; findIndex = 0; refreshFind(); editor.focus(); }
-  document.getElementById('find-btn')!.addEventListener('click', openFind);
-  document.getElementById('formatter-find-close')!.addEventListener('click', closeFind);
-  findInput.addEventListener('input', () => { findIndex = 0; refreshFind(); });
-  document.getElementById('formatter-find-next')!.addEventListener('click', () => { const count = jsonEditor.getMatches().length; if (count) { findIndex = (findIndex + 1) % count; refreshFind(true); } });
-  document.getElementById('formatter-find-prev')!.addEventListener('click', () => { const count = jsonEditor.getMatches().length; if (count) { findIndex = (findIndex - 1 + count) % count; refreshFind(true); } });
-  document.addEventListener('keydown', event => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'f') { event.preventDefault(); openFind(); }
-    if (event.key === 'Escape' && !findBar.classList.contains('hidden')) closeFind();
-  });
-
-  // Path tooltip
-  const pathTooltip = document.getElementById('path-tooltip')!;
-  const pathText = document.getElementById('path-text')!;
-  let currentPath = '';
-  let hideTimeout: number;
-
-  function showPathTooltip(path: string, rect: DOMRect) {
-    currentPath = path;
-    pathText.textContent = path || '.';
-    pathTooltip.style.maxWidth = Math.max(160, window.innerWidth - 24) + 'px';
-    pathTooltip.style.overflowWrap = 'anywhere';
-    pathTooltip.style.left = Math.max(8, Math.min(rect.left, window.innerWidth - 240)) + 'px';
-    pathTooltip.style.top = (rect.bottom + 4) + 'px';
-    pathTooltip.classList.remove('hidden');
-
-    clearTimeout(hideTimeout);
-    hideTimeout = setTimeout(() => {
-      pathTooltip.classList.add('hidden');
-    }, 3000) as unknown as number;
-  }
-
-  treeView.addEventListener('click', (e) => {
-    const target = e.target as HTMLElement;
-    if (target.dataset.path !== undefined) {
-      e.stopPropagation();
-      showPathTooltip(target.dataset.path, target.getBoundingClientRect());
-    }
-  });
-
-  pathTooltip.addEventListener('click', () => {
-    const path = currentPath || '.';
-    navigator.clipboard.writeText(path);
-    pathText.textContent = 'Copied!';
-    setTimeout(() => {
-      pathTooltip.classList.add('hidden');
-    }, 800);
-  });
-</script>
+<script>import '../lib/json-formatter-ui.ts';</script>
+<style>
+  .json-secondary { border:1px solid #cbd5e1; border-radius:.4rem; padding:.4rem .65rem; font-size:.8125rem; font-weight:600; color:#334155; background:white; cursor:pointer; }
+  .json-secondary:hover { background:#eef2ff; } button:disabled { cursor:default; opacity:.4; }
+  button:focus-visible { outline:2px solid #6366f1; outline-offset:2px; }
+  :global(.dark) .json-secondary { border-color:#475569; color:#e2e8f0; background:#1e293b; }
+  :global(.dark) .json-secondary:hover { background:#334155; }
+  :global(.json-tree-row) { display:flex; align-items:baseline; gap:.4rem; min-width:0; padding:.22rem 0; }
+  :global(.json-tree-value) { text-align:left; overflow-wrap:anywhere; min-width:0; color:#047857; }
+  :global(.json-tree-key) { color:#0369a1; overflow-wrap:anywhere; }
+  :global(.json-tree-value:hover) { background:#eef2ff; border-radius:.2rem; }
+  :global(.json-tree-children) { margin-left:.65rem; border-left:1px solid #cbd5e1; padding-left:.5rem; }
+  :global(.json-tree-row .json-tree-toggle) { flex-shrink:0; width:1.3rem; padding:0; color:#64748b; }
+  :global(.json-tree-more) { margin:.4rem 0; color:#4f46e5; font-weight:600; }
+  :global(.dark) .json-tree-value { color:#6ee7b7; } :global(.dark) .json-tree-key { color:#7dd3fc; }
+  :global(.dark) .json-tree-children { border-color:#475569; } :global(.dark) .json-tree-value:hover { background:#334155; }
+  :global(.dark) .json-tree-more { color:#a5b4fc; }
+</style>

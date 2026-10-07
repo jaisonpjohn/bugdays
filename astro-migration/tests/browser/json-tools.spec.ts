@@ -77,6 +77,7 @@ test('formatter safely quotes arbitrary keys in jq paths and reports syntax erro
   const data = { 'content.type': 'application/json', [key]: '<script>bad</script>' };
   await page.locator('#editor').fill(JSON.stringify(data));
   await page.locator('#tree-btn').click();
+  await expect(page.locator('#tree-view')).toBeVisible();
   const paths = await page.locator('#tree-view [data-path]').evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.path));
   expect(paths).toContain('.["content.type"]');
   expect(paths).toContain(`.[${JSON.stringify(key)}]`);
@@ -127,13 +128,14 @@ test('long JSON stays vertically and horizontally scrollable in both diff editor
       editor.scrollTop = editor.scrollHeight;
       editor.scrollLeft = editor.scrollWidth;
       editor.dispatchEvent(new Event('scroll'));
-      return { scrollHeight: editor.scrollHeight, clientHeight: editor.clientHeight, scrollTop: editor.scrollTop, scrollWidth: editor.scrollWidth, clientWidth: editor.clientWidth, scrollLeft: editor.scrollLeft, codeScrollHeight: code.scrollHeight, codeOverflow: getComputedStyle(code).overflow };
+      return { scrollHeight: editor.scrollHeight, clientHeight: editor.clientHeight, scrollTop: editor.scrollTop, scrollWidth: editor.scrollWidth, clientWidth: editor.clientWidth, scrollLeft: editor.scrollLeft, codeScrollHeight: code.scrollHeight, codeOverflow: getComputedStyle(code).overflow, plain: editor.closest('[data-json-editor]')!.classList.contains('json-editor-plain'), color: getComputedStyle(editor).color };
     });
     expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
     expect(metrics.scrollTop).toBeGreaterThan(0);
     expect(metrics.scrollWidth).toBeGreaterThan(metrics.clientWidth);
     expect(metrics.scrollLeft).toBeGreaterThan(0);
-    expect(metrics.codeScrollHeight).toBeGreaterThan(metrics.clientHeight);
+    if (!metrics.plain) expect(metrics.codeScrollHeight).toBeGreaterThan(metrics.clientHeight);
+    else expect(metrics.color).not.toBe('rgba(0, 0, 0, 0)');
     expect(metrics.codeOverflow).toBe('visible');
   }
 });

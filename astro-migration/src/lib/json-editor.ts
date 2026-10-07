@@ -15,6 +15,7 @@ export interface JsonEditor {
   showError(position: number | null): void;
   clearError(): void;
   focusPosition(position: number): void;
+  destroy(): void;
 }
 
 const MAX_SEARCH_MATCHES = 500;
@@ -225,20 +226,35 @@ export function createJsonEditor(element: HTMLTextAreaElement): JsonEditor {
   let matches: number[] = [];
   let activeMatch = -1;
   let pendingRefresh = 0;
+  const lifetime = new AbortController();
+  let plain = false, lineCount = 1;
 
   function lineNumbers() {
-    const count = Math.max(1, element.value.split('\n').length);
-    gutter.textContent = Array.from({ length: count }, (_, i) => String(i + 1)).join('\n');
+    lineCount = Math.max(1, element.value.split('\n').length);
+    if (!plain) gutter.textContent = Array.from({ length: lineCount }, (_, i) => String(i + 1)).join('\n');
   }
   function syncScroll() {
+    if (plain) {
+      const lineHeight = Number.parseFloat(getComputedStyle(element).lineHeight) || 21;
+      const first = Math.max(0, Math.floor((element.scrollTop - 12) / lineHeight));
+      const count = Math.min(lineCount - first, Math.ceil(element.clientHeight / lineHeight) + 2);
+      const span = document.createElement('span');
+      span.style.display = 'block'; span.style.transform = `translateY(${first * lineHeight - element.scrollTop}px)`;
+      span.textContent = Array.from({ length: Math.max(0, count) }, (_, i) => String(first + i + 1)).join('\n');
+      gutter.replaceChildren(span); gutter.scrollTop = 0;
+      return;
+    }
     gutter.scrollTop = element.scrollTop;
     code.style.transform = `translate(${-element.scrollLeft}px, ${-element.scrollTop}px)`;
   }
   function refresh() {
     if (pendingRefresh) cancelAnimationFrame(pendingRefresh);
     pendingRefresh = 0;
+    plain = element.value.length > 200_000 || element.value.split('\n').length > 5000 || element.value.length * matches.length > 5_000_000;
+    shell.classList.toggle('json-editor-plain', plain);
     lineNumbers();
-    code.innerHTML = highlightJson(element.value, errorPosition, matches, activeMatch, query.length);
+    if (plain) code.replaceChildren();
+    else code.innerHTML = highlightJson(element.value, errorPosition, matches, activeMatch, query.length);
     syncScroll();
   }
   function focusPosition(position: number) {
@@ -248,6 +264,9 @@ export function createJsonEditor(element: HTMLTextAreaElement): JsonEditor {
     const linesBefore = element.value.slice(0, bounded).split('\n').length - 1;
     const lineHeight = Number.parseFloat(getComputedStyle(element).lineHeight) || 21;
     element.scrollTop = Math.max(0, linesBefore * lineHeight - element.clientHeight / 2);
+    const column = bounded - element.value.lastIndexOf('\n', bounded - 1) - 1;
+    const fontSize = Number.parseFloat(getComputedStyle(element).fontSize) || 13;
+    element.scrollLeft = Math.max(0, column * fontSize * .6 - element.clientWidth / 2);
     syncScroll();
   }
   element.addEventListener('input', () => {
@@ -257,8 +276,24 @@ export function createJsonEditor(element: HTMLTextAreaElement): JsonEditor {
     // A large native insertion can emit many input events. Coalesce overlay
     // painting instead of rebuilding thousands of token spans for every event.
     if (!pendingRefresh) pendingRefresh = requestAnimationFrame(refresh);
-  });
-  element.addEventListener('scroll', syncScroll);
+  }, { signal: lifetime.signal });
+  element.addEventListener('scroll', syncScroll, { signal: lifetime.signal });
+  function insertLargeText(text: string) {
+    // Native content-editing insertion can spend seconds laying out a large,
+    // multiline paste before it even emits input. Replace the selected range
+    // directly and paint the overlay only once, just as local file loading does.
+    element.setRangeText(text, element.selectionStart, element.selectionEnd, 'end');
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  element.addEventListener('paste', event => {
+    const text = event.clipboardData?.getData('text/plain');
+    if (text && text.length > 50_000) { event.preventDefault(); insertLargeText(text); }
+  }, { signal: lifetime.signal });
+  element.addEventListener('beforeinput', event => {
+    if (event.cancelable && event.data && event.data.length > 50_000 && event.inputType === 'insertText') {
+      event.preventDefault(); insertLargeText(event.data);
+    }
+  }, { signal: lifetime.signal });
   element.addEventListener('keydown', event => {
     if (event.key === 'Tab') {
       event.preventDefault();
@@ -267,7 +302,7 @@ export function createJsonEditor(element: HTMLTextAreaElement): JsonEditor {
       element.setRangeText('  ', start, end, 'end');
       element.dispatchEvent(new Event('input', { bubbles: true }));
     }
-  });
+  }, { signal: lifetime.signal });
   refresh();
   return {
     element,
@@ -280,5 +315,6 @@ export function createJsonEditor(element: HTMLTextAreaElement): JsonEditor {
     showError(position) { errorPosition = position; refresh(); },
     clearError() { errorPosition = null; refresh(); },
     focusPosition,
+    destroy() { lifetime.abort(); if (pendingRefresh) cancelAnimationFrame(pendingRefresh); },
   };
 }

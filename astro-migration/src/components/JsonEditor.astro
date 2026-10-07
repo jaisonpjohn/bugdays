@@ -45,6 +45,9 @@ const { id, label, shareKey, height = 'h-72' } = Astro.props;
   :global(.json-editor-error-eof) { display: inline-block; min-width: .75em; }
   :global(.json-editor-placeholder) { color: #94a3b8; }
   :global(.json-editor-drop-target) { outline: 3px solid rgb(99 102 241 / .6); outline-offset: -3px; }
+  :global(.json-editor-plain .json-editor-input) { color: #334155; }
+  :global(.json-editor-plain .json-editor-code) { display: none; }
+  :global(.dark .json-editor-plain .json-editor-input) { color: #e2e8f0; }
   :global(#diff-left mark.diff-focus), :global(#diff-right mark.diff-focus) { outline: 3px solid #4f46e5; outline-offset: 2px; }
   :global(.dark) .json-token-key { color: #7dd3fc; }
   :global(.dark) .json-token-string { color: #6ee7b7; }

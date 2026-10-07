@@ -24,7 +24,7 @@ export const toolGroups: ToolGroup[] = [
     icon: "star",
     alwaysOpen: true,
     items: [
-      { name: "JSON Formatter", href: "/json-formatter/", description: "Format, validate & share JSON", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq", "api response"] },
+      { name: "JSON Formatter", href: "/json-formatter/", description: "Lossless formatting, validation & sharing", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq", "json pointer", "large integer", "duplicate keys", "api response"] },
       { name: "JSON Diff", href: "/json-diff/", description: "Compare & share JSON changes", keywords: ["compare", "difference", "array order", "key order", "api response"] },
       { name: "Text Diff", href: "/text-diff/", description: "Compare two texts line by line", keywords: ["compare", "difference"] },
       { name: "Join Lines", href: "/join-lines/", description: "Join lines with a delimiter", keywords: ["merge", "concatenate", "comma"] },
@@ -40,7 +40,7 @@ export const toolGroups: ToolGroup[] = [
     href: "/json-tools/",
     icon: "braces",
     items: [
-      { name: "JSON Formatter", href: "/json-formatter/", description: "Format, validate & share JSON", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq", "api response"] },
+      { name: "JSON Formatter", href: "/json-formatter/", description: "Lossless formatting, validation & sharing", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq", "json pointer", "large integer", "duplicate keys", "api response"] },
       { name: "JSON Diff", href: "/json-diff/", description: "Compare & share JSON changes", keywords: ["compare", "difference", "array order", "key order", "api response"] },
       { name: "JSON to Code", href: "/json-to-code/", description: "Generate TypeScript, Zod & Pydantic", keywords: ["types", "interface", "schema", "python", "model", "code generator"] },
       { name: "JSON Schema Doctor", href: "/json-schema-validator/", description: "Validate schemas, locate errors & share", keywords: ["json schema validator", "draft 7", "2020-12", "structured output", "openai", "required", "additionalProperties"] },

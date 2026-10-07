@@ -1,0 +1,35 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+import { exactJsonExample, exactFormatterExample } from '../../lib/json-examples.ts';
+const guide = guideBySlug('json-large-integers-duplicate-keys');
+---
+<GuideLayout guide={guide} imageWidth={1280} imageHeight={720} keywords="JSON large integers, JSON number precision, JSON duplicate keys, JSON formatter preserve numbers, JSON.parse rounding, lossless JSON formatter">
+  <p>You copy an API response into a JSON formatter and an order ID changes by one. Or two status fields become one. Neither is a whitespace change: a parser converted the text into a different representation before printing it. Here is an example you can inspect without losing that evidence.</p>
+  <h2>Try an exact-number and duplicate-key example</h2>
+  <pre><code>{exactJsonExample}</code></pre>
+  <p><a class="json-example-primary inline-block rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white" href={exactFormatterExample}>Open the example in JSON Formatter ↗</a></p>
+  <p>The link selects four-space indentation and formats locally. The ID remains <code>9007199254740993</code>, the amount remains <code>10.50</code>, the exponent remains <code>1E2</code>, and both status entries stay visible. Notes identify one large number and one duplicate key without silently fixing either.</p>
+  <h2>Why JSON.parse can round a large integer</h2>
+  <p>A JSON number is text. JavaScript normally reads it into a binary floating-point Number, which cannot distinguish every integer beyond <code>2^53 - 1</code>. If a formatter serializes that Number, lost digits cannot be recovered.</p>
+  <pre><code>{`JSON.parse('{"orderId":9007199254740993}').orderId;
+// 9007199254740992
+JSON.stringify(JSON.parse('{"amount":10.50}'));
+// '{"amount":10.5}'`}</code></pre>
+  <p>This is a JavaScript boundary, not a 53-bit limit in JSON itself. See <a href="https://www.rfc-editor.org/rfc/rfc8259#section-6">RFC 8259’s number guidance</a> and <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER">Number.MAX_SAFE_INTEGER</a>. Decimal and exponent spellings can change even when the mathematical value does not.</p>
+  <h2>Why duplicate JSON keys disappear</h2>
+  <p>Member names should be unique for interoperable JSON. Duplicate names are nevertheless accepted by some syntax parsers. JavaScript’s ordinary object representation retains the last value; implementations can differ, as <a href="https://www.rfc-editor.org/rfc/rfc8259#section-4">RFC 8259’s object guidance</a> explains.</p>
+  <pre><code>{`JSON.parse('{"status":"queued","status":"paid"}');
+// { status: "paid" }`}</code></pre>
+  <p>The <a href="/json-formatter/">Bug Days JSON formatter</a> keeps both source entries. Tree &amp; Fold displays both and lets you copy each exact value. Both have the same jq path and JSON Pointer because those paths identify a member name, not a particular duplicate occurrence. Do not assume a downstream lookup will see both.</p>
+  <h2>Inspect the evidence without rewriting it</h2>
+  <ol><li>Paste the original response or open its UTF-8 file.</li><li>Select Validate to check syntax without changing the text.</li><li>Select Prettify or Compact. Both copy original tokens and change only whitespace outside strings.</li><li>Inspect the duplicate-key and large-number notes.</li><li>Use Tree &amp; Fold to copy values or paths; Undo restores the text before formatting.</li></ol>
+  <p>String escapes and key order remain intact too. This is not a JSON canonicalizer. If a signature covers exact bytes, retain the original body: even whitespace changes can invalidate the signature.</p>
+  <h2>Fix the producer, not just the display</h2>
+  <p>If you control an API, return long identifiers as strings when consumers need every digit. Resolve duplicate names at the producer: which status is correct is a business decision. For decimal amounts, choose a representation consumers can process exactly.</p>
+  <p>Syntax validation is not contract validation. Use <a href="/json-schema-validator/">JSON Schema Doctor</a> for required fields, types, and enums. Several documents separated by newlines belong in the <a href="/jsonl-viewer/">JSONL and NDJSON viewer</a>.</p>
+  <h2>Share a small reproducer</h2>
+  <p>Replace real identifiers and credentials with synthetic values, then select Share JSON. Embedded-data links carry the text and indentation in a URL fragment. Optional short links explicitly store the example for 30 days. Anyone with either link can read it; a teammate can inspect the same values instead of guessing from a screenshot.</p>
+  <a slot="related" href="/guides/format-validate-json-api-response/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong class="block">Format and inspect an API response</strong><span class="text-sm">Validation, paths, and command-line alternatives.</span></a>
+  <a slot="related" href="/guides/validate-json-against-schema/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong class="block">Check an API contract</strong><span class="text-sm">Find the field failing a JSON Schema rule.</span></a>
+</GuideLayout>
