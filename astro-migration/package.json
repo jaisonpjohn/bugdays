@@ -11,6 +11,7 @@
     "test:grpc-json": "node --test tests/grpc-json.test.mjs",
     "test:api-guides": "node scripts/check-api-guides.mjs",
     "test:gzip-seo": "node scripts/check-gzip-seo.mjs",
+    "test:gzip-codec": "node --test tests/gzip-codec.test.mjs",
     "test:practical-guides": "node scripts/check-practical-guides.mjs",
     "test:json-seo": "node scripts/check-json-seo.mjs",
     "test:urls": "node scripts/check-url-preservation.mjs",

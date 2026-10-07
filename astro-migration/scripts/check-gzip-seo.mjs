@@ -1,6 +1,6 @@
 // Run after npm run build with Node 22.18+ (native TS loading) and Python 3.
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { gzipSync, gunzipSync } from 'node:zlib';
 import LZString from 'lz-string';
@@ -87,4 +87,25 @@ assert.deepEqual(image, readFileSync('public/og/gzip-base64.png'), 'Build must c
 assert.equal(image.subarray(1, 4).toString(), 'PNG');
 assert.equal(image.readUInt32BE(16), 1280);
 assert.equal(image.readUInt32BE(20), 720);
+
+const toolHtml = readPage('gzip-base64');
+const toolSchemas = [...toolHtml.matchAll(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/gs)].flatMap(match => JSON.parse(match[1]));
+const faq = toolSchemas.find(schema => schema['@type'] === 'FAQPage');
+assert.equal(faq.mainEntity.length, 7, 'Shipped workflows need matching FAQ structured data');
+for (const question of faq.mainEntity) {
+  assert.ok(toolHtml.includes(question.name), `Missing visible FAQ: ${question.name}`);
+  assert.ok(toolHtml.includes(question.acceptedAnswer.text), 'FAQ answer must match visible copy');
+}
+assert.ok(toolHtml.includes('Share example'), 'Sharing must be visible in the result workflow');
+assert.ok(toolHtml.includes('Download .gz') && toolHtml.includes('Open file'), 'File workflows must be discoverable');
+assert.ok(!toolHtml.includes('not file uploads'), 'Do not retain obsolete file-support claims');
+const uiName = readdirSync('dist/_astro').find(name => name.startsWith('gzip-base64.astro_') && name.endsWith('.js'));
+const workerName = readdirSync('dist/_astro').find(name => /^gzip\.worker-.*\.js$/.test(name));
+assert.ok(uiName && workerName, 'GZip requires a separately compiled worker');
+const ui = readFileSync(`dist/_astro/${uiName}`), worker = readFileSync(`dist/_astro/${workerName}`);
+assert.ok(ui.toString().includes('new Worker('), 'Heavy processing must be deferred until conversion');
+assert.ok(!ui.toString().includes('invalid distance too far back'), 'Pako must not enter the initial UI bundle');
+assert.ok(gzipSync(ui).length < 8_000, 'Keep tool-specific initial UI under 8 KB gzip');
+assert.ok(gzipSync(worker).length < 25_000, 'Keep deferred worker under 25 KB gzip');
+console.log(`GZip bundle budgets: UI ${gzipSync(ui).length} B gzip; deferred worker ${gzipSync(worker).length} B gzip.`);
 console.log('Passed: share fixtures, published Python/Node.js recipes, UTF-8 interop, rendered examples, RSS, sitemap, and 1280×720 social image.');

@@ -19,12 +19,21 @@ const example = gzipExamples[0];
 
   <h2>Decode your own payload in the browser</h2>
   <ol>
-    <li>Copy the complete Base64 string. If it is a JSON property, copy its value, not the key, surrounding quotes, or comma.</li>
+    <li>Copy the complete Base64 string. A quoted JSON string is accepted, but the key, comma, or entire response object is not part of the encoded value.</li>
     <li>Open the decoder and replace Input with that value.</li>
     <li>Select <strong>Decode & Decompress</strong>.</li>
-    <li>Compare Output with what the producer says it sent. Use <strong>Copy Output</strong> to move JSON into the <a href="/json-formatter/">JSON formatter</a> for indentation and validation.</li>
+    <li>Compare Output with what the producer says it sent. Use <strong>Copy Output</strong>, <strong>Download output</strong>, or <strong>Inspect in JSON Formatter</strong> to continue with the <a href="/json-formatter/">JSON formatter</a>. The JSON handoff keeps the raw text for inspection rather than automatically parsing and rewriting numeric IDs or duplicate keys.</li>
   </ol>
   <p>Decompression does not guarantee JSON. The producer might have compressed XML, a log line, or another text format. The tool displays decoded text as supplied; it does not silently rename fields, reorder properties, or pretty-print the payload.</p>
+
+  <h2>Open a .gz file, Base64URL value, or hex dump</h2>
+  <p>If the evidence is a file rather than an API field, select <strong>Open file</strong> or drop a <code>.gz</code> file into the input panel. The browser reads its compressed bytes locally, displays an equivalent Base64 value, and decompresses it. No file upload or local bridge is needed. <strong>Download output</strong> saves the decompressed bytes; <strong>Download .gz</strong> saves the compressed stream.</p>
+  <p>Auto input also accepts URL-safe Base64 using <code>-</code> and <code>_</code>, omitted <code>=</code> padding, and deliberate line wrapping. For a hex dump beginning with <code>1f8b</code>, leave Auto selected; otherwise choose Hex. The tool never guesses that a space was originally a plus sign. If transport damaged a value, return to the source.</p>
+  <p>Binary or non-UTF-8 results are offered as a <code>.bin</code> download instead of being displayed with replacement characters. A <code>.tar.gz</code> becomes a tar file after GZip decompression, not an extracted folder: use an archive utility for that final step.</p>
+
+  <h2>Check the sizes before copying the result</h2>
+  <p>The result separates original bytes, compressed GZip bytes, and final Base64 size. Base64's transport overhead is not included in the GZip saving percentage. A short message can grow even when the compression is working correctly. When creating a payload, level 1 favors speed, level 6 is the balanced default, and level 9 spends more work on compression.</p>
+  <p>Conversions run in a background worker. The page accepts up to 3 MiB of encoded input, 2 MiB of compressed data or text to compress, and 8 MiB of decompressed output. It stops after 8 seconds or at the output limit, keeping no partial success. Reduce a large capture to a representative message or use the <a href="/guides/gzip-base64-python-nodejs/">local script recipes</a> for larger jobs.</p>
 
   <h2>What does the H4sI prefix tell you?</h2>
   <p>A usual GZip stream begins with the bytes <code>1f 8b 08</code>: two identifying bytes followed by the DEFLATE compression-method byte. Their Base64 representation is <code>H4sI</code>. That makes the prefix a useful clue when examining a captured string. The header layout is defined in <a href="https://www.rfc-editor.org/info/rfc1952/">RFC 1952</a>.</p>

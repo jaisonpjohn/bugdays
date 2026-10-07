@@ -4,25 +4,34 @@ import { gzipExamples } from '../lib/gzip-examples';
 import { guides } from '../lib/guides';
 
 const gzipGuides = guides.filter((guide) => guide.toolHref === '/gzip-base64/');
+const faqs = [
+  ['How do I decode a GZip Base64 string starting with H4sI?', 'Paste the complete value and choose Decode & Decompress. H4sI represents the usual GZip header bytes 1f 8b 08. The decoder checks the compressed stream and its checksum before displaying UTF-8 text. The prefix alone does not prove that a payload is complete.'],
+  ['Can I decompress a .gz file online without uploading it?', 'Yes. Open or drop a binary .gz file into the input panel. It is read locally, shown as Base64, and decompressed in a background worker. Download output preserves the decompressed bytes; Download .gz preserves the compressed stream. ZIP files are not supported.'],
+  ['Does this accept Base64URL, missing padding, line breaks and hex?', 'Yes. Auto input accepts standard Base64, Base64URL, omitted padding, whitespace wrapping, a quoted JSON string, and Base64 data URIs. Hex beginning with 1f8b is recognized automatically; choose Hex for other hex values. Transport-damaged spaces are never guessed to be plus signs.'],
+  ['What does an incorrect header or checksum error mean?', 'A header error means the decoded bytes are not valid GZip; plain Base64, zlib, ZIP and raw DEFLATE are different formats. A checksum or truncated-stream error means the complete GZip data could not be verified. Re-copy the original payload rather than trusting partial output.'],
+  ['What happens if the decompressed content is binary or not UTF-8?', 'The tool keeps the exact decompressed bytes and offers a .bin download instead of replacing invalid characters. It decompresses one GZip stream, including concatenated GZip members, but does not unpack a tar archive or interpret an image, PDF, or other binary format.'],
+  ['What are the size limits?', 'Encoded input can be up to 3 MiB; compressed bytes and UTF-8 text to compress can be up to 2 MiB. Decompressed output is capped at 8 MiB, and conversion stops after 8 seconds. These limits protect browser responsiveness. Share a smaller example under 1 MiB.'],
+  ['Is my input uploaded, and what is included in a share link?', 'Conversion and local file reading happen in your browser, without uploading the payload. Sharing includes the input, operation, and conversion settings, not a local file name. Embedded links contain the data in the URL fragment; optional stored links upload it only when you choose that method. Neither kind is encrypted: anyone with the link can read it.'],
+];
 const jsonLd = [{
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   name: 'GZip Base64 Encoder and Decoder',
   url: 'https://bugdays.com/gzip-base64/',
-  description: 'Compress text with GZip and encode it as Base64, or decode Base64 GZip payloads into readable UTF-8 text in your browser.',
+  description: 'Decode Base64 GZip, Base64URL, hex, or local .gz files. Compress UTF-8 text, inspect sizes, download exact bytes, and share reproducible examples.',
   applicationCategory: 'DeveloperApplication',
   operatingSystem: 'Any',
   browserRequirements: 'Requires JavaScript',
   isAccessibleForFree: true,
   offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
-  featureList: ['GZip compression with Base64 output', 'Base64 decoding and GZip decompression', 'UTF-8 text input and output', 'Shareable examples'],
-}];
+  featureList: ['Base64 and Base64URL GZip decoding', 'Hex and local .gz file input', 'GZip compression levels 1, 6 and 9', 'Checksum-checked bounded decompression', 'UTF-8 or exact binary output downloads', 'Shareable input and operation'],
+}, { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map(([name, text]) => ({ '@type': 'Question', name, acceptedAnswer: { '@type': 'Answer', text } })) }];
 ---
 
 <Layout
   title="GZip Base64 Encoder & Decoder Online"
-  description="Decode Base64 GZip to text or compress text to Base64 online. Inspect JSON and XML payloads in your browser, with working examples and shareable links."
-  keywords="gzip base64, base64 gzip, gzip base64 decoder, base64 gzip decompress, gzip base64 encoder, H4sI decode, gzip to text"
+  description="Decode Base64 GZip to text or JSON, open .gz files, or compress text to Base64. Free online decoder with local processing, downloads and shareable examples."
+  keywords="gzip base64, base64 gzip, gzip base64 decoder, gzip decompress online, base64 gzip to json, gzip base64 encoder, H4sI decode, gz file decoder, gzip hex"
   breadcrumb={[{ name: "Encoding Tools", href: "/encoding-tools/" }, { name: "GZip & Base64" }]}
   toolId="gzip-base64"
   jsonLd={jsonLd}
@@ -32,28 +41,55 @@ const jsonLd = [{
   imageHeight={720}
 >
   <div class="max-w-6xl mx-auto">
-    <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100 mb-2">GZip Base64 Encoder & Decoder</h1>
-    <p class="max-w-3xl text-gray-600 dark:text-slate-300 mb-3">Decode a Base64 GZip payload into readable text, or compress text with GZip and encode it as Base64. Works with UTF-8 text, including JSON and XML.</p>
-    <p class="text-xs text-gray-500 dark:text-slate-400 mb-5">Browser-based processing · No account required · Share a reproducible example</p>
+    <header class="mb-4">
+      <h1 class="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">GZip Base64 Encoder & Decoder</h1>
+      <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">Decode a payload or open a .gz file. Compress text, inspect the result, and share a working example.</p>
+      <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Local processing · No upload for conversion · No sign-up</p>
+    </header>
 
-    <div class="grid md:grid-cols-2 gap-4">
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label for="input" class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Input: text or Base64 GZip</label>
-        <textarea id="input" data-share-key="input" spellcheck="false" class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none" placeholder="Paste a Base64 GZip string (often H4sI…), or text to compress..."></textarea>
+    <div id="gzip-workspace" aria-busy="false">
+      <div class="grid md:grid-cols-2 gap-4">
+        <section id="gzip-input-panel" class="gzip-panel order-1" aria-labelledby="gzip-input-heading">
+          <div class="gzip-panel-heading">
+            <label id="gzip-input-heading" for="input">Input <span id="gzip-input-size" class="gzip-small">0 B input</span></label>
+            <label for="gzip-file" class="gzip-link cursor-pointer">Open file<input id="gzip-file" type="file" class="sr-only" accept=".gz,.gzip,.txt,.log,.json,.xml,.b64,.base64,.hex,application/gzip,text/*" /></label>
+          </div>
+          <textarea id="input" data-share-key="input" spellcheck="false" autocapitalize="off" wrap="off" placeholder="Paste Base64 GZip (H4sI…), hex, or text to compress…" class="gzip-editor"></textarea>
+          <div class="gzip-settings">
+            <label for="gzip-encoding">Decode input<select id="gzip-encoding" data-share-key="encoding"><option value="auto">Auto: Base64 / hex</option><option value="base64">Base64 / Base64URL</option><option value="hex">Hex bytes</option></select></label>
+            <label for="gzip-level">Compression<select id="gzip-level" data-share-key="level"><option value="1">Fast · level 1</option><option value="6" selected>Balanced · level 6</option><option value="9">Smallest · level 9</option></select></label>
+          </div>
+          <p class="gzip-small mt-3">Drop a .gz or UTF-8 text file here. Nothing is uploaded.</p>
+        </section>
+        <div class="order-2 md:order-3 md:col-span-2">
+          <div class="flex flex-wrap items-center gap-2">
+            <button id="decompress-btn" data-share-action="decompress" class="gzip-primary">Decode & Decompress</button>
+            <button id="compress-btn" data-share-action="compress" class="gzip-secondary">Compress (GZip + Base64)</button>
+            <button id="clear-btn" class="gzip-link px-2">Clear</button>
+            <button id="gzip-cancel" class="gzip-link px-2" hidden>Cancel</button>
+            <label class="ml-auto flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300"><input id="gzip-auto" type="checkbox" class="accent-indigo-600" /> Auto-run last operation</label>
+          </div>
+          <p id="gzip-status" role="status" aria-live="polite" class="mt-3 text-sm text-slate-600 dark:text-slate-300">Paste a payload, open a file, or try an example.</p>
+          <p id="gzip-notice" role="status" class="gzip-small mt-1 min-h-4"></p>
+          <p id="gzip-error" role="alert" class="gzip-error mt-2" hidden></p>
+        </div>
+        <section class="gzip-panel order-3 md:order-2" aria-labelledby="gzip-output-heading">
+          <div class="gzip-panel-heading">
+            <label id="gzip-output-heading" for="output">Output <span id="gzip-output-type" class="gzip-small">Result</span></label>
+            <button id="gzip-share" class="gzip-primary" disabled>Share example ↗</button>
+          </div>
+          <textarea id="output" readonly spellcheck="false" wrap="off" class="gzip-editor gzip-result" placeholder="Your result appears here…"></textarea>
+          <div class="flex flex-wrap items-center gap-2 mt-3">
+            <button id="copy-btn" class="gzip-secondary" disabled>Copy Output</button>
+            <button id="gzip-download" class="gzip-secondary" disabled>Download output</button>
+            <button id="gzip-download-gz" class="gzip-secondary" disabled>Download .gz</button>
+            <button id="gzip-use-output" class="gzip-link" disabled>Reverse conversion ↔</button>
+          </div>
+          <p class="gzip-small mt-3">Sharing includes this input and settings. Use an example you can share.</p>
+        </section>
       </div>
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label for="output" class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Output</label>
-        <textarea id="output" readonly class="w-full h-64 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none" placeholder="Result..."></textarea>
-      </div>
-    </div>
-
-    <div id="stats" role="status" aria-live="polite" class="hidden mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800"></div>
-
-    <div class="flex flex-wrap gap-3 mt-4">
-      <button id="compress-btn" data-share-action="compress" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Compress (GZip + Base64)</button>
-      <button id="decompress-btn" data-share-action="decompress" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">Decode & Decompress</button>
-      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 font-medium">Clear</button>
-      <button id="copy-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 font-medium">Copy Output</button>
+      <div id="stats" class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-3" aria-label="Conversion sizes" hidden></div>
+      <button id="gzip-next" class="gzip-link mt-3" hidden>Inspect in JSON Formatter →</button>
     </div>
 
     <section class="mt-6" aria-labelledby="examples-heading">
@@ -72,17 +108,19 @@ const jsonLd = [{
       <section>
         <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">How to decode Base64 GZip to text</h2>
         <ol class="list-decimal pl-5 space-y-1">
-          <li>Paste the encoded payload into Input. Copy the string value itself, without surrounding JSON quotes.</li>
+          <li>Paste the complete encoded value into Input, or open a local <code>.gz</code> file. A quoted JSON string is accepted; an entire JSON object is not.</li>
           <li>Select <strong>Decode & Decompress</strong>. The tool decodes Base64 into bytes, then decompresses the GZip data.</li>
-          <li>Read the UTF-8 text in Output and use <strong>Copy Output</strong>. For JSON, continue in the <a href="/json-formatter/" class="text-indigo-600 dark:text-indigo-400 underline">JSON formatter</a>; for XML, use the <a href="/xml-formatter/" class="text-indigo-600 dark:text-indigo-400 underline">XML formatter</a>.</li>
+          <li>Read the UTF-8 text, copy it, or download the exact decoded bytes. For JSON or XML, the result offers a direct handoff to the <a href="/json-formatter/" class="text-indigo-600 dark:text-indigo-400 underline">JSON formatter</a> or <a href="/xml-formatter/" class="text-indigo-600 dark:text-indigo-400 underline">XML formatter</a>.</li>
         </ol>
         <p class="mt-3">To go the other way, paste ordinary text and select <strong>Compress (GZip + Base64)</strong>. The output is a Base64 string containing compressed bytes, ready for a text field that expects this format.</p>
+        <p class="mt-3">Auto input handles standard Base64, Base64URL, line wrapping, omitted padding, Base64 data URIs, and GZip hex starting with <code>1f8b</code>. No characters inside the decoded message are rewritten. Enable <strong>Auto-run last operation</strong> for repeated edits, or use <strong>Reverse conversion</strong> to round-trip a result.</p>
       </section>
 
       <section>
         <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">GZip vs Base64: compression and encoding are different</h2>
         <p>GZip compresses bytes. Base64 represents bytes as printable characters; it does not compress or encrypt them. For the format handled here, the order is <strong>text → UTF-8 → GZip → Base64</strong>. Decoding reverses those steps. See the <a href="https://www.rfc-editor.org/info/rfc1952/" class="text-indigo-600 dark:text-indigo-400 underline">GZip format</a> and <a href="https://www.rfc-editor.org/info/rfc4648/" class="text-indigo-600 dark:text-indigo-400 underline">Base64 specification</a>.</p>
         <p class="mt-3">Base64 adds roughly one third to the compressed byte count. Small inputs may therefore produce a longer result than the original text. Check the final Base64 length when a destination has a size limit.</p>
+        <p class="mt-3">Choose level 1 for speed, level 6 for a balance, or level 9 when a smaller GZip result matters more than compression time. Compression level is a trade-off, not a promise that every input will shrink. Correct GZip producers may emit different Base64 strings for identical text because headers, metadata, or compression choices differ; compare the decoded bytes instead.</p>
       </section>
 
       <section>
@@ -105,80 +143,49 @@ const jsonLd = [{
 
       <section>
         <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-3">Common Base64 GZip questions</h2>
-        <div class="space-y-3">
-          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">Why does my encoded string start with H4sI?</summary><p class="mt-2">The usual GZip header starts with bytes <code>1f 8b 08</code>, which encode as <code>H4sI</code> in Base64. It is a useful clue, not a guarantee that the entire payload is intact. Try the <a href="/guides/decode-base64-gzip-to-json/" class="text-indigo-600 dark:text-indigo-400 underline">worked decoding example</a>.</p></details>
-          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">Why does Base64 decoding alone produce unreadable text?</summary><p class="mt-2">You may be looking at compressed bytes rather than text. If the producer used GZip, those bytes must be decompressed before being decoded as UTF-8. Ordinary uncompressed Base64 belongs in the <a href="/base64-encoder-decoder/" class="text-indigo-600 dark:text-indigo-400 underline">Base64 decoder</a>.</p></details>
-          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">Can this open ZIP files or raw .gz uploads?</summary><p class="mt-2">This page accepts text and Base64-encoded GZip, not file uploads. ZIP archives, zlib-wrapped data, and raw DEFLATE are different formats. Check the producer's format before choosing a decoder.</p></details>
-          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">What should I check when decompression fails?</summary><p class="mt-2">Check that you copied the whole payload, selected only the Base64 string, and are using GZip rather than another compression format. Follow the <a href="/guides/fix-base64-gzip-decode-errors/" class="text-indigo-600 dark:text-indigo-400 underline">padding, header, and truncation troubleshooting guide</a> to isolate the failing step.</p></details>
-        </div>
+        <div class="space-y-3">{faqs.map(([question, answer]) => (
+          <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">{question}</summary><p class="mt-2">{answer}</p></details>
+        ))}</div>
+        <p class="mt-3">Decoding plain, uncompressed text? Use the <a href="/base64-encoder-decoder/" class="text-indigo-600 dark:text-indigo-400 underline">Base64 decoder</a>. For broken compressed payloads, follow the <a href="/guides/fix-base64-gzip-decode-errors/" class="text-indigo-600 dark:text-indigo-400 underline">padding, header, checksum and truncation guide</a>.</p>
       </section>
     </div>
   </div>
 </Layout>
 
 <script>
-  import { gzip, ungzip } from 'pako';
-  import { ShareManager } from '../lib/share';
-
-  const input = document.getElementById('input') as HTMLTextAreaElement;
-  const output = document.getElementById('output') as HTMLTextAreaElement;
-  const stats = document.getElementById('stats');
-
-  // A same-page fragment navigation does not run page-load share restoration.
-  document.querySelectorAll<HTMLAnchorElement>('[data-gzip-example]').forEach(link => {
-    link.addEventListener('click', (event) => {
-      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0) return;
-      event.preventDefault();
-      input.value = link.dataset.exampleInput || '';
-      document.getElementById('decompress-btn')!.click();
-    });
-  });
-
-  document.getElementById('compress-btn').addEventListener('click', () => {
-    try {
-      const inputBytes = new TextEncoder().encode(input.value);
-      const compressed = gzip(inputBytes);
-      const base64 = btoa(String.fromCharCode.apply(null, Array.from(compressed)));
-      output.value = base64;
-      const ratio = ((1 - compressed.length / inputBytes.length) * 100).toFixed(1);
-      stats.textContent = `Original: ${inputBytes.length} bytes → Compressed: ${compressed.length} bytes (${ratio}% reduction)`;
-      stats.classList.remove('hidden');
-    } catch (e) {
-      output.value = 'Error: ' + e.message;
-      stats.classList.add('hidden');
-    }
-  });
-
-  document.getElementById('decompress-btn').addEventListener('click', () => {
-    try {
-      const binaryString = atob(input.value);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-      const decompressed = ungzip(bytes);
-      output.value = new TextDecoder().decode(decompressed);
-      stats.textContent = `Compressed: ${bytes.length} bytes → Decompressed: ${decompressed.length} bytes`;
-      stats.classList.remove('hidden');
-    } catch (e) {
-      output.value = 'Error: Invalid data';
-      stats.classList.add('hidden');
-    }
-  });
-
-  document.getElementById('clear-btn').addEventListener('click', () => {
-    input.value = '';
-    output.value = '';
-    stats.classList.add('hidden');
-  });
-
-  document.getElementById('copy-btn').addEventListener('click', () => {
-    navigator.clipboard.writeText(output.value);
-  });
-
-  ShareManager.register({
-    tool: 'gzip-base64',
-    actions: {
-      compress: () => document.getElementById('compress-btn')!.click(),
-      decompress: () => document.getElementById('decompress-btn')!.click()
-    }
-  });
+  import '../lib/gzip-ui.ts';
 </script>
+
+<style is:global>
+  #gzip-workspace .gzip-panel { min-width: 0; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: white; box-shadow: 0 1px 3px #0f172a08; }
+  #gzip-workspace .gzip-panel[data-drag] { outline: 2px solid #6366f1; outline-offset: 2px; }
+  #gzip-workspace .gzip-panel-heading { min-height: 2.6rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; font-size: .875rem; font-weight: 650; color: #0f172a; }
+  #gzip-workspace .gzip-small { font-size: .75rem; font-weight: 400; color: #64748b; }
+  #gzip-workspace label .gzip-small { display: inline-block; margin-left: .4rem; }
+  #gzip-workspace .gzip-editor { display: block; box-sizing: border-box; width: 100%; height: clamp(16rem, 34vh, 24rem); min-height: 12rem; max-height: 36rem; padding: .875rem; border: 1px solid #cbd5e1; border-radius: .625rem; background: #fff; color: #334155; font: .8125rem/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; resize: vertical; overflow: auto; tab-size: 2; }
+  #gzip-workspace .gzip-result { background: #f8fafc; }
+  #gzip-workspace .gzip-settings { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .75rem; margin-top: .875rem; }
+  #gzip-workspace .gzip-settings label { color: #64748b; font-size: .75rem; }
+  #gzip-workspace select { width: 100%; min-width: 0; margin-top: .25rem; padding: .5rem; border: 1px solid #cbd5e1; border-radius: .5rem; color: #334155; background: #f8fafc; font-size: .8125rem; }
+  #gzip-workspace .gzip-primary, #gzip-workspace .gzip-secondary { display: inline-flex; justify-content: center; align-items: center; min-height: 2.5rem; padding: .5rem .85rem; border-radius: .625rem; font-size: .8125rem; font-weight: 600; cursor: pointer; }
+  #gzip-workspace .gzip-primary { background: #4f46e5; color: #fff; border: 1px solid #4f46e5; }
+  #gzip-workspace .gzip-primary:hover { background: #4338ca; }
+  #gzip-workspace .gzip-secondary { background: #f8fafc; color: #334155; border: 1px solid #cbd5e1; }
+  #gzip-workspace .gzip-secondary:hover { background: #eef2ff; }
+  #gzip-workspace .gzip-link { color: #4f46e5; font-size: .8125rem; font-weight: 600; cursor: pointer; }
+  #gzip-workspace button:disabled { opacity: .5; cursor: not-allowed; }
+  #gzip-workspace :is(button, textarea, select, input):focus-visible, #gzip-workspace label:has(input:focus-visible) { outline: 2px solid #6366f1; outline-offset: 3px; }
+  #gzip-workspace .gzip-error { border-radius: .625rem; padding: .75rem 1rem; background: #fff1f2; color: #9f1239; border: 1px solid #fecdd3; font-size: .875rem; }
+  #gzip-workspace .gzip-stat { padding: .75rem 1rem; border: 1px solid #e2e8f0; border-radius: .75rem; background: #f8fafc; min-width: 0; }
+  #gzip-workspace .gzip-stat span { display: block; color: #64748b; font-size: .75rem; }
+  #gzip-workspace .gzip-stat strong { display: block; margin-top: .25rem; font-size: .9rem; color: #334155; }
+  #gzip-workspace [hidden] { display: none !important; }
+  .dark #gzip-workspace .gzip-panel { background: #1e293b; border-color: #334155; }
+  .dark #gzip-workspace .gzip-panel-heading { color: #f1f5f9; }
+  .dark #gzip-workspace :is(.gzip-small, .gzip-settings label, .gzip-stat span) { color: #94a3b8; }
+  .dark #gzip-workspace :is(.gzip-editor, select, .gzip-stat, .gzip-secondary) { background: #0f172a; border-color: #475569; color: #e2e8f0; }
+  .dark #gzip-workspace .gzip-stat strong { color: #e2e8f0; }
+  .dark #gzip-workspace .gzip-link { color: #a5b4fc; }
+  .dark #gzip-workspace .gzip-secondary:hover { background: #334155; }
+  .dark #gzip-workspace .gzip-error { background: #88133733; color: #fda4af; border-color: #9f1239; }
+</style>

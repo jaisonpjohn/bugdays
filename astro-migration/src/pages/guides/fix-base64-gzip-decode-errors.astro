@@ -22,7 +22,7 @@ print(raw[:3].hex(" "))  # Expected: 1f 8b 08`;
 
   <h2>1. Is the Base64 string complete and correctly copied?</h2>
   <p>Copy the field value rather than an entire JSON object. Remove surrounding quotation marks or a log prefix by selecting the original value again. If a logging system shortened the string or inserted an ellipsis, changing decoders will not restore the missing bytes.</p>
-  <p>Standard Base64 uses <code>+</code> and <code>/</code>; Base64url uses <code>-</code> and <code>_</code>. Padding conventions can also differ. Confirm the sender's format rather than guessing replacements. The two alphabets and padding rules are described in <a href="https://www.rfc-editor.org/info/rfc4648/">RFC 4648</a>.</p>
+  <p>Standard Base64 uses <code>+</code> and <code>/</code>; Base64url uses <code>-</code> and <code>_</code>. The browser decoder accepts either alphabet, omitted padding, line wrapping, a JSON-quoted string, and a Base64 data URI. It explains which wrappers it removed and rejects mixed alphabets or impossible padding instead of silently repairing damaged bytes. Confirm the sender's format rather than guessing replacements. The two alphabets and padding rules are described in <a href="https://www.rfc-editor.org/info/rfc4648/">RFC 4648</a>.</p>
   <p>A plus sign can also be damaged by transport through a form or query parameter. Compare the value before and after that boundary. Do not repair spaces into plus signs unless you have established that this was the transformation.</p>
 
   <h2>2. Do the decoded bytes actually contain GZip?</h2>
@@ -42,10 +42,15 @@ print(raw[:3].hex(" "))  # Expected: 1f 8b 08`;
   <h2>3. Does the header survive, but decompression still fail?</h2>
   <p>Check the full string length at the producer and at the decoder. Log viewers, database columns, and copy operations can truncate the end while leaving the recognizable prefix intact. Ask for a complete sample rather than repeatedly appending padding.</p>
   <p>A checksum or end-of-stream error is a reason to investigate corruption or truncation. It is not a reason to ignore the error and trust partial output. Keep the original sample unchanged while testing a copy.</p>
+  <p>The tool now distinguishes a missing trailer from a failed CRC or original-size check, and clears any previous successful output when the input changes. An error stays beside the workflow, never inside the copyable output field. You can share a small failing example with the same operation and input settings so a teammate can reproduce the failure.</p>
 
   <h2>4. Did decompression succeed, but the result looks wrong?</h2>
-  <p>Confirm the original content type and character encoding. This browser tool displays output as UTF-8 text. A compressed image or a non-UTF-8 document does not become readable JSON just because GZip decompression succeeded.</p>
+  <p>Confirm the original content type and character encoding. This browser tool displays valid UTF-8 text without rewriting it. If it contains binary controls or invalid UTF-8, the tool offers the exact decompressed bytes as a download rather than replacing characters. A compressed image or a non-UTF-8 document does not become readable JSON just because GZip decompression succeeded.</p>
   <p>If the text is readable but a JSON parser rejects it, you have reached a different problem. It might be XML, several newline-delimited JSON records, or malformed JSON from the producer. Use the appropriate parser after checking the decoded text.</p>
+
+  <h2>5. Did the browser stop at a size or time limit?</h2>
+  <p>This is a separate condition from corrupt GZip. The decoder allows 3 MiB of encoded input, 2 MiB of compressed bytes or text to compress, and 8 MiB of decompressed output. A very small compressed stream can expand past that output limit. Conversion runs off the main thread and stops after 8 seconds. No truncated preview is labeled as a successful decode or offered as complete output.</p>
+  <p>Use a smaller message for a reproducible browser example. For a large log or archive, use a local tool with explicit output limits and enough storage. A <code>.tar.gz</code> file also needs a tar extractor after decompression.</p>
 
   <h2>Turn the failure into a useful question</h2>
   <p>Include the producer's compression and encoding steps, the exact error, and a small synthetic input that reproduces it. Add a Bug Days share link alongside the input and expected output. Someone helping you can then test the same operation without reconstructing the setup.</p>
