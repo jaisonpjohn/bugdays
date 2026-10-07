@@ -440,6 +440,38 @@ test('local bridge keeps the existing HTTP proxy path and explains setup when it
   await expect(page.locator('#error-box')).toContainText('Check that it is running');
 });
 
+test('same-tab share restores clear old responses and suppress replies from an earlier pending request', async ({ page }) => {
+  let delay = false;
+  await page.route('http://localhost:4321/mock-soap', async route => {
+    if (delay) await new Promise(resolve => setTimeout(resolve, 300));
+    await route.fulfill({ body: envelope('<old>previous response</old>') }).catch(() => {});
+  });
+  await directRequest(page, envelope('<oldRequest/>'));
+  await page.locator('#send-btn').click();
+  await expect(page.locator('#response-body')).toContainText('previous response');
+  const share = '/soap-client/#lz:' + LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'soap-client', a: 'send', d: { endpoint: 'http://localhost:4321/mock-soap', version: '1.1', request: envelope('<newRequest/>') } }));
+  await page.goto(share);
+  await expect(page.locator('#request-xml')).toHaveValue(/newRequest/);
+  await expect(page.locator('#response-content')).toBeHidden();
+  await expect(page.locator('#download-response-btn')).toBeDisabled();
+  delay = true;
+  await page.locator('#send-btn').click();
+  // Changing the state hash while waiting must abort the old send, not show its reply.
+  await page.goto('/soap-client/#lz:' + LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'soap-client', d: { endpoint: 'http://localhost:4321/mock-soap', version: '1.1', request: envelope('<newerRequest/>') } })));
+  await expect(page.locator('#request-xml')).toHaveValue(/newerRequest/);
+  await expect(page.locator('#send-btn')).toBeEnabled();
+  await expect(page.locator('#response-content')).toBeHidden();
+  await expect(page.locator('#error-box')).toBeHidden();
+  await page.locator('#use-proxy').evaluate(el => el.closest('details')!.open = true);
+  await page.locator('#use-proxy').check();
+  await page.locator('#send-btn').click();
+  await expect(page.locator('#bridge-access-dialog')).toBeVisible();
+  await page.goto('/soap-client/#lz:' + LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'soap-client', d: { version: '1.1', request: envelope('<thirdRequest/>') } })));
+  await expect(page.locator('#request-xml')).toHaveValue(/thirdRequest/);
+  await expect(page.locator('#bridge-access-dialog')).toBeHidden();
+  await expect(page.locator('#send-btn')).toBeEnabled();
+});
+
 test('guide example loads without sending and the workspace survives client navigation', async ({ page }) => {
   await page.goto('/guides/test-soap-api-from-wsdl-soap-11-vs-12/');
   await page.locator('.guide-body a[href^="/soap-client/#lz:"]').click();

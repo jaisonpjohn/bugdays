@@ -399,6 +399,7 @@ const jsonLd = [
   let hasResponse = false;
   let responseView: 'body' | 'headers' = 'body';
   let requestController: AbortController | null = null;
+  let requestRevision = 0;
   let contractController: AbortController | null = null;
   let disposed = false;
   let generatedRequest = requestXmlInput.value;
@@ -655,6 +656,7 @@ const jsonLd = [
   }
 
   function applySnapshot(saved: SoapSnapshot): void {
+    resetSessionResponse();
     endpointUrlInput.value = saved.endpoint || '';
     soapVersionSelect.value = saved.version === '1.2' ? '1.2' : '1.1';
     soapActionInput.value = saved.action || '';
@@ -752,6 +754,7 @@ const jsonLd = [
     if (mode === 'basic') headers.set('Authorization', basicAuthorization(username, password));
 
     const controller = new AbortController();
+    const revision = ++requestRevision;
     requestController = controller;
     byId<HTMLButtonElement>('send-btn').disabled = true;
     byId<HTMLElement>('cancel-request-btn').classList.remove('hidden');
@@ -764,15 +767,15 @@ const jsonLd = [
 
     try {
       if (proxyEnabled && !await confirmLocalBridgeAccess(bridgeUrl)) { showToast('Request not sent.'); return; }
-      if (disposed || controller.signal.aborted) return;
+      if (disposed || controller.signal.aborted || revision !== requestRevision) return;
       let outgoingXml = requestXml;
       if (mode === 'wsse-text' || mode === 'wsse-digest') outgoingXml = await usernameTokenRequest(requestXml, username.trim(), password, mode === 'wsse-digest' ? 'digest' : 'text');
-      if (disposed || controller.signal.aborted) return;
+      if (disposed || controller.signal.aborted || revision !== requestRevision) return;
       timer = timeout > 0 ? window.setTimeout(() => { timedOut = true; controller.abort(); }, timeout) : 0;
       started = performance.now();
       const response = await fetch(target, { method: 'POST', headers, body: outgoingXml, signal: controller.signal });
       const text = await readSoapBody(response);
-      if (disposed || controller.signal.aborted) return;
+      if (disposed || controller.signal.aborted || revision !== requestRevision) return;
       lastResponseText = text;
       hasResponse = true;
       const elapsed = Math.round(performance.now() - started);
@@ -794,7 +797,7 @@ const jsonLd = [
       showResponseView('body');
       addHistory(hasSoapFault ? `SOAP Fault ${response.status}` : `HTTP ${response.status}`, elapsed, savedSnapshot);
     } catch (error) {
-      if (disposed) return;
+      if (disposed || revision !== requestRevision) return;
       responseEmpty.classList.remove('hidden');
       const cancelled = controller.signal.aborted;
       const message = cancelled
@@ -832,6 +835,14 @@ const jsonLd = [
     responseEmpty.classList.remove('hidden');
     responseContent.classList.add('hidden');
     responseButtons(false);
+  }
+
+  function resetSessionResponse(): void {
+    requestRevision++;
+    requestController?.abort();
+    if (byId<HTMLDialogElement>('bridge-access-dialog').open) byId<HTMLButtonElement>('bridge-access-cancel').click();
+    clearResponse();
+    hideError();
   }
 
   function renderResponseChecks(response: Response, inspection: ReturnType<typeof inspectSoapResponse>, expected: SoapVersion): void {
@@ -1088,6 +1099,7 @@ const jsonLd = [
       request: requestWithoutSoapHeader(requestXmlInput.value),
     }),
     customRestore: data => {
+      resetSessionResponse();
       if (typeof data.wsdl === 'string') wsdlUrlInput.value = data.wsdl;
       endpointUrlInput.value = typeof data.endpoint === 'string' ? data.endpoint : '';
       soapVersionSelect.value = data.version === '1.2' ? '1.2' : '1.1';
