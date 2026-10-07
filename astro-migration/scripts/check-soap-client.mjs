@@ -1,0 +1,31 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import { gzipSync } from 'node:zlib';
+import LZString from 'lz-string';
+
+const read = path => readFile(new URL(`../dist/${path}`, import.meta.url), 'utf8');
+const html = await read('soap-client/index.html');
+assert.match(html, /<h1[^>]*>Online SOAP Client/);
+assert.match(html, /<link rel="canonical" href="https:\/\/bugdays.com\/soap-client\/"/);
+assert.match(html, /<meta name="description" content="[^"]{100,180}"/);
+assert.match(html, /<meta property="og:image"/);
+const schema = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap(match => JSON.parse(match[1]));
+const faq = schema.find(item => item['@type'] === 'FAQPage');
+assert.equal(faq.mainEntity.length, 5);
+for (const item of faq.mainEntity) assert.ok(html.includes(item.name), `FAQ is not visible: ${item.name}`);
+for (const id of ['share-request-btn', 'soap-port', 'validate-request-btn', 'cancel-request-btn', 'soap-fault', 'raw-response-btn']) assert.ok(html.includes(`id="${id}"`));
+for (const key of ['wsdl', 'endpoint', 'version', 'soapAction', 'request']) assert.ok(html.includes(`data-share-key="${key}"`));
+const guide = await read('guides/test-soap-api-from-wsdl-soap-11-vs-12/index.html');
+const auth = await read('guides/soap-api-authentication-basic-ws-security-mtls/index.html');
+for (const page of [guide, auth]) { assert.ok(page.includes('/soap-client/')); assert.ok(page.includes('"dateModified":"2026-10-07')); }
+const match = guide.match(/href="\/soap-client\/#lz:([^"]+)"/);
+assert.ok(match, 'Guide needs a runnable synthetic share example');
+const state = JSON.parse(LZString.decompressFromEncodedURIComponent(match[1]));
+assert.equal(state.v, 1); assert.equal(state.t, 'soap-client'); assert.equal(state.d.version, '1.1');
+assert.ok(state.d.request.includes('<customerId>42</customerId>')); assert.equal(state.a, undefined);
+assert.ok(guide.includes('https://www.w3.org/TR/soap12/#soapfault'));
+const script = html.match(/src="(\/_astro\/soap-client\.[^"]+\.js)"/);
+assert.ok(script, 'SOAP page bundle missing');
+const bytes = gzipSync(await read(script[1].slice(1))).length;
+assert.ok(bytes < 20_000, `SOAP initial script exceeds 20 KB gzip: ${bytes}`);
+console.log(`SOAP SEO, visible FAQs, stable share keys, guide example, and initial bundle passed (${bytes.toLocaleString()} B gzip).`);

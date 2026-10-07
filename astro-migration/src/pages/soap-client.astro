@@ -30,6 +30,9 @@ const jsonLd = [
       'Local saved requests and opt-in history',
       'Basic authentication and custom HTTP headers',
       'Response body, headers, timing, and SOAP Fault inspection',
+      'WSDL service port and binding selection',
+      'SOAP envelope validation and cancellable requests',
+      'Shareable requests without auth fields or SOAP headers',
       'Private direct-to-endpoint requests',
     ],
   },
@@ -55,6 +58,16 @@ const jsonLd = [
       },
       {
         '@type': 'Question',
+        name: 'Can I inspect SOAP faults even when HTTP returns 200?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Yes. The response inspector detects SOAP 1.1 or 1.2 Fault elements inside the SOAP Body, independently of HTTP status, and displays the fault code, reason, subcodes, and detail XML. An HTTP 200 alone does not mean the operation succeeded.' },
+      },
+      {
+        '@type': 'Question',
+        name: 'Does Validate check my request against the full XSD schema?',
+        acceptedAnswer: { '@type': 'Answer', text: 'Validate checks well-formed XML, a supported SOAP Envelope namespace, one Body, Header placement, and agreement with the selected SOAP version. It does not validate every business field, datatype, or WS-Security policy against XSD.' },
+      },
+      {
+        '@type': 'Question',
         name: 'Why does my SOAP request show a CORS error?',
         acceptedAnswer: {
           '@type': 'Answer',
@@ -67,8 +80,8 @@ const jsonLd = [
 ---
 
 <Layout
-  title="Online SOAP Client & WSDL Tester with XSD Request Builder"
-  description="Generate SOAP 1.1/1.2 requests from WSDL and imported XSD types, test RPC or document services, add WS-Security UsernameToken, and save requests locally."
+  title="Online SOAP Client & WSDL Tester — Requests, Faults & Sharing"
+  description="Test SOAP 1.1/1.2 APIs online. Generate XML from WSDL and XSD, choose service ports, add WS-Security, inspect SOAP faults, and share requests without auth fields."
   keywords="SOAP client, WSDL tester, SOAP request builder from WSDL, XSD import SOAP, JAX-WS SOAP client, RPC SOAP tester, WS-Security UsernameToken, SOAP 1.1, SOAP 1.2"
   breadcrumb={[{ name: 'Network Tools', href: '/network-tools/' }, { name: 'SOAP Client' }]}
   toolId="soap-client"
@@ -78,42 +91,23 @@ const jsonLd = [
   imageWidth={1280}
   imageHeight={720}
 >
-  <div class="max-w-[1600px] mx-auto">
+  <div id="soap-workspace" class="max-w-[1600px] mx-auto">
     <div class="mb-4 flex flex-wrap items-start justify-between gap-4">
       <div>
         <div class="flex flex-wrap items-center gap-3 mb-1.5">
-          <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100">SOAP API Client</h1>
-          <span class="px-2 py-1 rounded-full bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 text-xs font-semibold">WSDL-aware workspace</span>
+          <h1 class="text-2xl md:text-3xl font-bold text-gray-800 dark:text-slate-100">Online SOAP Client &amp; WSDL Tester</h1>
         </div>
-        <p class="text-gray-600 dark:text-slate-300 max-w-4xl">
-          Explore a contract or send an envelope directly. Build SOAP 1.1/1.2 requests, control authentication and headers, and inspect the full response without installing a desktop client.
+        <p class="text-sm md:text-base text-gray-600 dark:text-slate-300 max-w-4xl">
+          Generate a request from WSDL or paste your own XML. Test SOAP 1.1/1.2 APIs, read fault details, and share a reproducible request.
         </p>
-      </div>
-      <div class="flex flex-wrap gap-2 text-xs">
-        <span class="px-2.5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300">SOAP 1.1 + 1.2</span>
-        <span class="px-2.5 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300">No account</span>
-        <span class="px-2.5 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300">Direct to endpoint</span>
       </div>
     </div>
 
-    <div class="mb-4 grid md:grid-cols-3 rounded-xl overflow-hidden border border-emerald-200 dark:border-emerald-900 bg-emerald-50/70 dark:bg-emerald-950/20 text-sm">
-      <div class="p-3 flex items-start gap-2.5 border-b md:border-b-0 md:border-r border-emerald-200 dark:border-emerald-900">
-        <svg class="w-5 h-5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.6-8A12 12 0 0 1 12 3 12 12 0 0 1 3.4 6 12 12 0 0 0 3 9c0 5.6 3.8 10.3 9 11.6 5.2-1.3 9-6 9-11.6a12 12 0 0 0-.4-3Z"/></svg>
-        <div><strong class="text-emerald-900 dark:text-emerald-100">Payload privacy</strong><p class="text-xs text-emerald-800 dark:text-emerald-200 mt-0.5">Requests go to the endpoint you enter—not to Bug Days.</p></div>
-      </div>
-      <div class="p-3 flex items-start gap-2.5 border-b md:border-b-0 md:border-r border-emerald-200 dark:border-emerald-900">
-        <svg class="w-5 h-5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Zm10-10V7a4 4 0 0 0-8 0v4"/></svg>
-        <div><strong class="text-emerald-900 dark:text-emerald-100">Credential handling</strong><p class="text-xs text-emerald-800 dark:text-emerald-200 mt-0.5">Auth fields stay in this tab; review the SOAP body before sharing.</p></div>
-      </div>
-      <div class="p-3 flex items-start gap-2.5">
-        <svg class="w-5 h-5 mt-0.5 shrink-0 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7Z"/></svg>
-        <div><strong class="text-emerald-900 dark:text-emerald-100">Local workspace</strong><p class="text-xs text-emerald-800 dark:text-emerald-200 mt-0.5">Save requests here; history is opt-in. Auth fields and SOAP headers are excluded.</p></div>
-      </div>
-    </div>
+    <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">No account needed. Requests go to your endpoint; auth fields and SOAP headers stay out of saves and shares.</p>
 
     <section class="mb-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
       <div class="px-4 py-3 border-b border-gray-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div class="hidden sm:block">
           <h2 class="font-semibold text-gray-800 dark:text-slate-100">Start a SOAP session</h2>
           <p class="text-xs text-gray-500 dark:text-slate-400">Use a contract for generated requests, or work directly in the editor below.</p>
         </div>
@@ -123,13 +117,13 @@ const jsonLd = [
         </div>
       </div>
 
-      <div id="wsdl-mode-panel" role="tabpanel" class="p-4">
-        <div class="flex flex-col lg:flex-row gap-2">
+      <div id="wsdl-mode-panel" role="tabpanel" class="p-3 md:p-4">
+        <div class="grid grid-cols-[minmax(0,1fr)_auto] lg:flex gap-2">
           <div class="relative flex-1 min-w-0">
             <svg class="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.8 10.2a4.5 4.5 0 0 1 0 6.4l-2 2a4.5 4.5 0 0 1-6.4-6.4l1.1-1m3.7 3.6a4.5 4.5 0 0 1 0-6.4l2-2a4.5 4.5 0 0 1 6.4 6.4l-1.1 1"/></svg>
             <input type="url" id="wsdl-url" data-share-key="wsdl" class="w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500" placeholder="https://service.example.com/api?wsdl" />
           </div>
-          <button id="parse-wsdl-btn" type="button" class="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold whitespace-nowrap">Load contract</button>
+          <button id="parse-wsdl-btn" type="button" class="px-3 md:px-5 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-semibold whitespace-nowrap">Load contract</button>
           <button id="toggle-wsdl-input" type="button" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 text-sm font-medium whitespace-nowrap">Paste / upload WSDL</button>
           <button id="load-demo-btn" type="button" class="px-3 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 text-sm font-medium whitespace-nowrap">Load demo</button>
         </div>
@@ -149,13 +143,10 @@ const jsonLd = [
         </div>
       </div>
 
-      <div id="direct-mode-panel" role="tabpanel" class="hidden p-4">
-        <div class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-indigo-200 dark:border-indigo-900 bg-indigo-50 dark:bg-indigo-950/20 p-3">
-          <div>
-            <p class="font-semibold text-indigo-900 dark:text-indigo-100">The manual request workspace is ready below.</p>
-            <p class="text-xs text-indigo-700 dark:text-indigo-300 mt-0.5">Enter an endpoint, paste an envelope, choose the SOAP version, and send. No WSDL required.</p>
-          </div>
-          <button id="focus-endpoint-btn" type="button" class="px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 text-sm font-semibold">Go to endpoint</button>
+      <div id="direct-mode-panel" role="tabpanel" class="hidden p-3">
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-300">
+          <p>No WSDL required. Paste an envelope below.</p>
+          <button id="focus-endpoint-btn" type="button" class="rounded-md px-2 py-1.5 text-indigo-600 dark:text-indigo-400 hover:underline font-semibold">Go to endpoint ↓</button>
         </div>
       </div>
 
@@ -169,15 +160,15 @@ const jsonLd = [
       </details>
     </section>
 
-    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-200 whitespace-pre-wrap" role="alert"></div>
+    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-200 whitespace-pre-wrap break-words" role="alert"></div>
     <div id="contract-warnings" class="hidden mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900 dark:bg-amber-950/20 dark:text-amber-200" role="status"></div>
     <div id="loading" class="hidden mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2" role="status">
       <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.4 0 0 5.4 0 12h4Zm2 5.3A8 8 0 0 1 4 12H0c0 3 1.1 5.8 3 7.9l3-2.6Z"></path></svg>
       <span id="loading-text">Loading…</span>
     </div>
 
-    <section id="request-section" class="grid xl:grid-cols-[240px_minmax(0,1fr)] gap-4 items-start">
-      <aside id="operations-section" class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden xl:sticky xl:top-16">
+    <section id="request-section" class="grid gap-4 items-start">
+      <aside id="operations-section" class="hidden bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden xl:sticky xl:top-16">
         <div class="px-3 py-3 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between gap-2">
           <div>
             <h2 class="text-sm font-semibold text-gray-800 dark:text-slate-100">Service navigator</h2>
@@ -192,7 +183,8 @@ const jsonLd = [
         <div class="p-2 border-b border-gray-200 dark:border-slate-700">
           <input id="operation-filter" type="search" class="w-full px-2.5 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-xs" placeholder="Filter operations…" aria-label="Filter WSDL operations" />
         </div>
-        <div id="operations-list" class="p-2 space-y-1 max-h-[620px] overflow-y-auto">
+        <label id="port-field" class="hidden block p-3 border-b border-slate-200 dark:border-slate-700 text-xs text-slate-600 dark:text-slate-300">Service port / binding<select id="soap-port" aria-label="WSDL service port" class="mt-1 w-full min-w-0 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 p-2 text-xs"></select></label>
+        <div id="operations-list" class="p-2 space-y-1 max-h-44 xl:max-h-[480px] overflow-y-auto">
           <button type="button" class="w-full text-left p-2.5 rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20">
             <span class="block text-sm font-semibold text-indigo-800 dark:text-indigo-200">Manual request</span>
             <span class="block mt-0.5 text-[11px] text-indigo-600 dark:text-indigo-400">No contract required</span>
@@ -208,19 +200,20 @@ const jsonLd = [
               <span id="session-mode-badge" class="px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Manual</span>
               <h2 id="selected-operation" class="font-semibold text-gray-800 dark:text-slate-100 truncate">New SOAP request</h2>
             </div>
-            <span id="request-security-note" class="text-[11px] text-slate-500 dark:text-slate-400">Auth fields and SOAP headers are excluded from saves and shares; review endpoint and body</span>
+            <button id="share-request-btn" type="button" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Share request ↗</button>
           </div>
 
           <div class="p-3 border-b border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-            <div class="grid lg:grid-cols-[auto_minmax(240px,1fr)_120px_108px_auto] gap-2 items-center">
-              <span class="px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold text-center">POST</span>
-              <input type="url" id="endpoint-url" data-share-key="endpoint" class="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500" placeholder="https://service.example.com/soap" aria-label="SOAP endpoint URL" />
+            <div class="grid grid-cols-2 lg:grid-cols-[auto_minmax(240px,1fr)_120px_108px_auto] gap-2 items-center">
+              <span class="hidden lg:block px-3 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-sm font-bold text-center">POST</span>
+              <input type="url" id="endpoint-url" data-share-key="endpoint" class="col-span-2 lg:col-span-1 w-full min-w-0 px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500" placeholder="https://service.example.com/soap" aria-label="SOAP endpoint URL" />
               <select id="soap-version" data-share-key="version" class="w-full px-2 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100" aria-label="SOAP version"><option value="1.1">SOAP 1.1</option><option value="1.2">SOAP 1.2</option></select>
               <select id="request-timeout" class="w-full px-2 py-2 border border-gray-300 dark:border-slate-600 rounded-lg text-sm bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100" aria-label="Request timeout"><option value="15000">15 sec</option><option value="30000" selected>30 sec</option><option value="60000">60 sec</option><option value="0">No timeout</option></select>
-              <button id="send-btn" type="button" class="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors font-semibold whitespace-nowrap inline-flex items-center justify-center gap-2">
+              <button id="send-btn" type="button" data-share-action="send" class="col-span-2 lg:col-span-1 px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors font-semibold whitespace-nowrap inline-flex items-center justify-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m5 12 14-7-4 14-3-5-7-2Z"/></svg> Send
               </button>
             </div>
+            <div class="mt-2 flex flex-wrap items-center justify-between gap-2"><span class="text-[11px] text-slate-500 dark:text-slate-400">Share the endpoint and body; auth fields and SOAP headers are excluded. Review body values first.</span><button id="cancel-request-btn" type="button" class="hidden rounded-md border border-slate-300 dark:border-slate-600 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:border-indigo-400">Cancel request</button></div>
           </div>
 
           <details id="request-options" class="border-b border-gray-200 dark:border-slate-700">
@@ -247,24 +240,27 @@ const jsonLd = [
             <section class="min-w-0 border-b lg:border-b-0 lg:border-r border-gray-200 dark:border-slate-700">
               <div class="px-3 py-2 flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700">
                 <div><h3 class="text-sm font-semibold text-gray-800 dark:text-slate-100">Request</h3><p id="request-content-type" class="text-[10px] font-mono text-slate-500 dark:text-slate-400">text/xml; charset=utf-8</p></div>
-                <div class="flex gap-1.5"><button id="format-request-btn" type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium hover:border-indigo-400">Format XML</button><button id="copy-request-btn" type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium hover:border-indigo-400">Copy</button></div>
+                <div class="flex flex-wrap gap-1.5"><button id="validate-request-btn" data-share-action="validate" type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium hover:border-indigo-400">Validate</button><button id="format-request-btn" type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium hover:border-indigo-400">Format XML</button><button id="copy-request-btn" type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium hover:border-indigo-400">Copy</button></div>
               </div>
-              <textarea id="request-xml" data-share-key="request" class="block w-full h-[460px] p-4 border-0 font-mono text-[13px] leading-5 bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100 resize-y focus:ring-2 focus:ring-inset focus:ring-indigo-500" spellcheck="false" wrap="off" aria-label="SOAP request XML">{starterEnvelope}</textarea>
+              <textarea id="request-xml" data-share-key="request" class="block w-full h-80 lg:h-[420px] p-4 border-0 font-mono text-[13px] leading-5 bg-white dark:bg-slate-950 text-gray-900 dark:text-slate-100 resize-y focus:ring-2 focus:ring-inset focus:ring-indigo-500" spellcheck="false" wrap="off" aria-label="SOAP request XML">{starterEnvelope}</textarea>
+              <div class="flex flex-wrap justify-between gap-2 border-t border-slate-200 dark:border-slate-700 px-3 py-2 text-[11px] text-slate-500 dark:text-slate-400"><span id="request-validation" role="status">Validate envelope structure and SOAP version before sending.</span><button id="regenerate-request-btn" type="button" class="hidden font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Reset to WSDL template</button></div>
             </section>
 
             <section id="response-section" class="min-w-0">
               <div class="px-3 py-2 flex flex-wrap items-center justify-between gap-2 bg-slate-50 dark:bg-slate-900/50 border-b border-gray-200 dark:border-slate-700">
                 <div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-gray-800 dark:text-slate-100">Response</h3><span id="status-badge" class="hidden px-2 py-0.5 rounded text-[11px] font-semibold"></span><span id="response-time" class="text-[11px] text-gray-500 dark:text-slate-400"></span><span id="response-size" class="text-[11px] text-gray-500 dark:text-slate-400"></span></div>
-                <div class="flex gap-1.5"><button id="format-response-btn" type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium hover:border-indigo-400">Format</button><button id="copy-response-btn" type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium hover:border-indigo-400">Copy</button><button id="download-response-btn" type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium hover:border-indigo-400">Download</button></div>
+                <div class="flex flex-wrap gap-1.5"><button id="format-response-btn" disabled type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium disabled:opacity-40 hover:border-indigo-400">Readable</button><button id="raw-response-btn" disabled type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium disabled:opacity-40 hover:border-indigo-400">Raw</button><button id="copy-response-btn" disabled type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium disabled:opacity-40 hover:border-indigo-400">Copy</button><button id="download-response-btn" disabled type="button" class="px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-medium disabled:opacity-40 hover:border-indigo-400">Download</button></div>
               </div>
-              <div id="response-empty" class="h-[460px] flex flex-col items-center justify-center p-8 text-center bg-slate-50/50 dark:bg-slate-950 text-slate-500 dark:text-slate-400">
+              <div id="response-empty" class="h-44 lg:h-[450px] flex flex-col items-center justify-center p-5 text-center bg-slate-50/50 dark:bg-slate-950 text-slate-500 dark:text-slate-400">
                 <svg class="w-11 h-11 mb-3 text-slate-300 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 9h8m-8 4h5m8-1a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
                 <p class="font-medium text-slate-600 dark:text-slate-300">Response inspector</p><p class="mt-1 text-xs max-w-xs">Status, elapsed time, payload size, body, and HTTP headers will appear here after you send.</p>
               </div>
               <div id="response-content" class="hidden">
+                <div id="response-checks" class="flex flex-wrap gap-2 border-b border-slate-200 dark:border-slate-700 px-3 py-2 text-[11px]" role="status"></div>
+                <details id="soap-fault" class="hidden border-b border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20 p-3" open><summary class="cursor-pointer text-sm font-semibold text-red-800 dark:text-red-200">SOAP fault details</summary><dl id="fault-summary" class="mt-2 space-y-2 break-words text-xs text-red-900 dark:text-red-100"></dl><pre id="fault-detail" class="mt-2 max-h-36 overflow-auto whitespace-pre-wrap break-words font-mono text-xs text-red-900 dark:text-red-100"></pre></details>
                 <div class="flex border-b border-gray-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50" role="tablist" aria-label="Response views"><button id="response-body-tab" type="button" class="response-tab px-4 py-2 text-xs font-semibold text-indigo-700 dark:text-indigo-300 border-b-2 border-indigo-600" aria-selected="true">Body</button><button id="response-headers-tab" type="button" class="response-tab px-4 py-2 text-xs font-medium text-slate-500 dark:text-slate-400 border-b-2 border-transparent" aria-selected="false">Headers</button></div>
-                <pre id="response-body" class="h-[420px] p-4 bg-white dark:bg-slate-950 font-mono text-[13px] leading-5 overflow-auto whitespace-pre-wrap break-words text-gray-900 dark:text-slate-100"></pre>
-                <pre id="response-headers" class="hidden h-[420px] p-4 bg-white dark:bg-slate-950 font-mono text-xs leading-5 overflow-auto whitespace-pre-wrap break-words text-gray-900 dark:text-slate-100"></pre>
+                <pre id="response-body" class="h-80 lg:h-[360px] p-4 bg-white dark:bg-slate-950 font-mono text-[13px] leading-5 overflow-auto whitespace-pre-wrap break-words text-gray-900 dark:text-slate-100"></pre>
+                <pre id="response-headers" class="hidden h-80 lg:h-[360px] p-4 bg-white dark:bg-slate-950 font-mono text-xs leading-5 overflow-auto whitespace-pre-wrap break-words text-gray-900 dark:text-slate-100"></pre>
               </div>
             </section>
           </div>
@@ -292,13 +288,21 @@ const jsonLd = [
         <div><h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">SOAP 1.1 versus SOAP 1.2</h3><p>SOAP 1.1 commonly sends <code class="text-xs">text/xml</code> plus a separate <code class="text-xs">SOAPAction</code> header. SOAP 1.2 uses <code class="text-xs">application/soap+xml</code> and can carry the action as a content-type parameter. Choosing the matching version avoids many otherwise opaque HTTP 415 and action-routing failures.</p></div>
       </div>
       <p class="mt-5 text-sm text-gray-600 dark:text-slate-300">Need a walkthrough? Read <a href="/guides/test-soap-api-from-wsdl-soap-11-vs-12/" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">how to test a SOAP API from WSDL and choose SOAP 1.1 or 1.2</a>, then use the <a href="/guides/soap-api-authentication-basic-ws-security-mtls/" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">SOAP authentication guide</a> to distinguish Basic auth, WS-Security, and mTLS. Useful companions include the <a href="/certificate-inspector/" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">X.509 certificate decoder</a>, <a href="/xml-formatter/" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">XML formatter</a>, and <a href="/bulk-api-invoker/" class="text-indigo-600 dark:text-indigo-400 hover:underline font-medium">CSV bulk API runner</a>.</p>
+      <div class="mt-6 grid gap-5 md:grid-cols-2 text-sm text-gray-600 dark:text-slate-300">
+        <div><h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-1">Inspect a SOAP fault, not just an HTTP status</h3><p>SOAP 1.1 faults expose <code>faultcode</code> and <code>faultstring</code>; SOAP 1.2 uses Code, nested Subcode, and multilingual Reason fields. The inspector pulls these out with the detail XML, even when the server returns HTTP 200. Response checks distinguish HTTP success, a SOAP envelope, and absence of a SOAP fault; they do not certify business success.</p></div>
+        <div><h3 class="font-semibold text-slate-900 dark:text-slate-100 mb-1">Share an editable SOAP request</h3><p>Use <strong>Share request</strong> to send a colleague your endpoint, SOAP version, action, and XML body. Auth fields, HTTP headers, and the entire SOAP Header are left out. Review body values before sharing. Opening a link restores the editor; it never sends a request automatically. Choose a self-contained URL to keep the shared state out of server storage.</p></div>
+      </div>
+      <h2 class="mt-6 mb-3 text-lg font-semibold text-slate-900 dark:text-slate-100">SOAP client questions</h2>
+      <div class="divide-y divide-slate-200 dark:divide-slate-700">
+        {jsonLd[1].mainEntity?.map(item => <details class="py-3"><summary class="cursor-pointer text-sm font-semibold text-slate-800 dark:text-slate-100">{item.name}</summary><p class="mt-2 text-sm text-slate-600 dark:text-slate-300">{item.acceptedAnswer.text}</p></details>)}
+      </div>
       <div class="mt-3 text-right"><button id="inline-feedback-btn" type="button" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">Send feedback about this SOAP client</button></div>
     </section>
 
     <LocalBridgeAccessDialog directOption="If the SOAP service allows browser requests, turn off Holy CORS and send directly." />
 
-    <div id="proxy-modal" class="hidden fixed inset-0 bg-black/55 items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="proxy-modal-title">
-      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-xl w-full p-6">
+    <dialog id="proxy-modal" class="m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-xl overflow-auto rounded-xl bg-white dark:bg-slate-800 shadow-xl backdrop:bg-black/55" aria-labelledby="proxy-modal-title">
+      <div class="p-5">
         <div class="flex items-start justify-between gap-4 mb-4"><div><h3 id="proxy-modal-title" class="text-lg font-semibold text-gray-800 dark:text-slate-100">Connect through Holy CORS</h3><p class="text-sm text-gray-500 dark:text-slate-400 mt-1">If a SOAP service blocks browser requests, start this small local bridge and try again.</p></div><button id="close-proxy-modal-btn" type="button" class="p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500" aria-label="Close">✕</button></div>
         <div class="space-y-4 text-sm text-gray-600 dark:text-slate-300">
           <p class="font-medium text-gray-800 dark:text-slate-100">1. Start Holy CORS:</p>
@@ -313,9 +317,9 @@ const jsonLd = [
           <p class="text-xs text-gray-500 dark:text-slate-400">Want the details? <a href="https://github.com/bugdays-com/holy-cors" target="_blank" rel="noopener" class="text-indigo-600 dark:text-indigo-400 hover:underline">View Holy CORS on GitHub</a>.</p>
         </div>
       </div>
-    </div>
+    </dialog>
 
-    <div id="soap-toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-lg bg-slate-900 text-white shadow-xl text-sm" role="status" aria-live="polite"></div>
+    <div id="soap-toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 w-max max-w-[calc(100%-2rem)] px-4 py-2.5 rounded-lg bg-slate-900 text-white shadow-xl text-sm" role="status" aria-live="polite"></div>
   </div>
 </Layout>
 
@@ -330,8 +334,14 @@ const jsonLd = [
   import { track } from '../lib/analytics.ts';
   import { ShareManager } from '../lib/share.ts';
   import { createLocalBridgeAccessGuard } from '../lib/local-bridge-access.ts';
-  import { parseSoapContract, generateSoapRequest, type SoapContract, type SoapOperation, type LocalSoapDocument } from '../lib/soap-wsdl.ts';
+  import { parseSoapContract, selectSoapPort, generateSoapRequest, type SoapContract, type LocalSoapDocument } from '../lib/soap-wsdl.ts';
   import { usernameTokenRequest, requestWithoutSoapHeader } from '../lib/soap-security.ts';
+  import { changeSoapVersion, soapEnvelope, readableSoapXml, inspectSoapResponse, readSoapBody, type SoapVersion } from '../lib/soap-messages.ts';
+
+  function initSoapClient(): void {
+  const workspace = document.getElementById('soap-workspace');
+  if (!workspace || workspace.dataset.init) return;
+  workspace.dataset.init = 'true';
 
   const DEMO_WSDL = `<?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="https://example.com/customer" xmlns:xsd="http://www.w3.org/2001/XMLSchema" targetNamespace="https://example.com/customer" name="CustomerDirectory">
@@ -374,7 +384,7 @@ const jsonLd = [
   const loadingText = byId<HTMLElement>('loading-text');
   const useProxyCheckbox = byId<HTMLInputElement>('use-proxy');
   const proxyUrlInput = byId<HTMLInputElement>('proxy-url');
-  const proxyModal = byId<HTMLElement>('proxy-modal');
+  const proxyModal = byId<HTMLDialogElement>('proxy-modal');
   const confirmLocalBridgeAccess = createLocalBridgeAccessGuard();
   const authType = byId<HTMLSelectElement>('auth-type');
   const authUsername = byId<HTMLInputElement>('auth-username');
@@ -386,15 +396,16 @@ const jsonLd = [
   let parsedWsdl: SoapContract | null = null;
   let selectedOperation = '';
   let lastResponseText = '';
+  let hasResponse = false;
+  let responseView: 'body' | 'headers' = 'body';
+  let requestController: AbortController | null = null;
+  let contractController: AbortController | null = null;
+  let disposed = false;
+  let generatedRequest = requestXmlInput.value;
   let toastTimer = 0;
   let localSchemas: LocalSoapDocument[] = [];
   const SAVED_KEY = 'bugdays-soap-saved-v1';
   const HISTORY_KEY = 'bugdays-soap-history-v1';
-
-  function elementsByLocalName(root: Document | Element, name: string): Element[] {
-    return Array.from(root.getElementsByTagNameNS('*', name));
-  }
-
 
   function setMode(mode: 'wsdl' | 'direct'): void {
     const wsdl = mode === 'wsdl';
@@ -405,10 +416,13 @@ const jsonLd = [
     wsdlModeTab.className = `mode-tab px-3 py-1.5 rounded-md text-sm ${wsdl ? 'bg-white dark:bg-slate-700 shadow-sm font-semibold text-indigo-700 dark:text-indigo-300' : 'font-medium text-slate-600 dark:text-slate-300'}`;
     directModeTab.className = `mode-tab px-3 py-1.5 rounded-md text-sm ${!wsdl ? 'bg-white dark:bg-slate-700 shadow-sm font-semibold text-indigo-700 dark:text-indigo-300' : 'font-medium text-slate-600 dark:text-slate-300'}`;
     if (!wsdl) setManualSession(false);
+    byId<HTMLElement>('operations-section').classList.toggle('hidden', !wsdl || !parsedWsdl);
+    byId<HTMLElement>('request-section').classList.toggle('xl:grid-cols-[240px_minmax(0,1fr)]', wsdl && !!parsedWsdl);
   }
 
   function setManualSession(focusEndpoint = true): void {
     selectedOperation = '';
+    byId<HTMLElement>('regenerate-request-btn').classList.add('hidden');
     selectedOperationEl.textContent = 'New SOAP request';
     byId<HTMLElement>('session-mode-badge').textContent = 'Manual';
     byId<HTMLElement>('session-mode-badge').className = 'px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-700 text-[11px] font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300';
@@ -447,6 +461,7 @@ const jsonLd = [
     let url: URL;
     try { url = new URL(value); } catch { throw new Error(`${label} must be a complete http:// or https:// URL.`); }
     if (!['http:', 'https:'].includes(url.protocol)) throw new Error(`${label} must use http:// or https://.`);
+    if (url.username || url.password) throw new Error(`${label} must not include user:password. Use the authentication fields instead.`);
     return url;
   }
 
@@ -483,7 +498,11 @@ const jsonLd = [
     }
   }
 
-  async function parseWsdlXml(xml: string, sourceLabel = 'WSDL', baseUrl?: string): Promise<void> {
+  async function parseWsdlXml(xml: string, sourceLabel = 'WSDL', baseUrl?: string, existingController?: AbortController): Promise<void> {
+    if (!existingController) contractController?.abort();
+    const controller = existingController || new AbortController();
+    contractController = controller;
+    const timer = window.setTimeout(() => controller.abort(), 30_000);
     showLoading('Reading WSDL and linked schemas…');
     hideError();
     try {
@@ -493,14 +512,27 @@ const jsonLd = [
         localDocuments: collectedSchemas(),
         fetchText: async url => {
           if (useProxyCheckbox.checked && !await confirmLocalBridgeAccess(proxyUrlInput.value)) throw new Error('Local bridge access was not approved.');
-          const response = await fetch(requestUrl(url));
+          const response = await fetch(requestUrl(url), { signal: controller.signal });
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const content = await response.text();
+          const content = await readSoapBody(response);
           if (content.length > 5 * 1024 * 1024) throw new Error('XSD is larger than 5 MB.');
           return content;
         },
       });
+      if (disposed || controller !== contractController) return;
+      if (controller.signal.aborted) throw new Error('Contract loading was cancelled or timed out. Try local WSDL/XSD files.');
+      if (generatedRequest && requestXmlInput.value !== generatedRequest && !window.confirm('Load this contract and replace your edited request with its WSDL template?')) return;
+      generatedRequest = '';
       parsedWsdl = contract;
+      setMode('wsdl');
+      const portSelect = byId<HTMLSelectElement>('soap-port');
+      portSelect.replaceChildren(...contract.ports.map(port => {
+        const option = document.createElement('option'); option.value = port.id;
+        option.textContent = `${port.service} / ${port.name} · SOAP ${port.version}`;
+        return option;
+      }));
+      portSelect.value = contract.selectedPort;
+      byId<HTMLElement>('port-field').classList.toggle('hidden', !contract.ports.length);
       displayOperations();
       byId<HTMLElement>('contract-summary').classList.remove('hidden');
       byId<HTMLElement>('service-name').textContent = contract.serviceName;
@@ -518,8 +550,11 @@ const jsonLd = [
       }
       renderContractWarnings();
     } catch (error) {
-      showError(`Could not parse ${sourceLabel}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally { hideLoading(); }
+      if (!disposed && controller === contractController) showError(`Could not parse ${sourceLabel}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      window.clearTimeout(timer);
+      if (!disposed && controller === contractController) { contractController = null; hideLoading(); }
+    }
   }
 
   function displayOperations(): void {
@@ -553,6 +588,7 @@ const jsonLd = [
   function selectOperation(name: string): void {
     const operation = parsedWsdl?.operations.find(candidate => candidate.name === name);
     if (!operation || !parsedWsdl) return;
+    if (generatedRequest && requestXmlInput.value !== generatedRequest && !window.confirm('Replace your edited request with this WSDL template?')) return;
     selectedOperation = name;
     selectedOperationEl.textContent = operation.name;
     const badge = byId<HTMLElement>('session-mode-badge');
@@ -562,27 +598,19 @@ const jsonLd = [
     soapActionInput.value = operation.soapAction;
     const generated = generateSoapRequest(parsedWsdl, operation, soapVersionSelect.value as '1.1' | '1.2');
     requestXmlInput.value = generated.xml;
+    generatedRequest = generated.xml;
+    byId<HTMLElement>('regenerate-request-btn').classList.remove('hidden');
+    byId<HTMLElement>('request-validation').textContent = 'Template ready. Fill in the operation parameters, then validate or send.';
     renderContractWarnings(generated.warnings);
     displayOperations();
   }
 
   function formatXml(xml: string): string {
-    if (!xml.trim()) return xml;
-    const doc = new DOMParser().parseFromString(xml, 'text/xml');
-    if (doc.querySelector('parsererror')) throw new Error('The XML is not well formed.');
-    const serialized = new XMLSerializer().serializeToString(doc).replace(/></g, '>\n<');
-    let indent = 0;
-    return serialized.split('\n').map(rawLine => {
-      const line = rawLine.trim();
-      if (/^<\//.test(line)) indent = Math.max(0, indent - 1);
-      const output = `${'  '.repeat(indent)}${line}`;
-      if (/^<[^!?/][^>]*[^/]>$/.test(line) && !/<\/[^>]+>$/.test(line)) indent++;
-      return output;
-    }).join('\n');
+    return readableSoapXml(xml);
   }
 
-  function parseCustomHeaders(value: string): Record<string, string> {
-    const headers: Record<string, string> = {};
+  function parseCustomHeaders(value: string): Headers {
+    const headers = new Headers();
     value.split('\n').forEach((line, index) => {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('#')) return;
@@ -591,7 +619,7 @@ const jsonLd = [
       const name = trimmed.slice(0, separator).trim();
       const headerValue = trimmed.slice(separator + 1).trim();
       if (!/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name)) throw new Error(`Header line ${index + 1} has an invalid name.`);
-      headers[name] = headerValue;
+      headers.set(name, headerValue);
     });
     return headers;
   }
@@ -634,6 +662,7 @@ const jsonLd = [
     authType.value = ['basic', 'wsse-text', 'wsse-digest'].includes(saved.authMode) ? saved.authMode : 'none';
     authUsername.value = '';
     authPassword.value = '';
+    customHeadersInput.value = '';
     authType.dispatchEvent(new Event('change'));
     setMode('direct');
     updateContentType();
@@ -670,9 +699,8 @@ const jsonLd = [
     }
   }
 
-  function addHistory(status: string, elapsed: number): void {
+  function addHistory(status: string, elapsed: number, current: SoapSnapshot): void {
     if (!byId<HTMLInputElement>('save-history').checked) return;
-    const current = snapshot();
     if (!current.request || current.request.length > 100_000) { showToast('History skipped: request is invalid or too large to store locally.', true); return; }
     const items = getStored(HISTORY_KEY);
     items.unshift({ at: new Date().toISOString(), status, elapsed, snapshot: current });
@@ -682,22 +710,26 @@ const jsonLd = [
   function updateContentType(): void {
     const action = soapActionInput.value.trim();
     const contentType = soapVersionSelect.value === '1.2'
-      ? `application/soap+xml; charset=utf-8${action ? '; action="' + action.replaceAll('"', '\\"') + '"' : ''}`
+      ? `application/soap+xml; charset=utf-8${action ? '; action="' + quotedAction(action) + '"' : ''}`
       : 'text/xml; charset=utf-8';
     byId<HTMLElement>('request-content-type').textContent = contentType;
   }
 
+  function quotedAction(value: string): string { return value.replaceAll('\\', '\\\\').replaceAll('"', '\\"'); }
+
   async function sendRequest(): Promise<void> {
+    if (requestController) return;
     hideError();
     const endpoint = endpointUrlInput.value.trim();
     const requestXml = requestXmlInput.value.trim();
     if (!endpoint) { showError('Enter the SOAP endpoint URL before sending.'); endpointUrlInput.focus(); return; }
     if (!requestXml) { showError('Enter a SOAP XML envelope before sending.'); requestXmlInput.focus(); return; }
 
-    try { formatXml(requestXml); } catch (error) { showError(error instanceof Error ? error.message : 'The request XML is invalid.'); return; }
+    const version = soapVersionSelect.value as SoapVersion;
+    try { soapEnvelope(requestXml, version); } catch (error) { showError(error instanceof Error ? error.message : 'The request XML is invalid.'); return; }
 
     let target: string;
-    let headers: Record<string, string>;
+    let headers: Headers;
     try {
       target = requestUrl(endpoint);
       headers = parseCustomHeaders(customHeadersInput.value);
@@ -706,66 +738,136 @@ const jsonLd = [
       return;
     }
 
-    if (useProxyCheckbox.checked && !await confirmLocalBridgeAccess(proxyUrlInput.value)) return;
-
-    let outgoingXml = requestXml;
-    if (authType.value === 'wsse-text' || authType.value === 'wsse-digest') {
-      try { outgoingXml = await usernameTokenRequest(requestXml, authUsername.value.trim(), authPassword.value, authType.value === 'wsse-digest' ? 'digest' : 'text'); }
-      catch (error) { showError(error instanceof Error ? error.message : 'Could not add the UsernameToken.'); return; }
-    }
-
-    const version = soapVersionSelect.value;
+    const savedSnapshot = snapshot();
+    const mode = authType.value;
+    const username = authUsername.value, password = authPassword.value;
+    const proxyEnabled = useProxyCheckbox.checked, bridgeUrl = proxyUrlInput.value;
     const soapAction = soapActionInput.value.trim();
-    headers['Content-Type'] = version === '1.2'
-      ? `application/soap+xml; charset=utf-8${soapAction ? `; action="${soapAction.replaceAll('"', '\\"')}"` : ''}`
-      : 'text/xml; charset=utf-8';
-    if (version === '1.1' && soapAction) headers.SOAPAction = `"${soapAction}"`;
-    if (authType.value === 'basic') headers.Authorization = basicAuthorization(authUsername.value, authPassword.value);
+    if (/[\x00-\x1f\x7f]|[^\x00-\xff]/.test(soapAction)) { showError('SOAPAction must be a single HTTP header value. Percent-encode non-ASCII URI characters.'); return; }
+    headers.set('Content-Type', version === '1.2'
+      ? `application/soap+xml; charset=utf-8${soapAction ? `; action="${quotedAction(soapAction)}"` : ''}`
+      : 'text/xml; charset=utf-8');
+    headers.delete('SOAPAction');
+    if (version === '1.1' && soapAction) headers.set('SOAPAction', `"${quotedAction(soapAction)}"`);
+    if (mode === 'basic') headers.set('Authorization', basicAuthorization(username, password));
 
-    showLoading('Sending SOAP request…');
-    responseEmpty.classList.add('hidden');
-    responseContent.classList.add('hidden');
-    statusBadge.classList.add('hidden');
     const controller = new AbortController();
+    requestController = controller;
+    byId<HTMLButtonElement>('send-btn').disabled = true;
+    byId<HTMLElement>('cancel-request-btn').classList.remove('hidden');
+    clearResponse();
+    showLoading('Sending SOAP request…');
     const timeout = Number(timeoutSelect.value);
-    const timer = timeout > 0 ? window.setTimeout(() => controller.abort(), timeout) : 0;
-    const started = performance.now();
+    let timedOut = false;
+    let timer = 0;
+    let started = performance.now();
 
     try {
+      if (proxyEnabled && !await confirmLocalBridgeAccess(bridgeUrl)) { showToast('Request not sent.'); return; }
+      if (disposed || controller.signal.aborted) return;
+      let outgoingXml = requestXml;
+      if (mode === 'wsse-text' || mode === 'wsse-digest') outgoingXml = await usernameTokenRequest(requestXml, username.trim(), password, mode === 'wsse-digest' ? 'digest' : 'text');
+      if (disposed || controller.signal.aborted) return;
+      timer = timeout > 0 ? window.setTimeout(() => { timedOut = true; controller.abort(); }, timeout) : 0;
+      started = performance.now();
       const response = await fetch(target, { method: 'POST', headers, body: outgoingXml, signal: controller.signal });
+      const text = await readSoapBody(response);
+      if (disposed || controller.signal.aborted) return;
+      lastResponseText = text;
+      hasResponse = true;
       const elapsed = Math.round(performance.now() - started);
-      lastResponseText = await response.text();
       let formattedResponse = lastResponseText;
-      try { formattedResponse = formatXml(lastResponseText); } catch { /* Preserve non-XML error bodies. */ }
+      if (lastResponseText.length <= 1_000_000) try { formattedResponse = formatXml(lastResponseText); } catch { /* Preserve non-XML error bodies. */ }
       responseBody.textContent = formattedResponse;
       responseHeaders.textContent = [...response.headers.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, value]) => `${name}: ${value}`).join('\n') || '(No response headers exposed by CORS)';
       responseTime.textContent = `${elapsed.toLocaleString()} ms`;
       responseSize.textContent = `${new TextEncoder().encode(lastResponseText).length.toLocaleString()} bytes`;
 
-      const responseXml = new DOMParser().parseFromString(lastResponseText, 'text/xml');
-      const hasSoapFault = !responseXml.querySelector('parsererror') && elementsByLocalName(responseXml, 'Fault').length > 0;
+      const inspection = inspectSoapResponse(lastResponseText);
+      const hasSoapFault = !!inspection.fault;
+      renderResponseChecks(response, inspection, version);
       statusBadge.textContent = hasSoapFault ? `SOAP Fault · ${response.status}` : `${response.status} ${response.statusText}`;
       statusBadge.className = `px-2 py-0.5 rounded text-[11px] font-semibold ${hasSoapFault || !response.ok ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'}`;
       responseContent.classList.remove('hidden');
+      responseEmpty.classList.add('hidden');
+      responseButtons(true);
       showResponseView('body');
-      addHistory(hasSoapFault ? `SOAP Fault ${response.status}` : `HTTP ${response.status}`, elapsed);
+      addHistory(hasSoapFault ? `SOAP Fault ${response.status}` : `HTTP ${response.status}`, elapsed, savedSnapshot);
     } catch (error) {
+      if (disposed) return;
       responseEmpty.classList.remove('hidden');
-      const message = error instanceof DOMException && error.name === 'AbortError'
-        ? `Request timed out after ${timeout / 1000} seconds.`
+      const cancelled = controller.signal.aborted;
+      const message = cancelled
+        ? timedOut ? `Request timed out after ${timeout / 1000} seconds.` : 'Request cancelled. No retry was sent.'
         : error instanceof Error ? error.message : 'Unknown network error';
-      const corsHelp = !useProxyCheckbox.checked
+      const corsHelp = cancelled || !(error instanceof TypeError) ? '' : !proxyEnabled
         ? '\n\nIf the endpoint works in a desktop client, its CORS policy may be blocking browsers. Open “Browser blocked by CORS?” above to configure the optional local bridge.'
-        : `\n\nThe local Holy CORS bridge is enabled. Check that it is running at ${proxyUrlInput.value.trim()}, the endpoint is correct, and your browser allows local access for bugdays.com.`;
+        : `\n\nThe local Holy CORS bridge is enabled. Check that it is running at ${bridgeUrl.trim()}, the endpoint is correct, and your browser allows local access for bugdays.com.`;
       showError(`Request failed: ${message}${corsHelp}`);
-      addHistory('Network error', Math.round(performance.now() - started));
+      addHistory(cancelled ? timedOut ? 'Timed out' : 'Cancelled' : 'Request error', Math.round(performance.now() - started), savedSnapshot);
     } finally {
       if (timer) window.clearTimeout(timer);
-      hideLoading();
+      requestController = null;
+      if (!disposed) {
+        byId<HTMLButtonElement>('send-btn').disabled = false;
+        byId<HTMLElement>('cancel-request-btn').classList.add('hidden');
+        hideLoading();
+      }
     }
   }
 
+  function responseButtons(enabled: boolean): void {
+    for (const id of ['format-response-btn', 'raw-response-btn', 'copy-response-btn', 'download-response-btn']) byId<HTMLButtonElement>(id).disabled = !enabled;
+  }
+
+  function clearResponse(): void {
+    hasResponse = false;
+    lastResponseText = '';
+    responseBody.textContent = '';
+    responseHeaders.textContent = '';
+    responseTime.textContent = '';
+    responseSize.textContent = '';
+    statusBadge.classList.add('hidden');
+    byId<HTMLElement>('soap-fault').classList.add('hidden');
+    responseEmpty.classList.remove('hidden');
+    responseContent.classList.add('hidden');
+    responseButtons(false);
+  }
+
+  function renderResponseChecks(response: Response, inspection: ReturnType<typeof inspectSoapResponse>, expected: SoapVersion): void {
+    const checks = byId<HTMLElement>('response-checks');
+    checks.replaceChildren();
+    const entries: [boolean, string][] = [
+      [response.ok, `HTTP ${response.status}`],
+      [!!inspection.version, inspection.version ? `SOAP ${inspection.version}` : 'Not SOAP'],
+      ...(inspection.version ? [[!inspection.fault, inspection.fault ? 'Fault returned' : 'No SOAP fault'] as [boolean, string]] : []),
+      ...(inspection.version && inspection.version !== expected ? [[false, `Expected SOAP ${expected}`] as [boolean, string]] : []),
+    ];
+    for (const [pass, label] of entries) {
+      const badge = document.createElement('span');
+      badge.className = pass ? 'rounded bg-emerald-50 px-2 py-1 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' : 'rounded bg-amber-50 px-2 py-1 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300';
+      badge.textContent = `${pass ? '✓' : '!'} ${label}`;
+      checks.append(badge);
+    }
+    const faultPanel = byId<HTMLDetailsElement>('soap-fault');
+    faultPanel.classList.toggle('hidden', !inspection.fault);
+    if (!inspection.fault) return;
+    faultPanel.open = true;
+    const fault = inspection.fault;
+    const summary = byId<HTMLElement>('fault-summary');
+    summary.replaceChildren();
+    for (const [label, value] of [['Code', fault.code || 'Not supplied'], ['Subcodes', fault.subcodes.join(' → ')], ['Reason', fault.reasons.join('\n')], ['Node / actor / role', fault.actor]]) {
+      if (!value) continue;
+      const row = document.createElement('div'), term = document.createElement('dt'), description = document.createElement('dd');
+      term.className = 'font-semibold'; term.textContent = label;
+      description.className = 'mt-0.5 whitespace-pre-wrap'; description.textContent = value;
+      row.append(term, description); summary.append(row);
+    }
+    byId<HTMLElement>('fault-detail').textContent = fault.detail;
+  }
+
   function showResponseView(view: 'body' | 'headers'): void {
+    responseView = view;
     const body = view === 'body';
     responseBody.classList.toggle('hidden', !body);
     responseHeaders.classList.toggle('hidden', body);
@@ -816,19 +918,28 @@ const jsonLd = [
     let url: string;
     try { url = requestUrl(validateHttpUrl(value, 'WSDL URL').toString()); } catch (error) { showError(error instanceof Error ? error.message : 'Invalid WSDL URL.'); return; }
     if (useProxyCheckbox.checked && !await confirmLocalBridgeAccess(proxyUrlInput.value)) return;
+    contractController?.abort();
+    const controller = new AbortController();
+    contractController = controller;
+    const timer = window.setTimeout(() => controller.abort(), 30_000);
     showLoading('Fetching WSDL contract…');
     hideError();
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: controller.signal });
       if (!response.ok) throw new Error(`HTTP ${response.status} ${response.statusText}`);
-      await parseWsdlXml(await response.text(), 'WSDL', value);
+      const xml = await readSoapBody(response);
+      if (!disposed && contractController === controller && !controller.signal.aborted) await parseWsdlXml(xml, 'WSDL', value, controller);
     } catch (error) {
+      if (disposed || contractController !== controller) return;
       const message = error instanceof Error ? error.message : 'Unknown network error';
       const help = useProxyCheckbox.checked
         ? `The local Holy CORS bridge is enabled. Check that it is running at ${proxyUrlInput.value.trim()}, the WSDL URL is correct, and your browser allows local access for bugdays.com.`
         : 'The service may block cross-origin requests. Paste the WSDL XML or enable the optional local Holy CORS bridge.';
       showError(`Could not fetch WSDL: ${message}\n\n${help}`);
-    } finally { hideLoading(); }
+    } finally {
+      window.clearTimeout(timer);
+      if (!disposed && contractController === controller) { contractController = null; hideLoading(); }
+    }
   });
 
   parseXmlBtn.addEventListener('click', () => {
@@ -845,6 +956,7 @@ const jsonLd = [
       return;
     }
     const documents = await Promise.all(files.map(async file => ({ name: file.webkitRelativePath || file.name, xml: await file.text() })));
+    if (disposed) return;
     const wsdl = documents.find(item => item.name.toLowerCase().endsWith('.wsdl')) || documents.find(item => new DOMParser().parseFromString(item.xml, 'text/xml').documentElement.localName === 'definitions');
     wsdlFileInput.value = '';
     if (!wsdl) { localSchemas.push(...documents); byId<HTMLElement>('local-schema-count').textContent = `${localSchemas.length} XSD file${localSchemas.length === 1 ? '' : 's'} ready`; showToast('XSD files added. Paste or open the WSDL, then load the contract.'); return; }
@@ -855,9 +967,8 @@ const jsonLd = [
   });
 
   useProxyCheckbox.addEventListener('change', () => { proxyUrlInput.disabled = !useProxyCheckbox.checked; });
-  byId<HTMLButtonElement>('proxy-info-btn').addEventListener('click', () => { proxyModal.classList.remove('hidden'); proxyModal.classList.add('flex'); });
-  byId<HTMLButtonElement>('close-proxy-modal-btn').addEventListener('click', () => { proxyModal.classList.add('hidden'); proxyModal.classList.remove('flex'); });
-  proxyModal.addEventListener('click', event => { if (event.target === proxyModal) { proxyModal.classList.add('hidden'); proxyModal.classList.remove('flex'); } });
+  byId<HTMLButtonElement>('proxy-info-btn').addEventListener('click', () => proxyModal.showModal());
+  byId<HTMLButtonElement>('close-proxy-modal-btn').addEventListener('click', () => proxyModal.close());
 
   authType.addEventListener('change', () => {
     const mode = authType.value;
@@ -871,27 +982,59 @@ const jsonLd = [
   soapActionInput.addEventListener('input', updateContentType);
   soapVersionSelect.addEventListener('change', () => {
     updateContentType();
-    if (selectedOperation && parsedWsdl) {
-      const operation = parsedWsdl.operations.find(candidate => candidate.name === selectedOperation);
-      if (operation) {
-        const generated = generateSoapRequest(parsedWsdl, operation, soapVersionSelect.value as '1.1' | '1.2');
-        requestXmlInput.value = generated.xml;
-        renderContractWarnings(generated.warnings);
-      }
-    } else {
-      requestXmlInput.value = soapVersionSelect.value === '1.2'
-        ? requestXmlInput.value.replaceAll('soap:', 'soap12:').replaceAll('xmlns:soap=', 'xmlns:soap12=').replace('http://schemas.xmlsoap.org/soap/envelope/', 'http://www.w3.org/2003/05/soap-envelope')
-        : requestXmlInput.value.replaceAll('soap12:', 'soap:').replaceAll('xmlns:soap12=', 'xmlns:soap=').replace('http://www.w3.org/2003/05/soap-envelope', 'http://schemas.xmlsoap.org/soap/envelope/');
-    }
+    const version = soapVersionSelect.value as SoapVersion;
+    try {
+      const untouched = requestXmlInput.value === generatedRequest;
+      requestXmlInput.value = changeSoapVersion(requestXmlInput.value, version);
+      if (untouched) generatedRequest = requestXmlInput.value;
+      byId<HTMLElement>('request-validation').textContent = `SOAP ${version} envelope. Your parameter values are preserved; check the service port and security policy.`;
+      hideError();
+    } catch (error) { showError(error instanceof Error ? error.message : 'Could not change the envelope version.'); }
   });
+
+  byId<HTMLSelectElement>('soap-port').addEventListener('change', event => {
+    if (!parsedWsdl) return;
+    const select = event.target as HTMLSelectElement;
+    if (generatedRequest && requestXmlInput.value !== generatedRequest && !window.confirm('Switch service port and replace your edited request with its WSDL template?')) { select.value = parsedWsdl.selectedPort; return; }
+    selectSoapPort(parsedWsdl, select.value);
+    generatedRequest = '';
+    soapVersionSelect.value = parsedWsdl.version;
+    endpointUrlInput.value = parsedWsdl.endpoint;
+    byId<HTMLElement>('service-name').textContent = parsedWsdl.serviceName;
+    byId<HTMLElement>('operation-count').textContent = `${parsedWsdl.operations.length} operations · SOAP ${parsedWsdl.version}`;
+    operationFilter.value = '';
+    const operation = parsedWsdl.operations.find(item => item.name === selectedOperation) || parsedWsdl.operations[0];
+    if (operation) selectOperation(operation.name);
+    else { setManualSession(false); displayOperations(); }
+    updateContentType();
+  });
+  byId<HTMLButtonElement>('regenerate-request-btn').addEventListener('click', () => { if (selectedOperation) selectOperation(selectedOperation); });
+  function validateRequest(): void {
+    try {
+      const envelope = soapEnvelope(requestXmlInput.value, soapVersionSelect.value as SoapVersion);
+      hideError();
+      byId<HTMLElement>('request-validation').textContent = `✓ Valid SOAP ${envelope.version} envelope. This checks XML and envelope structure, not XSD business rules.`;
+    } catch (error) {
+      byId<HTMLElement>('request-validation').textContent = 'Fix the XML or SOAP version before sending.';
+      showError(error instanceof Error ? error.message : 'Invalid SOAP XML.');
+    }
+  }
+  byId<HTMLButtonElement>('validate-request-btn').addEventListener('click', validateRequest);
+  requestXmlInput.addEventListener('input', () => { byId<HTMLElement>('request-validation').textContent = 'Request edited. Validate envelope structure and SOAP version before sending.'; });
+  byId<HTMLButtonElement>('share-request-btn').addEventListener('click', () => {
+    if (!requestWithoutSoapHeader(requestXmlInput.value)) { validateRequest(); return; }
+    byId<HTMLButtonElement>('share-btn').click();
+  });
+  byId<HTMLButtonElement>('cancel-request-btn').addEventListener('click', () => { requestController?.abort(); });
 
   byId<HTMLButtonElement>('send-btn').addEventListener('click', sendRequest);
   byId<HTMLButtonElement>('format-request-btn').addEventListener('click', () => { try { requestXmlInput.value = formatXml(requestXmlInput.value); showToast('Request XML formatted.'); } catch (error) { showError(error instanceof Error ? error.message : 'Invalid XML.'); } });
   byId<HTMLButtonElement>('copy-request-btn').addEventListener('click', async () => { try { await navigator.clipboard.writeText(requestXmlInput.value); showToast('Request copied.'); } catch { showToast('Clipboard access was blocked.', true); } });
-  byId<HTMLButtonElement>('format-response-btn').addEventListener('click', () => { try { responseBody.textContent = formatXml(responseBody.textContent || ''); showToast('Response XML formatted.'); } catch { showToast('The response is not valid XML.', true); } });
-  byId<HTMLButtonElement>('copy-response-btn').addEventListener('click', async () => { try { await navigator.clipboard.writeText(responseBody.textContent || ''); showToast('Response copied.'); } catch { showToast('Clipboard access was blocked.', true); } });
+  byId<HTMLButtonElement>('format-response-btn').addEventListener('click', () => { try { responseBody.textContent = formatXml(lastResponseText); showResponseView('body'); showToast('Readable view. Raw response and downloads are unchanged.'); } catch { showToast('The response is not valid XML.', true); } });
+  byId<HTMLButtonElement>('raw-response-btn').addEventListener('click', () => { responseBody.textContent = lastResponseText; showResponseView('body'); });
+  byId<HTMLButtonElement>('copy-response-btn').addEventListener('click', async () => { try { await navigator.clipboard.writeText(responseView === 'headers' ? responseHeaders.textContent || '' : responseBody.textContent || ''); showToast(responseView === 'headers' ? 'Headers copied.' : 'Response copied.'); } catch { showToast('Clipboard access was blocked.', true); } });
   byId<HTMLButtonElement>('download-response-btn').addEventListener('click', () => {
-    if (!lastResponseText) { showToast('Send a request before downloading.', true); return; }
+    if (!hasResponse) { showToast('Send a request before downloading.', true); return; }
     track('export_used', { tool: 'soap-client', format: 'xml' });
     const blob = new Blob([lastResponseText], { type: 'application/xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -928,6 +1071,7 @@ const jsonLd = [
       const url = new URL(value);
       url.username = '';
       url.password = '';
+      url.hash = '';
       for (const name of [...url.searchParams.keys()]) if (/key|token|secret|pass|auth|signature|credential/i.test(name)) url.searchParams.delete(name);
       return url.toString();
     } catch { return ''; }
@@ -935,6 +1079,8 @@ const jsonLd = [
 
   ShareManager.register({
     tool: 'soap-client',
+    // Sharing never replays a POST, including legacy links containing action: "send".
+    beforeShare: () => ShareManager.setLastAction(''),
     customCollect: () => ({
       endpoint: shareEndpoint(endpointUrlInput.value.trim()),
       version: soapVersionSelect.value,
@@ -950,6 +1096,7 @@ const jsonLd = [
       authUsername.value = '';
       authPassword.value = '';
       authType.value = 'none';
+      customHeadersInput.value = '';
       authType.dispatchEvent(new Event('change'));
       updateContentType();
       setMode('direct');
@@ -958,4 +1105,14 @@ const jsonLd = [
 
   authType.dispatchEvent(new Event('change'));
   updateContentType();
+  document.addEventListener('astro:before-swap', () => {
+    disposed = true;
+    requestController?.abort();
+    contractController?.abort();
+    window.clearTimeout(toastTimer);
+    if (byId<HTMLDialogElement>('bridge-access-dialog').open) byId<HTMLButtonElement>('bridge-access-cancel').click();
+  }, { once: true });
+  }
+  initSoapClient();
+  document.addEventListener('astro:after-swap', initSoapClient);
 </script>

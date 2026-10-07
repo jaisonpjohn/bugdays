@@ -31,7 +31,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "Compare Lists", href: "/list-compare/", description: "Set operations on two lists", keywords: ["intersection", "union", "difference", "set ops"] },
       { name: "GZip & Base64", href: "/gzip-base64/", description: "Decode Base64, hex & .gz files; compress text", keywords: ["gzip base64", "base64 gzip", "compress", "decompress", "decode", "encode", "H4sI", "gunzip", "hex", "gz file", "base64url"] },
       { name: "Schema Explorer", href: "/schema-explorer/", description: "DDL to ER diagram & data dictionary", keywords: ["erd", "database", "diagram"] },
-      { name: "SOAP Client", href: "/soap-client/", description: "Online WSDL tester & SOAP requests", keywords: ["wsdl", "xml", "web service", "soapui"] },
+      { name: "SOAP Client", href: "/soap-client/", description: "Generate, test & share SOAP requests; inspect faults", keywords: ["wsdl", "xml", "web service", "soapui", "ws-security", "fault"] },
       { name: "Thread Dump Analyzer", href: "/thread-dump-analyzer/", description: "Analyze jstack, jcmd & deadlocks", keywords: ["java", "jvm", "jstack", "jcmd", "blocked", "virtual threads"] },
     ]
   },
@@ -163,7 +163,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "cURL to Code", href: "/curl-to-code/", description: "Convert cURL to Fetch, Python & clean cURL", keywords: ["curl to javascript", "curl to fetch", "curl to python", "requests", "code generator", "api", "postman"] },
       { name: "API Client", href: "/api-client/", description: "Send HTTP requests from the browser", keywords: ["http", "rest", "postman", "curl", "request"] },
       { name: "Bulk API Invoker", href: "/bulk-api-invoker/", description: "Run templated API requests from CSV", keywords: ["batch", "http", "csv", "runner"] },
-      { name: "SOAP Client", href: "/soap-client/", description: "Online WSDL tester & SOAP requests", keywords: ["wsdl", "xml", "web service", "soapui", "soap 1.1", "soap 1.2"] },
+      { name: "SOAP Client", href: "/soap-client/", description: "Generate, test & share SOAP requests; inspect faults", keywords: ["wsdl", "xml", "web service", "soapui", "soap 1.1", "soap 1.2", "ws-security", "fault", "xsd", "jax-ws"] },
       { name: "gRPC Client", href: "/grpc-client/", description: "Call native gRPC and gRPC-Web services", keywords: ["proto", "protobuf", "rpc", "http2", "streaming", "grpc-web"] },
       { name: "Kafka Client", href: "/kafka-client/", description: "Browse & replay Kafka messages by offset or time", keywords: ["kafka message browser", "topic", "partition", "offset", "timestamp", "replay", "headers", "key"] },
       { name: "Kafka Diagnostics", href: "/kafka-diagnostics/", description: "Inspect consumer lag, stuck partitions & reset offsets", keywords: ["consumer group", "lag", "poison pill", "stuck", "offset reset", "rebalance"] },

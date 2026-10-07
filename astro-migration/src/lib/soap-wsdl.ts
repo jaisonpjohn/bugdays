@@ -1,4 +1,5 @@
 // WSDL 1.1 / XML Schema request templates. All parsing happens in the browser.
+import { parseSoapXml } from './soap-messages.ts';
 const XSD_NS = 'http://www.w3.org/2001/XMLSchema';
 const SOAP11_NS = 'http://schemas.xmlsoap.org/soap/envelope/';
 const SOAP12_NS = 'http://www.w3.org/2003/05/soap-envelope';
@@ -30,7 +31,10 @@ export interface SoapContract {
   simpleTypes: Map<string, Declaration>;
   warnings: string[];
   importedCount: number;
+  ports: SoapPort[];
+  selectedPort: string;
 }
+export interface SoapPort { id: string; service: string; name: string; binding: string; endpoint: string; version: '1.1' | '1.2'; operations: SoapOperation[] }
 export interface LocalSoapDocument { name: string; xml: string }
 export interface ParseSoapOptions {
   sourceName?: string;
@@ -58,9 +62,7 @@ function qname(value: string | null, context: Element, fallback = ''): QName | u
 
 function xmlDocument(xml: string, label: string): Document {
   if (xml.length > 5 * 1024 * 1024) throw new Error(`${label} is larger than 5 MB.`);
-  const doc = new DOMParser().parseFromString(xml, 'text/xml');
-  if (doc.querySelector('parsererror')) throw new Error(`${label} is not well-formed XML.`);
-  return doc;
+  return parseSoapXml(xml);
 }
 
 function normalizedPath(path: string): string {
@@ -78,14 +80,14 @@ export async function parseSoapContract(xml: string, options: ParseSoapOptions =
   const sourceName = options.sourceName || 'WSDL';
   const doc = xmlDocument(xml, sourceName);
   const definitions = doc.documentElement;
-  if (definitions.localName !== 'definitions') throw new Error('This is not a WSDL 1.1 definitions document.');
+  if (definitions.localName !== 'definitions' || definitions.namespaceURI !== 'http://schemas.xmlsoap.org/wsdl/') throw new Error('This is not a WSDL 1.1 definitions document.');
   const namespace = definitions.getAttribute('targetNamespace') || '';
   const warnings: string[] = [];
   const contract: SoapContract = {
     serviceName: definitions.getAttribute('name') || sourceName,
     namespace, endpoint: '', version: '1.1', operations: [],
     messages: new Map(), elements: new Map(), complexTypes: new Map(), simpleTypes: new Map(),
-    warnings, importedCount: 0,
+    warnings, importedCount: 0, ports: [], selectedPort: '',
   };
   const localDocuments = options.localDocuments || [];
   const loaded = new Set<string>();
@@ -164,38 +166,59 @@ export async function parseSoapContract(xml: string, options: ParseSoapOptions =
     })));
   }
 
-  const service = first(definitions, 'service');
-  if (service?.getAttribute('name')) contract.serviceName = service.getAttribute('name')!;
-  const port = service ? direct(service, 'port').find(candidate => direct(candidate, 'address').some(address => address.hasAttribute('location'))) : undefined;
-  const address = port ? direct(port, 'address').find(candidate => candidate.hasAttribute('location')) : undefined;
-  contract.endpoint = address?.getAttribute('location') || '';
-  contract.version = address?.namespaceURI?.includes('/soap12/') ? '1.2' : '1.1';
-  const bindingName = port ? qname(port.getAttribute('binding'), port, namespace)?.name : undefined;
-  const binding = direct(definitions, 'binding').find(candidate => candidate.getAttribute('name') === bindingName) || direct(definitions, 'binding')[0];
-  const bindingSoap = binding ? direct(binding, 'binding').find(candidate => /\/soap(?:12)?\/$/.test(candidate.namespaceURI || '')) : undefined;
-  const bindingStyle = bindingSoap?.getAttribute('style') === 'rpc' ? 'rpc' : 'document';
-  const portTypeName = binding ? qname(binding.getAttribute('type'), binding, namespace)?.name : undefined;
-  const portType = direct(definitions, 'portType').find(candidate => candidate.getAttribute('name') === portTypeName) || direct(definitions, 'portType')[0];
-  const bindingOperations = new Map<string, Element>();
-  if (binding) for (const operation of direct(binding, 'operation')) bindingOperations.set(operation.getAttribute('name') || '', operation);
-  if (portType) contract.operations = direct(portType, 'operation').map(operation => {
-    const name = operation.getAttribute('name') || 'UnnamedOperation';
-    const bound = bindingOperations.get(name);
-    const soapOperation = bound ? direct(bound, 'operation').find(candidate => /\/soap(?:12)?\/$/.test(candidate.namespaceURI || '')) : undefined;
-    const body = bound ? direct(first(bound, 'input') || bound, 'body').find(candidate => /\/soap(?:12)?\/$/.test(candidate.namespaceURI || '')) : undefined;
-    return {
-      name,
-      inputMessage: qname(first(operation, 'input')?.getAttribute('message') || '', first(operation, 'input') || operation, namespace)?.name || '',
-      outputMessage: qname(first(operation, 'output')?.getAttribute('message') || '', first(operation, 'output') || operation, namespace)?.name || '',
-      soapAction: soapOperation?.getAttribute('soapAction') || '',
-      style: soapOperation?.getAttribute('style') === 'rpc' ? 'rpc' : bindingStyle,
-      bodyNamespace: body?.getAttribute('namespace') || namespace,
-      bodyParts: body?.getAttribute('parts')?.trim().split(/\s+/).filter(Boolean) || [],
-      bodyUse: body?.getAttribute('use') === 'encoded' ? 'encoded' : 'literal',
-      encodingStyle: body?.getAttribute('encodingStyle') || '',
-    };
-  });
+  const soapBindings = direct(definitions, 'binding').filter(binding => direct(binding, 'binding').some(candidate => /\/soap(?:12)?\/$/.test(candidate.namespaceURI || '')));
+  contract.ports = [];
+  for (const service of direct(definitions, 'service')) for (const port of direct(service, 'port')) {
+    const bindingRef = qname(port.getAttribute('binding'), port, namespace);
+    const binding = bindingRef?.ns === namespace ? soapBindings.find(item => item.getAttribute('name') === bindingRef.name) : undefined;
+    const address = direct(port, 'address').find(item => /\/soap(?:12)?\/$/.test(item.namespaceURI || '') && item.hasAttribute('location'));
+    if (!binding || !address) continue;
+    const version = address.namespaceURI?.includes('/soap12/') ? '1.2' : '1.1';
+    contract.ports.push({ id: `port-${contract.ports.length}`, service: service.getAttribute('name') || contract.serviceName, name: port.getAttribute('name') || 'SOAP port', binding: binding.getAttribute('name') || '', endpoint: address.getAttribute('location') || '', version, operations: bindingOperations(binding) });
+  }
+  function bindingOperations(binding: Element): SoapOperation[] {
+    const bindingSoap = direct(binding, 'binding').find(candidate => /\/soap(?:12)?\/$/.test(candidate.namespaceURI || ''));
+    const bindingStyle = bindingSoap?.getAttribute('style') === 'rpc' ? 'rpc' : 'document';
+    const portTypeName = qname(binding.getAttribute('type'), binding, namespace)?.name;
+    const portType = direct(definitions, 'portType').find(candidate => candidate.getAttribute('name') === portTypeName) || direct(definitions, 'portType')[0];
+    const boundOperations = new Map<string, Element>();
+    for (const operation of direct(binding, 'operation')) boundOperations.set(operation.getAttribute('name') || '', operation);
+    return portType ? direct(portType, 'operation').filter(operation => boundOperations.has(operation.getAttribute('name') || '')).map(operation => {
+      const name = operation.getAttribute('name') || 'UnnamedOperation';
+      const bound = boundOperations.get(name);
+      const soapOperation = bound ? direct(bound, 'operation').find(candidate => /\/soap(?:12)?\/$/.test(candidate.namespaceURI || '')) : undefined;
+      const body = bound ? direct(first(bound, 'input') || bound, 'body').find(candidate => /\/soap(?:12)?\/$/.test(candidate.namespaceURI || '')) : undefined;
+      return {
+        name,
+        inputMessage: qname(first(operation, 'input')?.getAttribute('message') || '', first(operation, 'input') || operation, namespace)?.name || '',
+        outputMessage: qname(first(operation, 'output')?.getAttribute('message') || '', first(operation, 'output') || operation, namespace)?.name || '',
+        soapAction: soapOperation?.getAttribute('soapAction') || '',
+        style: soapOperation?.getAttribute('style') === 'rpc' ? 'rpc' : bindingStyle,
+        bodyNamespace: body?.getAttribute('namespace') || namespace,
+        bodyParts: body?.getAttribute('parts')?.trim().split(/\s+/).filter(Boolean) || [],
+        bodyUse: body?.getAttribute('use') === 'encoded' ? 'encoded' : 'literal',
+        encodingStyle: body?.getAttribute('encodingStyle') || '',
+      };
+    }) : [];
+  }
+  if (contract.ports.length) selectSoapPort(contract, contract.ports[0].id);
+  else {
+    contract.operations = soapBindings[0] ? bindingOperations(soapBindings[0]) : [];
+    const soapBinding = soapBindings[0] && direct(soapBindings[0], 'binding').find(item => /\/soap(?:12)?\/$/.test(item.namespaceURI || ''));
+    contract.version = soapBinding?.namespaceURI?.includes('/soap12/') ? '1.2' : '1.1';
+    warnings.push('No supported SOAP service port was found. Enter the endpoint manually; external WSDL imports are not resolved.');
+  }
   return contract;
+}
+
+export function selectSoapPort(contract: SoapContract, id: string): void {
+  const port = contract.ports.find(item => item.id === id);
+  if (!port) throw new Error('This SOAP port is not available in the contract.');
+  contract.selectedPort = id;
+  contract.serviceName = port.service;
+  contract.endpoint = port.endpoint;
+  contract.version = port.version;
+  contract.operations = port.operations;
 }
 
 function builtInValue(type?: QName): string {

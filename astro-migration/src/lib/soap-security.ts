@@ -1,13 +1,12 @@
 // WS-Security UsernameToken generation is deliberately send-time only.
+import { soapEnvelope } from './soap-messages.ts';
 const WSSE = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd';
 const WSU = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd';
 const PROFILE = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0';
 const SECURITY = 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0';
 
 function parseXml(xml: string): Document {
-  const doc = new DOMParser().parseFromString(xml, 'text/xml');
-  if (doc.querySelector('parsererror')) throw new Error('The SOAP request XML is not well formed.');
-  return doc;
+  return soapEnvelope(xml).doc;
 }
 
 const base64 = (bytes: Uint8Array): string => btoa(Array.from(bytes, byte => String.fromCharCode(byte)).join(''));
@@ -67,7 +66,7 @@ export function requestWithoutSoapHeader(xml: string): string {
     const envelope = doc.documentElement;
     if (envelope.localName !== 'Envelope') return '';
     const headers = Array.from(envelope.children).filter(child => child.localName === 'Header' && child.namespaceURI === envelope.namespaceURI);
-    for (const header of headers) header.replaceChildren();
+    for (const header of headers) header.remove();
     return new XMLSerializer().serializeToString(doc);
   } catch { return ''; }
 }

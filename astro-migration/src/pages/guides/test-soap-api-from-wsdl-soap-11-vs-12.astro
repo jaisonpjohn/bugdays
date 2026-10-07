@@ -1,8 +1,14 @@
 ---
 import GuideLayout from '../../layouts/GuideLayout.astro';
 import { guideBySlug } from '../../lib/guides';
+import LZString from 'lz-string';
 
 const guide = guideBySlug('test-soap-api-from-wsdl-soap-11-vs-12');
+const example = `<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:c="urn:customers">
+  <soap:Header/>
+  <soap:Body><c:GetCustomer><customerId>42</customerId></c:GetCustomer></soap:Body>
+</soap:Envelope>`;
+const exampleHref = '/soap-client/#lz:' + LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'soap-client', d: { endpoint: 'https://service.example.com/customer', version: '1.1', soapAction: 'urn:GetCustomer', request: example } }));
 ---
 
 <GuideLayout guide={guide} keywords="test SOAP API from WSDL, SOAP 1.1 vs SOAP 1.2, WSDL request generator, XSD import include, JAX-WS unqualified elements, RPC SOAP, SOAPAction header, SOAP fault debugging">
@@ -23,12 +29,18 @@ const guide = guideBySlug('test-soap-api-from-wsdl-soap-11-vs-12');
   <h2>Start with one operation, not a blank editor</h2>
   <ol>
     <li>Load the WSDL from a URL, local file, or pasted XML.</li>
-    <li>Select the intended operation. Check which service port and binding the WSDL exposes; if it has several, verify the endpoint and version in the client.</li>
+    <li>Choose the <strong>Service port / binding</strong> in the navigator, then select the intended operation. A SOAP 1.2 port may use a different endpoint or action from its SOAP 1.1 sibling; HTTP GET/POST ports are not SOAP ports.</li>
     <li>Confirm the generated endpoint is appropriate for the environment.</li>
     <li>Fill in required values without removing namespace declarations.</li>
     <li>Check authentication and any application-specific headers.</li>
   </ol>
   <p>Imported WSDL endpoints are often production URLs, obsolete hosts, or internal names. Treat the address as contract data to verify, not an instruction to send blindly.</p>
+
+  <h3>A shareable SOAP request you can open and edit</h3>
+  <p><a href={exampleHref}>Open this SOAP 1.1 GetCustomer example in the client</a>. It uses an illustrative endpoint, not a live service, and opening the link does not send anything. Replace the endpoint and operation with those from your service before sending.</p>
+  <pre><code>{example}</code></pre>
+  <p>Select <strong>Validate</strong> to check the envelope and version. Change to SOAP 1.2 and the envelope namespace changes without replacing <code>customerId</code> with a template value. This is not a WS-Security-policy conversion or a full XSD validation: your service can still require a different port, action, field order, or authentication policy. Use <strong>Reset to WSDL template</strong> only when you want to discard edits; the client asks before replacing an edited request.</p>
+  <p>For a colleague to reproduce your request, use <strong>Share request</strong> beside the workspace. The link includes the endpoint, version, action, and body, but not HTTP auth fields, additional HTTP headers, or the SOAP Header. Review sensitive values inside the body yourself. A self-contained URL keeps state in its fragment; server-stored links are an explicit alternative, not encrypted private team storage.</p>
 
   <h2>Follow named types and linked XSD files</h2>
   <p>Java JAX-WS and CXF WSDLs often declare an operation’s global element in one schema and its fields in a named <code>complexType</code> elsewhere. A template with only an empty operation tag is not enough. In the <a href="/soap-client/">Bug Days SOAP client</a>, load the WSDL by URL so relative <code>xsd:import</code> and <code>xsd:include</code> paths can be fetched, or select the WSDL and its XSD files together. You can also paste each XSD with its <code>schemaLocation</code> filename.</p>
@@ -63,6 +75,15 @@ Content-Type: application/soap+xml; charset=utf-8; action="urn:GetCustomer"</cod
   <p>There is a subtler case in Java services: a qualified operation wrapper can contain <em>unqualified</em> child parameters. If the XSD omits <code>elementFormDefault="qualified"</code>, local elements have no namespace unless an individual <code>form</code> overrides it. An unprefixed <code>&lt;customerId&gt;</code> below a prefixed wrapper is intentional; adding the wrapper’s namespace to every child can make a server deserialize them as null. RPC-style bindings also have their own operation wrapper and message-part parameter rules.</p>
 
   <h2>Read the fault before rewriting the request</h2>
+  <p>The Bug Days response inspector shows the code, reason, nested SOAP 1.2 subcodes, and detail XML together. It recognizes a fault by its SOAP namespace and position inside the Body, not merely because a business payload contains an element named <code>Fault</code>. A service can return a SOAP fault with HTTP 200, so read both the status and the envelope.</p>
+  <pre><code>{`<env:Fault xmlns:env="http://www.w3.org/2003/05/soap-envelope" xmlns:app="urn:customers">
+  <env:Code><env:Value>env:Sender</env:Value>
+    <env:Subcode><env:Value>app:InvalidCustomerId</env:Value></env:Subcode>
+  </env:Code>
+  <env:Reason><env:Text xml:lang="en">Customer ID must be positive.</env:Text></env:Reason>
+  <env:Detail><app:field>customerId</app:field></env:Detail>
+</env:Fault>`}</code></pre>
+  <p>This fragment belongs inside the response Envelope’s Body. <code>Sender</code> identifies a request-side problem; the application subcode and detail identify which value to fix. Do not treat “no SOAP fault” as proof of business success: some services report errors inside an ordinary response element.</p>
   <p>A SOAP fault is structured diagnostic output. Preserve the HTTP status, response headers, fault code, human-readable reason, and detail block. Then classify the failure:</p>
   <ul>
     <li><strong>HTTP 401 or 403:</strong> authentication or authorization happened before the operation.</li>
@@ -80,6 +101,10 @@ Content-Type: application/soap+xml; charset=utf-8; action="urn:GetCustomer"</cod
   <p>A browser can reach a service only when the service permits the web origin and required headers, or when a local bridge handles the request. A CORS failure means the browser blocked access to the response; it does not prove the SOAP endpoint rejected the envelope.</p>
   <p>Bug Days sends directly to the endpoint you enter. If browser CORS blocks the request, the optional Holy CORS bridge runs on your own machine. It is not a hosted relay. For mTLS, integrated Windows authentication, private PKI policy, or sensitive production workflows, use an approved internal or desktop client.</p>
 
+  <h3>Keep the evidence intact</h3>
+  <p>Use <strong>Raw</strong> for the response body as received, or <strong>Readable</strong> for a formatted XML view that preserves leaf text, mixed content, and CDATA. Download always exports the original response body, not the formatted view. Copy uses the currently selected body or headers view. Timing covers receipt of the complete body, rather than only the first response headers.</p>
+  <p>Cancel stops the browser from waiting; it cannot undo work already accepted by the SOAP service. The client does not retry a cancelled or timed-out POST automatically. Keep that distinction in mind for operations that create orders or transfer funds.</p>
+
   <h2>Minimal SOAP debugging checklist</h2>
   <ul>
     <li>Confirm the selected port, binding, and endpoint belong together.</li>
@@ -92,6 +117,7 @@ Content-Type: application/soap+xml; charset=utf-8; action="urn:GetCustomer"</cod
   </ul>
 
   <p>For the protocol definitions, the <a href="https://www.w3.org/TR/soap/" target="_blank" rel="noopener">W3C SOAP specifications index</a> links to SOAP 1.1 and the SOAP 1.2 recommendations.</p>
+  <p>The precise SOAP 1.2 fields are documented in the <a href="https://www.w3.org/TR/soap12/#soapfault" target="_blank" rel="noopener">W3C SOAP Fault specification</a>; service ports and bindings are defined in <a href="https://www.w3.org/TR/wsdl#_services" target="_blank" rel="noopener">WSDL 1.1</a>.</p>
 
   <a slot="related" href="/guides/pem-vs-der-vs-cer-vs-p7b-certificate-formats/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Understand certificate files</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Identify PEM, DER, CER, and certificate bundles.</span></a>
   <a slot="related" href="/guides/soap-api-authentication-basic-ws-security-mtls/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Debug SOAP authentication</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Separate HTTP credentials, WS-Security, and mTLS failures.</span></a>
