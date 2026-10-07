@@ -224,6 +224,7 @@ export function createJsonEditor(element: HTMLTextAreaElement): JsonEditor {
   let query = '';
   let matches: number[] = [];
   let activeMatch = -1;
+  let pendingRefresh = 0;
 
   function lineNumbers() {
     const count = Math.max(1, element.value.split('\n').length);
@@ -234,6 +235,8 @@ export function createJsonEditor(element: HTMLTextAreaElement): JsonEditor {
     code.style.transform = `translate(${-element.scrollLeft}px, ${-element.scrollTop}px)`;
   }
   function refresh() {
+    if (pendingRefresh) cancelAnimationFrame(pendingRefresh);
+    pendingRefresh = 0;
     lineNumbers();
     code.innerHTML = highlightJson(element.value, errorPosition, matches, activeMatch, query.length);
     syncScroll();
@@ -251,7 +254,9 @@ export function createJsonEditor(element: HTMLTextAreaElement): JsonEditor {
     errorPosition = null;
     matches = searchOccurrences(element.value, query);
     activeMatch = matches.length ? Math.min(activeMatch, matches.length - 1) : -1;
-    refresh();
+    // A large native insertion can emit many input events. Coalesce overlay
+    // painting instead of rebuilding thousands of token spans for every event.
+    if (!pendingRefresh) pendingRefresh = requestAnimationFrame(refresh);
   });
   element.addEventListener('scroll', syncScroll);
   element.addEventListener('keydown', event => {

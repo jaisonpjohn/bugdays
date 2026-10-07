@@ -1,0 +1,90 @@
+---
+import Layout from '../layouts/Layout.astro';
+import JsonEditor from '../components/JsonEditor.astro';
+const faqs = [
+  ['What is the difference between JSON validation and JSON Schema validation?', 'JSON validation checks syntax. JSON Schema validation checks the shape and rules of a document: required keys, types, arrays, enums, ranges, and more. Schema Doctor checks the schema itself before validating your data.'],
+  ['Which JSON Schema drafts are supported?', 'Draft 7, 2019-09, and 2020-12. Auto reads $schema and defaults to 2020-12 when it is absent. A conflicting selection is reported rather than silently changing dialects.'],
+  ['Can I validate $ref without uploading files?', 'Yes. Internal references work directly. Add local reference files with absolute $id values that match the resolved reference URLs. The validator never downloads remote schemas.'],
+  ['Does a passing structured-output check guarantee OpenAI will accept my schema?', 'No. The optional OpenAI profile is a dated set of local checks, not an API call or a complete model-specific compatibility guarantee. Review its scope and test your chosen model.'],
+  ['Are my JSON and schemas uploaded?', 'Validation happens on this device. Sharing is optional: review both inputs and reference files before creating a link. Embedded links carry data in the URL fragment; choosing a stored short link uploads the selected share state.'],
+];
+const jsonLd = [
+  { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'JSON Schema Doctor — JSON Schema Validator', url: 'https://bugdays.com/json-schema-validator/', description: 'Validate JSON against a schema, locate field-level errors, check local references, and share reproducible examples.', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any', isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, featureList: ['Draft 7, 2019-09 and 2020-12 validation', 'JSON Pointer and line-level errors', 'Local schema references', 'OpenAI structured-output checks', 'Reviewed schema edits', 'Shareable validation examples'] },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map(([name, text]) => ({ '@type': 'Question', name, acceptedAnswer: { '@type': 'Answer', text } })) },
+];
+---
+<Layout title="JSON Schema Validator — Schema Doctor & Error Finder" description="Validate JSON against a schema online. Find errors by field and line, check Draft 7 or 2020-12 schemas and OpenAI structured outputs, and share a reproducible example." keywords="JSON schema validator, validate JSON against schema, JSON schema validation errors, JSON schema doctor, draft 2020-12 validator, required additionalProperties, structured output validator" toolId="json-schema-validator" breadcrumb={[{ name: 'JSON Tools', href: '/json-tools/' }, { name: 'JSON Schema Validator' }]} jsonLd={jsonLd} image="/og/guide-json-schema-doctor.png" imageAlt="JSON Schema Doctor tracing a quantity error to a minimum rule">
+  <div id="schema-doctor" class="mx-auto max-w-7xl">
+    <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
+      <div><h1 class="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">JSON Schema Validator <span class="text-indigo-600 dark:text-indigo-400">/ Schema Doctor</span></h1><p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Find the field. Understand the rule. Share the reproducer. All checks run on your device.</p></div>
+      <button id="doctor-share" class="doctor-primary">Share example ↗</button>
+    </div>
+    <div class="doctor-panel mb-4 flex flex-wrap items-end gap-3">
+      <label class="text-xs font-semibold">Schema dialect<select id="doctor-dialect" class="doctor-select mt-1 block"><option value="auto">Auto ($schema or 2020-12)</option><option value="draft7">Draft 7</option><option value="2019-09">Draft 2019-09</option><option value="2020-12">Draft 2020-12</option></select></label>
+      <label class="text-xs font-semibold">Additional checks<select id="doctor-profile" class="doctor-select mt-1 block"><option value="standard">JSON Schema only</option><option value="openai">OpenAI structured outputs</option></select></label>
+      <label class="flex min-h-10 items-center gap-2 text-sm"><input id="doctor-formats" type="checkbox" class="accent-indigo-600" /> Assert formats <span class="text-xs text-slate-500 dark:text-slate-400">(email, date…)</span></label>
+      <button id="doctor-run" data-share-action="validate" class="doctor-primary">Validate</button>
+      <button id="doctor-cancel" class="doctor-secondary" hidden>Cancel</button>
+    </div>
+    <div class="grid min-w-0 gap-4 xl:grid-cols-2">
+      <section class="doctor-panel min-w-0">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><label for="doctor-schema" class="font-semibold">1. JSON Schema</label><div class="flex gap-3"><button id="doctor-format-schema" class="doctor-link">Format</button><label class="doctor-link cursor-pointer">Open file<input id="doctor-schema-file" type="file" accept=".json,application/json" class="sr-only" aria-label="Open schema file" /></label></div></div>
+        <JsonEditor id="doctor-schema" label="JSON Schema" height="h-80" />
+      </section>
+      <section class="doctor-panel min-w-0">
+        <div class="mb-3 flex flex-wrap items-center justify-between gap-2"><label for="doctor-json" class="font-semibold">2. JSON document <span class="text-xs font-normal text-slate-500 dark:text-slate-400">optional</span></label><div class="flex gap-3"><button id="doctor-format-json" class="doctor-link">Format</button><label class="doctor-link cursor-pointer">Open file<input id="doctor-json-file" type="file" accept=".json,application/json" class="sr-only" aria-label="Open JSON file" /></label></div></div>
+        <JsonEditor id="doctor-json" label="JSON document" height="h-80" />
+      </section>
+    </div>
+    <div class="my-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm"><span class="text-slate-500 dark:text-slate-400">Try an example:</span><button id="doctor-invalid" class="doctor-link">Four failing fields</button><button id="doctor-valid" class="doctor-link">Passing document</button><button id="doctor-structured" class="doctor-link">Structured output</button><button id="doctor-clear" class="doctor-link">Clear</button><label class="ml-auto flex items-center gap-2 text-xs"><input id="doctor-auto" type="checkbox" checked class="accent-indigo-600" /> Auto-check</label></div>
+    <details class="doctor-panel mb-4 text-sm" id="doctor-references"><summary class="cursor-pointer font-semibold">Local reference schemas <span id="doctor-ref-count" class="text-slate-500 dark:text-slate-400">(0)</span></summary><p class="mt-2 text-slate-600 dark:text-slate-300">For external <code>$ref</code>, add JSON files with matching absolute <code>$id</code> values. Relative references resolve against the root schema’s <code>$id</code>. No URLs are fetched. Up to 12 files; 500 KB each, 1 MB combined.</p><label class="doctor-link mt-3 inline-block cursor-pointer">Add reference files<input id="doctor-ref-files" type="file" multiple accept=".json,application/json" class="sr-only" aria-label="Add reference files" /></label><ul id="doctor-ref-list" class="mt-2 space-y-2"></ul></details>
+    <p id="doctor-notice" role="status" class="mb-3 text-sm text-indigo-700 dark:text-indigo-300"></p>
+    <section class="doctor-panel" aria-labelledby="doctor-results-title">
+      <div class="flex flex-wrap items-center justify-between gap-3"><div><h2 id="doctor-results-title" class="text-lg font-bold">Diagnosis</h2><p id="doctor-status" role="status" aria-live="polite" class="mt-1 text-sm text-slate-600 dark:text-slate-300">Paste a schema, or try an example above.</p></div><div class="flex flex-wrap gap-2"><button id="doctor-copy" class="doctor-secondary" disabled>Copy report</button><button id="doctor-export" class="doctor-secondary" disabled>Download JSON report</button></div></div>
+      <div id="doctor-summary" class="mt-4 flex flex-wrap gap-2" hidden></div>
+      <p id="doctor-profile-note" class="mt-3 text-xs leading-6 text-slate-600 dark:text-slate-400" hidden>OpenAI profile · rules reviewed October 5, 2026. Checks root shape, required fields, extra keys, selected unsupported keywords, formats, and size limits. It does not certify API acceptance, resolve nesting through references, or cover fine-tuned/model-specific rules. <a class="doctor-link" href="https://developers.openai.com/api/docs/guides/structured-outputs" target="_blank" rel="noopener noreferrer">Official supported schemas ↗</a></p>
+      <div id="doctor-findings" class="mt-4 space-y-3"></div>
+      <details id="doctor-fixes" class="mt-4 rounded-lg border border-indigo-200 p-4 dark:border-indigo-800" hidden><summary class="cursor-pointer font-semibold text-indigo-700 dark:text-indigo-300">Review proposed schema edits</summary><p class="mt-2 text-sm text-slate-600 dark:text-slate-300">These edits tighten your contract: undeclared keys become invalid and optional fields become required. No constraints are removed and null is not added automatically. They do not resolve every compatibility issue.</p><div id="doctor-edit-list" class="mt-3 space-y-3"></div><label for="doctor-proposed" class="mt-3 block text-sm font-semibold">Proposed root schema</label><textarea id="doctor-proposed" readonly spellcheck="false" class="mt-2 h-56 w-full rounded-lg border border-slate-300 bg-slate-50 p-3 font-mono text-xs dark:border-slate-600 dark:bg-slate-900"></textarea><div class="mt-3 flex flex-wrap gap-2"><button id="doctor-apply" class="doctor-primary">Apply reviewed edits</button><button id="doctor-undo" class="doctor-secondary" disabled>Undo schema edit</button></div></details>
+    </section>
+    <dialog id="doctor-share-review" class="w-[min(44rem,calc(100vw-2rem))] max-h-[85vh] rounded-xl border border-slate-200 bg-white p-5 text-slate-900 shadow-xl backdrop:bg-slate-950/50 dark:border-slate-700 dark:bg-slate-800 dark:text-white" aria-labelledby="doctor-share-title"><div class="flex items-center justify-between gap-3"><h2 id="doctor-share-title" class="text-lg font-bold">Review your shared example</h2><button id="doctor-review-close" class="doctor-secondary" aria-label="Close share review">✕</button></div><p class="my-3 text-sm text-slate-600 dark:text-slate-300">The link includes both inputs, settings, and attached reference schemas below. Use a small fictional example. Anyone with the link can read it; sharing does not redact secrets.</p><pre id="doctor-share-preview" class="max-h-64 overflow-auto rounded-lg bg-slate-100 p-3 text-xs whitespace-pre-wrap break-all dark:bg-slate-900"></pre><label class="my-4 flex items-start gap-2 text-sm"><input id="doctor-share-ack" type="checkbox" class="mt-1 accent-indigo-600" /> I reviewed this example and removed secrets and private data.</label><button id="doctor-review-continue" disabled class="doctor-primary">Continue to link options</button></dialog>
+    <section class="mt-8 grid gap-4 text-sm md:grid-cols-3"><a class="doctor-panel hover:border-indigo-400" href="/guides/validate-json-against-schema/"><strong class="block text-indigo-600 dark:text-indigo-400">Walk through a failing API response</strong><span class="mt-1 block">Fix types, enums, nested constraints, and extra keys with a runnable example.</span></a><a class="doctor-panel hover:border-indigo-400" href="/json-formatter/"><strong class="block text-indigo-600 dark:text-indigo-400">Just need valid JSON syntax?</strong><span class="mt-1 block">Format, inspect a tree, and copy paths in the JSON Formatter.</span></a><a class="doctor-panel hover:border-indigo-400" href="/json-diff/"><strong class="block text-indigo-600 dark:text-indigo-400">Compare the response before and after</strong><span class="mt-1 block">Use JSON Diff to inspect what changed between API versions.</span></a></section>
+    <section class="mt-8 max-w-4xl space-y-6 text-sm leading-7 text-slate-600 dark:text-slate-300">
+      <div><h2 class="doctor-heading">Validate JSON against a schema, not just its syntax</h2><p class="mt-2">A response can be perfectly valid JSON and still break a client. An ID might arrive as a string, a status might use the wrong enum value, or a nested array item might omit a required field. This JSON Schema validator checks the document against your contract and reports a JSON Pointer, line, and schema rule for each failure. Select a finding to jump to the relevant input. Missing fields point to the containing object.</p></div>
+      <div><h2 class="doctor-heading">Required fields, additional properties, and union errors</h2><p class="mt-2"><code>properties</code> describes fields; it does not make them mandatory. Put mandatory names in <code>required</code>. An explicit <code>null</code> differs from a missing property and must be allowed by its schema. <code>additionalProperties: false</code> rejects undeclared keys. For <code>anyOf</code>, one or more branches may match; <code>oneOf</code> needs exactly one. The diagnosis preserves branch errors so you can see the rule behind the union failure. Data is never coerced, stripped, or filled with defaults.</p></div>
+      <div><h2 class="doctor-heading">Choose the right draft and format behavior</h2><p class="mt-2">The <code>$schema</code> declaration determines the dialect. Draft 7 tuple arrays use an array under <code>items</code>; Draft 2020-12 uses <code>prefixItems</code>. Auto defaults to 2020-12 only when no declaration is present. Format assertions are optional: turn them on to validate supported formats such as email and date-time. Unknown formats or keywords produce diagnostics rather than a silent promise that they were enforced. Custom vocabularies, legacy drafts, and asynchronous validation are outside this tool’s scope.</p></div>
+      <div><h2 class="doctor-heading">Check structured-output schemas before making an API call</h2><p class="mt-2">The optional OpenAI profile checks a documented subset independently of ordinary JSON Schema validation. A schema can validate your sample while failing a provider-specific rule. Review proposed changes to object requirements before applying them; tightening a schema changes which data it accepts. This is a local troubleshooting aid, not a model call, and it needs no API key. For generated application models, try <a href="/json-to-code/" class="doctor-link">JSON to TypeScript, Zod, and Pydantic</a>.</p></div>
+      <div><h2 class="doctor-heading">Share the actual validation problem</h2><p class="mt-2">A useful bug report includes the schema, a minimal failing document, and the chosen dialect. Share example restores those inputs and reruns the diagnosis. Review the visible preview before choosing an embedded link or optional stored short link. Report exports exclude the original documents but retain field paths and diagnostic text, so review them too. Files stay local during validation; there is no automatic remote reference loading or background document upload.</p></div>
+      <div><h2 class="doctor-heading">JSON Schema validator questions</h2><div class="mt-3 space-y-2">{faqs.map(([q, a]) => <details class="doctor-panel"><summary class="cursor-pointer font-semibold text-slate-800 dark:text-slate-100">{q}</summary><p class="mt-2">{a}</p></details>)}</div></div>
+    </section>
+  </div>
+</Layout>
+<script>
+  import '../lib/schema-doctor-ui.ts';
+</script>
+<style is:global>
+  #schema-doctor { color: #334155; }
+  .dark #schema-doctor { color: #e2e8f0; }
+  #schema-doctor [hidden] { display: none !important; }
+  #schema-doctor .doctor-panel { border: 1px solid #e2e8f0; border-radius: .75rem; background: #fff; padding: 1rem; box-shadow: 0 1px 2px rgb(0 0 0 / .03); }
+  .dark #schema-doctor .doctor-panel { border-color: #334155; background: #1e293b; }
+  #schema-doctor .doctor-primary, #schema-doctor .doctor-secondary { border-radius: .5rem; padding: .6rem .9rem; font-size: .85rem; font-weight: 600; }
+  #schema-doctor .doctor-primary { background: #4f46e5; color: #fff; }
+  #schema-doctor .doctor-primary:hover { background: #4338ca; }
+  #schema-doctor .doctor-secondary { border: 1px solid #cbd5e1; color: #334155; background: #f8fafc; }
+  .dark #schema-doctor .doctor-secondary { border-color: #475569; color: #e2e8f0; background: #0f172a; }
+  #schema-doctor button:disabled { opacity: .45; cursor: not-allowed; }
+  #schema-doctor .doctor-link { color: #4f46e5; font-size: .8rem; font-weight: 600; }
+  .dark #schema-doctor .doctor-link { color: #a5b4fc; }
+  #schema-doctor .doctor-link:hover { text-decoration: underline; }
+  #schema-doctor .doctor-select { max-width: 100%; background: transparent; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .6rem; font-size: .8rem; font-weight: 400; }
+  .dark #schema-doctor .doctor-select { border-color: #475569; background: #0f172a; }
+  #schema-doctor .doctor-heading { font-size: 1.2rem; font-weight: 700; color: #0f172a; }
+  .dark #schema-doctor .doctor-heading { color: #f8fafc; }
+  #schema-doctor .doctor-finding { border: 1px solid #e2e8f0; border-left: 3px solid #f59e0b; border-radius: .5rem; padding: .85rem; overflow-wrap: anywhere; font-size: .85rem; }
+  #schema-doctor .doctor-finding[data-severity="error"] { border-left-color: #f43f5e; }
+  .dark #schema-doctor .doctor-finding { border-top-color: #334155; border-right-color: #334155; border-bottom-color: #334155; }
+  #schema-doctor .doctor-finding p { margin-top: .3rem; }
+  #schema-doctor .doctor-badge { font-size: .75rem; border-radius: .4rem; padding: .35rem .6rem; background: #f1f5f9; }
+  .dark #schema-doctor .doctor-badge { background: #0f172a; }
+  #schema-doctor :is(button, select, summary, input, a):focus-visible { outline: 2px solid #6366f1; outline-offset: 3px; }
+</style>

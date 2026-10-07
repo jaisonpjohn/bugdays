@@ -3,7 +3,7 @@
 import { chromium } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 
-const names = ['guide-base64-variants', 'guide-kafka-offset-reset', 'guide-kafka-lag', 'guide-access-log-evidence'];
+const names = process.argv.slice(2).length ? process.argv.slice(2) : ['guide-base64-variants', 'guide-kafka-offset-reset', 'guide-kafka-lag', 'guide-access-log-evidence', 'guide-json-schema-doctor'];
 const browser = await chromium.launch({ channel: 'chrome' });
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });

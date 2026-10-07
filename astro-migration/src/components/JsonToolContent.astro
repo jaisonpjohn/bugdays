@@ -6,6 +6,7 @@ const { tool } = Astro.props;
 const faqs = tool === 'formatter' ? formatterFaqs : diffFaqs;
 ---
 <section class="json-copy mt-7 space-y-5 text-sm text-slate-600 dark:text-slate-300" aria-label={tool === 'formatter' ? 'JSON formatting reference and examples' : 'JSON comparison reference and examples'}>
+  <p class="rounded-lg border border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-800 dark:bg-indigo-950/30">Need to check an API contract? <a href="/json-schema-validator/">JSON Schema Doctor</a> validates required fields, types, enums, and nested rules. <a href="/guides/validate-json-against-schema/">Try a four-error example →</a></p>
   {tool === 'formatter' ? <>
     <div>
       <h2>Format, validate, and explore JSON in your browser</h2>

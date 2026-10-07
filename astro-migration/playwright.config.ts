@@ -10,5 +10,5 @@ export default defineConfig({
     { name: 'desktop', use: { ...devices['Desktop Chrome'], channel: 'chrome' } },
     { name: 'mobile', use: { ...devices['Pixel 7'], defaultBrowserType: 'chromium', channel: 'chrome' } },
   ],
-  webServer: { command: 'npm run dev -- --host 127.0.0.1 --port 4321', url: 'http://127.0.0.1:4321', reuseExistingServer: !process.env.CI },
+  webServer: { command: `npm run ${process.env.PLAYWRIGHT_BUILD === '1' ? 'preview' : 'dev'} -- --host 127.0.0.1 --port 4321`, url: 'http://127.0.0.1:4321', reuseExistingServer: !process.env.CI && process.env.PLAYWRIGHT_BUILD !== '1' },
 });

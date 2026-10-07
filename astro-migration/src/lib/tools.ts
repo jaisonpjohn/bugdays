@@ -43,6 +43,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "JSON Formatter", href: "/json-formatter/", description: "Format, validate & share JSON", keywords: ["prettify", "beautify", "validate", "minify", "tree", "jq", "api response"] },
       { name: "JSON Diff", href: "/json-diff/", description: "Compare & share JSON changes", keywords: ["compare", "difference", "array order", "key order", "api response"] },
       { name: "JSON to Code", href: "/json-to-code/", description: "Generate TypeScript, Zod & Pydantic", keywords: ["types", "interface", "schema", "python", "model", "code generator"] },
+      { name: "JSON Schema Doctor", href: "/json-schema-validator/", description: "Validate schemas, locate errors & share", keywords: ["json schema validator", "draft 7", "2020-12", "structured output", "openai", "required", "additionalProperties"] },
       { name: "JSONL Viewer", href: "/jsonl-viewer/", description: "Validate, filter & export JSON Lines", keywords: ["ndjson", "json lines", "newline delimited json", "logs", "parser"] },
       { name: "YAML ↔ JSON", href: "/yaml-json-converter/", description: "Convert YAML to JSON and back", keywords: ["yml", "convert"] },
       { name: "CSV ↔ JSON", href: "/csv-json-converter/", description: "Convert CSV to JSON and back", keywords: ["spreadsheet", "excel", "convert"] },

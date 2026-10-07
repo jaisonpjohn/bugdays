@@ -1,0 +1,61 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+import { schemaExample, invalidExample, validExample, structuredExample } from '../../lib/schema-doctor-examples.ts';
+import LZString from 'lz-string';
+const guide = guideBySlug('validate-json-against-schema');
+const link = (schema: string, json: string, profile = 'standard') => '/json-schema-validator/#lz:' + LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'json-schema-validator', a: 'validate', d: { schema, json, dialect: 'auto', profile, formats: false, references: [] } }));
+---
+<GuideLayout guide={guide} keywords="validate JSON against schema, JSON schema validator, JSON schema validation errors, required property missing, additionalProperties false, anyOf oneOf, invalid schema for response_format">
+  <p>Your endpoint returns valid JSON, but the client still rejects it. Pretty-printing will not explain why <code>"1042"</code> is not an integer or why <code>"PAID"</code> fails a lowercase enum. You need to compare the response with its schema and find the exact rule that disagrees.</p>
+  <p>This walkthrough uses fictional order data. <a data-schema-example="invalid" href={link(schemaExample, invalidExample)}>Open the failing example in JSON Schema Doctor</a> to reproduce all four errors without an account, a backend, or an API key.</p>
+
+  <h2>A valid JSON document with four contract errors</h2>
+  <p>The response below parses correctly. Its problems are semantic: the type of an order ID, the spelling of a status, a nested quantity, and an unexpected debug field.</p>
+  <pre><code>{invalidExample}</code></pre>
+  <p>Here is the matching contract. The nested item schema lives in <code>$defs</code>, and the array uses <code>$ref</code> to reuse it:</p>
+  <pre><code>{schemaExample}</code></pre>
+  <p>Run Validate. Select a finding to jump to its input line. Each finding also shows a JSON Pointer and the schema rule responsible for the error.</p>
+  <div class="table-scroll"><table><thead><tr><th>Data pointer</th><th>What failed</th><th>Fix in this example</th></tr></thead><tbody>
+    <tr><td><code>/orderId</code></td><td>A quoted number is a string.</td><td>Use the number <code>1042</code>.</td></tr>
+    <tr><td><code>/status</code></td><td>Enum matching is case-sensitive.</td><td>Use <code>"paid"</code>.</td></tr>
+    <tr><td><code>/items/0/quantity</code></td><td>The quantity is below its minimum.</td><td>Use a quantity of at least 1.</td></tr>
+    <tr><td><code>/debug</code></td><td>The root object disallows undeclared properties.</td><td>Remove the debug field.</td></tr>
+  </tbody></table></div>
+  <p>The first array item has index <code>0</code>. In JSON Pointer, a property name containing <code>/</code> escapes it as <code>~1</code>; a literal <code>~</code> becomes <code>~0</code>. This keeps paths unambiguous even for unusual field names.</p>
+
+  <h2>Check the repaired response</h2>
+  <pre><code>{validExample}</code></pre>
+  <p><a data-schema-example="valid" href={link(schemaExample, validExample)}>Open the passing example</a>. The schema has not changed; the response now satisfies it. Schema Doctor does not coerce strings into numbers, insert defaults, or delete extra fields. That matters when you are testing what the API actually returned.</p>
+  <p>Use <a href="/json-diff/">JSON Diff</a> to review the before-and-after response. If the document cannot even be parsed, start with the <a href="/json-formatter/">JSON Formatter</a> instead: comments, trailing commas, and single-quoted keys are syntax problems, not schema failures.</p>
+  <p>Schema Doctor rejects duplicate keys, nonfinite parsed numbers, and integers outside JavaScript’s safe range rather than validating a silently rounded value. It uses JavaScript number arithmetic, not an arbitrary-precision numeric engine. For long identifiers, use strings if the API contract allows them.</p>
+
+  <h2>Missing, optional, and null are three different things</h2>
+  <p>Adding a name under <code>properties</code> describes its value when present. Only <code>required</code> makes that property mandatory. A nullable value does not make a key optional: <code>"type": ["string", "null"]</code> permits an explicit null, while <code>required: ["name"]</code> still insists the key exists.</p>
+  <p>When a required key is missing there is no value to highlight. The validator points to the containing object and reports the missing field’s path. Decide whether the producer should supply the field or the contract should allow omission; changing the schema just to make a sample pass can hide a real API regression.</p>
+
+  <h2>Choose the dialect before debugging array rules</h2>
+  <p>The <code>$schema</code> declaration identifies a JSON Schema dialect. Draft 7, 2019-09, and 2020-12 are supported here. If you leave out the declaration, Auto uses 2020-12. Choosing a conflicting dialect is reported, rather than silently interpreting your rules differently.</p>
+  <p>Tuple syntax is a common trap: Draft 7 uses an array of schemas under <code>items</code>; 2020-12 uses <code>prefixItems</code>. Merely replacing the draft URL is not a schema migration. See the <a href="https://json-schema.org/draft/2020-12">JSON Schema 2020-12 specification overview</a> for the dialect’s changes.</p>
+  <p>Formats are another source of differences between validators. By default this tool treats <code>format</code> as an annotation. Enable Assert formats when you want supported email, date-time, URI, and other format checks. A format assertion is still not proof that a mailbox exists or that a URL is reachable.</p>
+
+  <h2>Resolve references without a schema server</h2>
+  <p>The example’s <code>#/$defs/item</code> reference stays inside one document. For separate files, give the root schema an absolute <code>$id</code>, such as <code>https://example.com/schemas/order.json</code>. A reference to <code>item.json</code> then resolves to <code>https://example.com/schemas/item.json</code>.</p>
+  <p>Add the local item file with that exact absolute <code>$id</code> under Local reference schemas. The URL serves as an identifier; Schema Doctor does not request it over the network. Missing references remain errors until you supply their schemas. This keeps results repeatable and also works with internal schema identifiers.</p>
+
+  <h2>Why anyOf and oneOf errors can look noisy</h2>
+  <p><code>anyOf</code> succeeds when at least one branch succeeds. <code>oneOf</code> requires exactly one, so a value matching two overlapping branches fails too. Inspect the branch-specific findings at the same data path instead of treating the summary error as another independent field problem.</p>
+  <p>For example, <code>{'oneOf: [{"type":"number"},{"type":"integer"}]'}</code> rejects <code>2</code>: that value is both a number and an integer. Use mutually exclusive branches when exclusive matching is what the contract needs.</p>
+
+  <h2>Separate JSON Schema validity from structured-output compatibility</h2>
+  <p>A general-purpose schema can be valid and still be unsuitable for a model’s structured-output API. The optional OpenAI profile checks a reviewed set of strict-output rules, including the object root, required fields, and closed objects. It also flags selected unsupported or unreviewed keywords.</p>
+  <p><a data-schema-example="structured" href={link(structuredExample, '{"summary":"A fictional support request"}', 'openai')}>Open the structured-output example</a>. The document satisfies the original schema, but the provider checks identify contract changes to review. The proposed-edits panel shows each old and new rule before applying it. No arbitrary constraints are stripped, and optional fields are not silently made nullable.</p>
+  <p>The profile is dated October 5, 2026. It is not a full compatibility certification: fine-tuned/model-specific restrictions and reference-expanded nesting limits are outside its scope. Check the <a href="https://developers.openai.com/api/docs/guides/structured-outputs">official supported-schema documentation</a> and test the exact model and endpoint you intend to use. This tool never calls that API.</p>
+
+  <h2>Share a small reproducer, not the whole production response</h2>
+  <p>Keep only enough data to demonstrate the failure. Replace personal values and credentials with fictional ones, then confirm the error still reproduces. Share example displays the exact schema, document, reference files, and settings that the link will contain.</p>
+  <p>An embedded link carries the example in its URL fragment. A stored short link is an explicit upload of that share state. Neither is private storage: anyone with the link can read it. A downloaded diagnosis omits the original documents but still contains property paths and error text, which should also be reviewed.</p>
+  <p>For application code derived from a representative response, continue with the <a href="/json-to-code/">TypeScript, Zod, and Pydantic generator</a>. Inference from one example is a starting point; schema validation is how you check an explicit contract.</p>
+  <a slot="related" href="/guides/format-validate-json-api-response/" class="doctor-guide-link rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"><strong class="text-indigo-600 dark:text-indigo-400">Debug JSON syntax and inspect an API response →</strong></a>
+  <a slot="related" href="/guides/json-to-typescript-zod-pydantic/" class="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800"><strong class="text-indigo-600 dark:text-indigo-400">Generate application types from a JSON example →</strong></a>
+</GuideLayout>

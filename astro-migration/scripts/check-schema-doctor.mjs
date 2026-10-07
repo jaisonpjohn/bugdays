@@ -1,0 +1,35 @@
+import assert from 'node:assert/strict';
+import { readFile, readdir } from 'node:fs/promises';
+import { gzipSync } from 'node:zlib';
+import LZString from 'lz-string';
+import { diagnoseSchema } from '../src/lib/schema-doctor.ts';
+const read = path => readFile(new URL(`../dist/${path}`, import.meta.url), 'utf8');
+const tool = await read('json-schema-validator/index.html');
+const guide = await read('guides/validate-json-against-schema/index.html');
+for (const [path, html, type] of [['/json-schema-validator/', tool, 'WebApplication'], ['/guides/validate-json-against-schema/', guide, 'Article']]) {
+  assert.ok(html.includes(`rel="canonical" href="https://bugdays.com${path}"`));
+  assert.equal([...html.matchAll(/<h1\b/g)].length, 1);
+  for (const attr of ['name="description"', 'property="og:description"', 'name="twitter:description"']) assert.ok(html.includes(attr));
+  const schemas = [...html.matchAll(/<script type="application\/ld\+json">(.*?)<\/script>/gs)].flatMap(m => JSON.parse(m[1]));
+  assert.ok(schemas.some(schema => schema['@type'] === type));
+  assert.ok(html.includes('/og/guide-json-schema-doctor.png'));
+  assert.ok((await read('sitemap-0.xml')).includes(path));
+}
+assert.ok((await read('guides/rss.xml')).includes('/guides/validate-json-against-schema/'));
+assert.ok((await read('guides/index.html')).includes('/guides/validate-json-against-schema/'));
+for (const path of ['index.html', 'json-tools/index.html', 'developer-tools/index.html', 'json-formatter/index.html', 'json-diff/index.html', 'json-to-code/index.html']) assert.ok((await read(path)).includes('href="/json-schema-validator/"'));
+assert.ok(tool.includes('FAQPage'));
+const links = [...guide.matchAll(/href="\/json-schema-validator\/#lz:([^"]+)"/g)];
+assert.equal(links.length, 3);
+const reports = links.map(([, hash]) => diagnoseSchema(JSON.parse(LZString.decompressFromEncodedURIComponent(hash)).d));
+assert.equal(reports[0].findings.length, 4); assert.equal(reports[1].dataValid, true); assert.equal(reports[2].profile, 'openai');
+const assets = await readdir(new URL('../dist/_astro/', import.meta.url));
+const worker = assets.find(name => name.startsWith('schema-doctor.worker-'));
+const ui = assets.find(name => name.startsWith('json-schema-validator.astro_'));
+assert.ok(worker && ui);
+assert.ok(!tool.includes(`rel="modulepreload" href="/_astro/${worker}"`), 'Validator must not be eagerly loaded');
+const uiBytes = gzipSync(await read(`_astro/${ui}`)).length;
+const workerBytes = gzipSync(await read(`_astro/${worker}`)).length;
+assert.ok(uiBytes < 12_000, `Page UI exceeds 12 KB compressed: ${uiBytes}`);
+assert.ok(workerBytes < 65_000, `Deferred validator exceeds 65 KB compressed: ${workerBytes}`);
+console.log(`Schema Doctor SEO, links, examples and bundle budgets passed. UI ${uiBytes} B gzip; deferred worker ${workerBytes} B gzip.`);

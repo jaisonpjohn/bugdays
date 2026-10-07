@@ -17,6 +17,16 @@ export interface Guide {
 
 export const guides: Guide[] = [
   {
+    slug: 'validate-json-against-schema',
+    title: 'Validate JSON Against a Schema: Find and Fix the Failing Field',
+    shortTitle: 'Diagnose JSON Schema validation errors',
+    description: 'Debug a JSON API response with four reproducible failures. Understand required fields, null, extra keys, local references, and structured-output schema checks.',
+    topic: 'JSON Schema validation', published: '2026-10-05', updated: '2026-10-05', readingMinutes: 7,
+    image: '/og/guide-json-schema-doctor.png', artImage: '/og/guide-json-schema-doctor.svg',
+    imageAlt: 'JSON Schema Doctor traces /items/0/quantity to its minimum rule, then shares the reproducible example',
+    toolHref: '/json-schema-validator/', toolName: 'JSON Schema Doctor',
+  },
+  {
     slug: 'gzip-base64-java',
     title: 'Java GZip Base64: Compress and Decode Strings with UTF-8',
     shortTitle: 'Decode Base64 GZip in Java',
