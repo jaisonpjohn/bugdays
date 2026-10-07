@@ -167,3 +167,17 @@ test('clipboard denial and worker startup failure are recoverable and do not cha
   await page.evaluate(() => { window.Worker = (window as any).__realWorker; });
   await page.locator('#validate-btn').click(); await expect(page.locator('#formatter-status')).toContainText('Valid JSON');
 });
+test('compact formatter keeps bottom controls visible and long JSON scrollable', async ({ page }, testInfo) => {
+  const viewport = testInfo.project.name === 'mobile' ? { width: 393, height: 740 } : { width: 1280, height: 600 };
+  await page.setViewportSize(viewport); await page.goto('/json-formatter/');
+  const metrics = await page.evaluate(() => ({ height: document.querySelector('[data-json-editor]')!.getBoundingClientRect().height, bottom: document.querySelector('#formatter-status')!.getBoundingClientRect().bottom, scroll: scrollY }));
+  expect(metrics.height).toBeLessThanOrEqual(testInfo.project.name === 'mobile' ? 240 : 320);
+  expect(metrics.bottom).toBeLessThan(viewport.height); expect(metrics.scroll).toBe(0);
+  const text = JSON.stringify({ rows: Array.from({ length: 300 }, (_, id) => ({ id, value: 'row-' + id })) }, null, 2);
+  await page.locator('#editor').fill(text);
+  const scroll = await page.locator('#editor').evaluate(node => { const input = node as HTMLTextAreaElement; input.scrollTop = input.scrollHeight; input.dispatchEvent(new Event('scroll')); return { top: input.scrollTop, height: input.clientHeight, fullHeight: input.scrollHeight }; });
+  expect(scroll.top).toBeGreaterThan(0); expect(scroll.fullHeight).toBeGreaterThan(scroll.height);
+  await page.locator('#tree-btn').click(); await expect(page.locator('#tree-view')).toBeVisible();
+  expect((await page.locator('#tree-view').boundingBox())!.height).toBe(metrics.height);
+  await page.locator('#back-btn').click(); await expect(page.locator('#editor')).toHaveValue(text);
+});

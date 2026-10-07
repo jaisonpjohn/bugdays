@@ -285,12 +285,15 @@ export function createJsonEditor(element: HTMLTextAreaElement): JsonEditor {
     element.setRangeText(text, element.selectionStart, element.selectionEnd, 'end');
     element.dispatchEvent(new Event('input', { bubbles: true }));
   }
+  // Native insertion also becomes slow with many short lines, even when the
+  // total text is well below the byte-size threshold.
+  const needsFastInsertion = (text: string) => text.length > 50_000 || text.split('\n', 502).length > 500;
   element.addEventListener('paste', event => {
     const text = event.clipboardData?.getData('text/plain');
-    if (text && text.length > 50_000) { event.preventDefault(); insertLargeText(text); }
+    if (text && needsFastInsertion(text)) { event.preventDefault(); insertLargeText(text); }
   }, { signal: lifetime.signal });
   element.addEventListener('beforeinput', event => {
-    if (event.cancelable && event.data && event.data.length > 50_000 && event.inputType === 'insertText') {
+    if (event.cancelable && event.data && needsFastInsertion(event.data) && event.inputType === 'insertText') {
       event.preventDefault(); insertLargeText(event.data);
     }
   }, { signal: lifetime.signal });

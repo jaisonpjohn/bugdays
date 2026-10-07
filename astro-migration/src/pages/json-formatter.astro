@@ -115,12 +115,12 @@ const jsonLd = [
 
       <!-- Editor area -->
       <div id="editor-view" class="p-3">
-        <JsonEditor id="editor" label="JSON input" shareKey="json" height="h-[420px] sm:h-[480px]" />
+        <JsonEditor id="editor" label="JSON input" shareKey="json" height="formatter-editor-height" />
         <p id="file-status" class="mt-2 text-xs text-slate-500 dark:text-slate-400">Drop a JSON file here or choose Open file. Nothing is uploaded.</p>
       </div>
 
       <!-- Tree View -->
-      <div id="tree-view" class="hidden p-4 h-[420px] sm:h-[480px] overflow-auto font-mono text-sm" aria-label="JSON tree"></div>
+      <div id="tree-view" class="hidden formatter-editor-height p-4 overflow-auto font-mono text-sm" aria-label="JSON tree"></div>
 
       <!-- Path tooltip -->
       <div id="path-tooltip" class="hidden border-t border-indigo-200 bg-indigo-50 p-3 dark:border-indigo-900 dark:bg-indigo-950/30">
@@ -139,6 +139,12 @@ const jsonLd = [
 
 <script>import '../lib/json-formatter-ui.ts';</script>
 <style>
+  /* Reserve room for the header, toolbars and bottom status instead of letting
+     a fixed-height editor push the rest of the workflow below the fold. */
+  #formatter-workspace :global(.formatter-editor-height) { height:clamp(10rem, calc(100svh - 24rem), 20rem); }
+  @media (max-width:639px) {
+    #formatter-workspace :global(.formatter-editor-height) { height:clamp(9rem, calc(100svh - 37rem), 15rem); }
+  }
   .json-secondary { border:1px solid #cbd5e1; border-radius:.4rem; padding:.4rem .65rem; font-size:.8125rem; font-weight:600; color:#334155; background:white; cursor:pointer; }
   .json-secondary:hover { background:#eef2ff; } button:disabled { cursor:default; opacity:.4; }
   button:focus-visible { outline:2px solid #6366f1; outline-offset:2px; }
