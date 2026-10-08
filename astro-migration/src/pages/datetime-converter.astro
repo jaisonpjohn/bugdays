@@ -1,22 +1,32 @@
 ---
 import Layout from '../layouts/Layout.astro';
 const faqs = [
-  { question: 'How do I convert Unix epoch seconds or milliseconds to a date?', answer: 'Enter either timestamp to update the ISO 8601 date, readable date, date picker, and RFC 2822 value instantly. Epoch seconds can include up to three decimal places. Unix timestamps identify an instant and do not change when you select another timezone.' },
+  { question: 'How do I convert Unix epoch seconds or milliseconds to a date?', answer: 'Enter either value in the timezone-independent Unix timestamp section to update both sides instantly. Epoch seconds can include up to three decimal places. A Unix timestamp identifies the same instant worldwide; it belongs to neither the source nor target timezone.' },
   { question: 'How do I convert between a source and target timezone?', answer: 'Choose the source timezone and enter its local date and time. Choose a target timezone to see the converted clock time and ISO 8601 offset alongside the source. Your browser’s timezone is the source default; UTC is the target default. Changing the target preserves the instant. Changing the source after entering a local date reinterprets that clock time. Swap zones reverses the view without changing the instant.' },
   { question: 'How do I get ISO 8601 with a timezone offset?', answer: 'Choose a target timezone such as America/New_York or Asia/Kolkata. Both sides show ISO 8601 with their offsets for the selected date, including daylight saving time. UTC uses Z; other zones show a numeric offset such as -04:00 or +05:30.' },
   { question: 'Which timezone is used when I enter a date without an offset?', answer: 'The source date and time uses the source timezone. Editable target ISO, readable date and RFC fields use the target timezone when no offset is supplied. A date with Z or a numeric offset identifies its own instant. Epoch timestamps and current-time snapshots also identify absolute instants, so changing either timezone only changes their display.' },
   { question: 'What happens during a daylight-saving clock change?', answer: 'A skipped local time is rejected instead of silently shifted. A repeated local time shows a first/second occurrence selector with the two offsets. This converter supports millisecond precision and calendar years 0001–9999, not leap seconds or historical seconds-based timezone offsets.' },
   { question: 'Can I share the converted timestamp?', answer: 'Share time preserves the exact milliseconds and both source and target timezones, including a snapshot of current time. Opening the link reproduces the same moment rather than recalculating now. Conversion runs in your browser; sharing is optional.' },
 ];
-const fields = [
+const sourceFields = [
   { id: 'datepicker', label: 'Source date & time', type: 'datetime-local', placeholder: '', hint: 'Enter the local clock time in the source timezone.', readonly: false },
-  { id: 'target-datepicker', label: 'Converted date & time', type: 'datetime-local', placeholder: '', hint: 'The same moment in the target timezone.', readonly: true },
   { id: 'source-iso8601', label: 'Source ISO 8601 with offset', type: 'text', placeholder: '', hint: 'Source date, time and its daylight-saving-aware offset.', readonly: true },
+  { id: 'source-human', label: 'Source human-readable date', type: 'text', placeholder: '', hint: 'Local time with its UTC offset.', readonly: true, zone: 'source' },
+  { id: 'source-rfc2822', label: 'Source RFC 2822 date', type: 'text', placeholder: '', hint: 'Email-style source date; whole-second precision.', readonly: true },
+];
+const targetFields = [
+  { id: 'target-datepicker', label: 'Converted date & time', type: 'datetime-local', placeholder: '', hint: 'The same moment in the target timezone.', readonly: true },
   { id: 'iso8601', label: 'Target ISO 8601 with offset', type: 'text', placeholder: '2024-01-01T05:30:00.000+05:30', hint: 'Editable. Without an offset, this uses the target zone.' },
-  { id: 'unix-sec', label: 'Unix timestamp · seconds', type: 'text', placeholder: '1704067200', hint: 'Fractional seconds preserve milliseconds.' },
-  { id: 'unix-ms', label: 'Unix timestamp · milliseconds', type: 'text', placeholder: '1704067200000', hint: 'The exact moment, independent of timezone.' },
-  { id: 'human', label: 'Target human-readable date', type: 'text', placeholder: 'January 1, 2024 12:00:00 AM', hint: 'English date and time in the target zone, with a GMT offset.' },
+  { id: 'human', label: 'Target human-readable date', type: 'text', placeholder: 'January 1, 2024 12:00:00 AM', hint: 'Editable local time with its UTC offset.', zone: 'target' },
   { id: 'rfc2822', label: 'Target RFC 2822 date', type: 'text', placeholder: 'Mon, 01 Jan 2024 00:00:00 +0000', hint: 'Email-style target date; whole-second precision.' },
+];
+const epochFields = [
+  { id: 'unix-sec', label: 'Unix timestamp · seconds', type: 'text', placeholder: '1704067200', hint: 'Fractional seconds preserve milliseconds.', readonly: false, zone: undefined },
+  { id: 'unix-ms', label: 'Unix timestamp · milliseconds', type: 'text', placeholder: '1704067200000', hint: 'An integer count of milliseconds since the Unix epoch.', readonly: false, zone: undefined },
+];
+const zoneCards = [
+  { id: 'source-times', heading: 'Source', selectId: 'source-timezone', shareKey: 'sourceTimezone', offsetId: 'source-offset', fields: sourceFields },
+  { id: 'target-times', heading: 'Target', selectId: 'timezone', shareKey: 'timezone', offsetId: 'zone-offset', fields: targetFields },
 ];
 const jsonLd = [
   { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Unix Timestamp & Timezone Converter', url: 'https://bugdays.com/datetime-converter/', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } },
@@ -35,40 +45,55 @@ const jsonLd = [
     <p class="mt-2 mb-4 text-sm text-slate-600 dark:text-slate-300">Convert timestamps or local time between timezones. See both sides, with the right ISO 8601 offsets.</p>
     <section id="datetime-workspace" aria-label="Date and timestamp converter" class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 overflow-hidden">
       <div class="border-b border-slate-200 p-4 dark:border-slate-700">
-        <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
-          <div class="min-w-0">
-            <label for="source-timezone" class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">From · source timezone</label>
-            <select id="source-timezone" data-share-key="sourceTimezone" aria-describedby="source-offset" class="datetime-input"></select>
-            <p id="source-offset" class="mt-1 text-xs text-slate-500 dark:text-slate-400">UTC offset depends on the date</p>
-          </div>
-          <button id="swap-zones-btn" aria-label="Swap source and target timezones" title="Swap zones, keeping the same moment" class="justify-self-start sm:justify-self-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-indigo-600 dark:border-slate-600 dark:text-indigo-400 disabled:opacity-40">⇄ <span class="sm:sr-only">Swap zones</span></button>
-          <div class="min-w-0">
-            <label for="timezone" class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">To · target timezone</label>
-            <select id="timezone" data-share-key="timezone" aria-describedby="zone-offset" class="datetime-input"></select>
-            <p id="zone-offset" class="mt-1 text-xs text-slate-500 dark:text-slate-400">UTC offset depends on the date</p>
-          </div>
-        </div>
-        <div class="flex flex-wrap gap-2 mt-3">
+        <div class="flex flex-wrap gap-2">
           <button id="now-btn" data-share-action="convert" class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Use current time</button>
           <button id="clear-btn" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-200">Clear</button>
+          <button id="swap-zones-btn" aria-label="Swap source and target timezones" title="Swap zones, keeping the same moment" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-indigo-600 dark:border-slate-600 dark:text-indigo-400 disabled:opacity-40">⇄ Swap zones</button>
           <button id="share-time-btn" class="ml-auto rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40">Share time ↗</button>
         </div>
       </div>
-      <p class="px-4 pt-3 text-xs text-slate-500 dark:text-slate-400">Enter a source local time, or paste a timestamp below. Changing the target keeps the same moment.</p>
+      <p class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">Paste a timestamp, or enter a date in the source card. Changing the target keeps the same moment.</p>
       <div id="error-box" role="alert" class="hidden mx-4 mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"></div>
       <div id="dst-choice" class="hidden mx-4 mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
         <label for="dst-occurrence" class="block mb-2">The clock repeats this local time. Choose which occurrence you mean:</label>
         <select id="dst-occurrence" class="datetime-input"></select>
       </div>
-      <div class="grid md:grid-cols-2 gap-x-5 gap-y-4 p-4">
-        {fields.map(field => <div class="min-w-0">
+      <section id="epoch-values" aria-label="Timezone-independent Unix timestamps" class="border-y border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/50">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pt-3">
+          <h2 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Unix timestamps</h2>
+          <span class="rounded-full border border-slate-300 bg-white px-2 py-0.5 text-xs font-medium text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">Timezone-independent</span>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Same instant. Same values in every timezone.</p>
+        </div>
+        <div class="grid md:grid-cols-2 gap-x-5 gap-y-3 p-4">
+        {epochFields.map(field => <div class="min-w-0">
           <div class="flex items-center justify-between gap-2 mb-1">
             <label for={field.id} class="text-sm font-semibold text-slate-700 dark:text-slate-200">{field.label}</label>
             <button data-copy={field.id} aria-label={`Copy ${field.label}`} class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-40">Copy</button>
           </div>
-          <input id={field.id} type={field.type} readonly={field.readonly} step={field.type === 'datetime-local' ? '0.001' : undefined} data-share-key={field.id === 'unix-sec' ? 'unixSec' : undefined} placeholder={field.placeholder} aria-describedby={`${field.id}-hint`} autocomplete="off" spellcheck="false" class="datetime-input font-mono" />
+          <input id={field.id} type={field.type} data-share-key={field.id === 'unix-sec' ? 'unixSec' : undefined} placeholder={field.placeholder} aria-describedby={`${field.id}-hint`} autocomplete="off" spellcheck="false" class="datetime-input font-mono" />
           <p id={`${field.id}-hint`} class="mt-1 text-xs text-slate-500 dark:text-slate-400">{field.hint}</p>
         </div>)}
+        </div>
+      </section>
+      <div id="zoned-times" class="grid md:grid-cols-2 items-start gap-4 p-4">
+        {zoneCards.map(card => <section id={card.id} aria-labelledby={`${card.id}-heading`} class:list={['min-w-0 rounded-xl border p-4', card.id === 'source-times' ? 'border-slate-200 bg-white dark:border-slate-600 dark:bg-slate-800' : 'border-indigo-200 bg-indigo-50/60 dark:border-indigo-900 dark:bg-indigo-950/25']}>
+          <h2 id={`${card.id}-heading`} class="text-base font-semibold text-slate-900 dark:text-white mb-3">{card.heading}</h2>
+          <div class="pb-3 mb-3 border-b border-slate-200 dark:border-slate-600">
+            <label for={card.selectId} class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">{card.heading === 'Source' ? 'From · source timezone' : 'To · target timezone'}</label>
+            <select id={card.selectId} data-share-key={card.shareKey} aria-describedby={card.offsetId} class="datetime-input"></select>
+            <p id={card.offsetId} class="mt-1 text-xs text-slate-500 dark:text-slate-400">UTC offset depends on the date</p>
+          </div>
+          <div class="grid gap-3">
+            {card.fields.map(field => <div class="min-w-0">
+              <div class="flex items-center justify-between gap-2 mb-1">
+                <label for={field.id} class="text-sm font-semibold text-slate-700 dark:text-slate-200">{field.label}</label>
+                <button data-copy={field.id} aria-label={`Copy ${field.label}`} class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-40">Copy</button>
+              </div>
+              <input id={field.id} type={field.type} readonly={field.readonly} step={field.type === 'datetime-local' ? '0.001' : undefined} placeholder={field.placeholder} aria-describedby={`${field.id}-hint`} autocomplete="off" spellcheck="false" class="datetime-input font-mono" />
+              <p id={`${field.id}-hint`} class="mt-1 text-xs text-slate-500 dark:text-slate-400">{field.zone && <><span data-zone-context={field.zone} class="font-medium"></span> · </>}{field.hint}</p>
+            </div>)}
+          </div>
+        </section>)}
       </div>
       <div class="flex flex-wrap justify-between gap-2 border-t border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
         <p id="datetime-status" role="status">All fields represent the same moment.</p><p id="local-zone"></p>

@@ -14,6 +14,7 @@ function init() {
   const zone = el<HTMLSelectElement>('timezone'), sourceZone = el<HTMLSelectElement>('source-timezone');
   const occurrence = el<HTMLSelectElement>('dst-occurrence');
   const sourceIso = el<HTMLInputElement>('source-iso8601'), targetDate = el<HTMLInputElement>('target-datepicker');
+  const sourceHuman = el<HTMLInputElement>('source-human'), sourceRfc = el<HTMLInputElement>('source-rfc2822');
   const local = browserTimeZone();
   const zones = timeZones(local);
   for (const select of [sourceZone, zone]) for (const value of [local, ...zones.filter(z => z !== local)]) {
@@ -27,6 +28,11 @@ function init() {
   let sourceWall = false, occurrenceField: DateTimeField | null = null;
   let candidates: number[] = [];
   const status = (text: string) => { el('datetime-status').textContent = text; };
+  function zoneLabels() {
+    for (const node of root!.querySelectorAll<HTMLElement>('[data-zone-context]')) {
+      node.textContent = node.dataset.zoneContext === 'source' ? sourceZone.value : zone.value;
+    }
+  }
   function enabled() {
     el<HTMLButtonElement>('share-time-btn').disabled = instant === null;
     el<HTMLButtonElement>('swap-zones-btn').disabled = instant === null;
@@ -41,9 +47,9 @@ function init() {
   function clear(source?: DateTimeField) {
     instant = null; resetOccurrences();
     fields.forEach(field => { if (field !== source) inputs[field].value = ''; });
-    sourceIso.value = ''; targetDate.value = '';
+    sourceIso.value = ''; targetDate.value = ''; sourceHuman.value = ''; sourceRfc.value = '';
     for (const id of ['source-offset', 'zone-offset']) el(id).textContent = 'UTC offset depends on the date';
-    enabled();
+    zoneLabels(); enabled();
   }
   function fail(error: unknown, source?: DateTimeField) {
     clear(source); hideError();
@@ -59,6 +65,8 @@ function init() {
     instant = ms; hideError();
     fields.forEach(field => { if (field !== source) inputs[field].value = field === 'datepicker' ? sourceValues[field] : values[field]; });
     sourceIso.value = sourceValues.iso8601; targetDate.value = values.datepicker;
+    sourceHuman.value = sourceValues.human; sourceRfc.value = sourceValues.rfc2822;
+    zoneLabels();
     el('source-offset').textContent = `UTC offset ${sourceValues.offset}`;
     el('zone-offset').textContent = `UTC offset ${values.offset}`;
     status('All fields represent the same moment. Conversion stays in your browser.');
@@ -90,12 +98,14 @@ function init() {
     inputs[field].addEventListener('change', () => convert(field, true), { signal });
   }
   zone.addEventListener('change', () => {
+    zoneLabels();
     if (instant !== null) {
       try { render(instant); if (occurrenceField !== 'datepicker') resetOccurrences(); }
       catch (error) { fail(error); }
     } else if (pending && ['iso8601', 'human', 'rfc2822'].includes(pending)) convert(pending, true);
   }, { signal });
   sourceZone.addEventListener('change', () => {
+    zoneLabels();
     // A deliberately entered source clock time stays put when its zone changes.
     // Epochs, offset-bearing dates and "now" are absolute instants instead.
     if (sourceWall) convert('datepicker', true);

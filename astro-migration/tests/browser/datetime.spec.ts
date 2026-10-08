@@ -36,6 +36,55 @@ test('source defaults to local and target to UTC; absolute instants synchronize 
   expect(ms).toBeGreaterThanOrEqual(before - 1000); expect(ms).toBeLessThanOrEqual(Date.now() + 1000);
   expect(Date.parse(await page.locator('#iso8601').inputValue())).toBe(ms);
 });
+test('source fields stay in the left card, target fields in the right, and epochs stay global', async ({ page }) => {
+  await page.goto('/datetime-converter/');
+  const global = page.locator('#epoch-values');
+  await expect(global).toContainText('Timezone-independent');
+  await expect(global.locator('#unix-sec')).toHaveCount(1); await expect(global.locator('#unix-ms')).toHaveCount(1);
+  await expect(page.locator('#zoned-times #unix-sec')).toHaveCount(0);
+  await expect(page.locator('#zoned-times #unix-ms')).toHaveCount(0);
+  for (const id of ['source-timezone', 'datepicker', 'source-iso8601', 'source-human', 'source-rfc2822']) {
+    await expect(page.locator('#source-times #' + id)).toHaveCount(1);
+    await expect(page.locator('#target-times #' + id)).toHaveCount(0);
+  }
+  for (const id of ['timezone', 'target-datepicker', 'iso8601', 'human', 'rfc2822']) {
+    await expect(page.locator('#target-times #' + id)).toHaveCount(1);
+    await expect(page.locator('#source-times #' + id)).toHaveCount(0);
+  }
+  const left = (await page.locator('#source-times').boundingBox())!, right = (await page.locator('#target-times').boundingBox())!;
+  if (page.viewportSize()!.width >= 768) expect(right.x).toBeGreaterThan(left.x + left.width);
+  else expect(right.y).toBeGreaterThan(left.y + left.height);
+  const distinctCards = async () => expect(await page.evaluate(() => {
+    const source = getComputedStyle(document.querySelector('#source-times')!), target = getComputedStyle(document.querySelector('#target-times')!);
+    return source.backgroundColor !== target.backgroundColor && parseFloat(source.borderTopWidth) > 0 && parseFloat(target.borderTopWidth) > 0;
+  })).toBeTruthy();
+  await distinctCards();
+  const distinctBackground = async () => expect(await page.evaluate(() => getComputedStyle(document.querySelector('#epoch-values')!).backgroundColor !== getComputedStyle(document.querySelector('#datetime-workspace')!).backgroundColor)).toBeTruthy();
+  await distinctBackground();
+  await page.locator('#unix-ms').fill('1719837296789');
+  await page.locator('#timezone').selectOption('Asia/Kolkata');
+  await expect(page.locator('#source-human')).toHaveValue('Monday, July 1, 2024 05:34:56.789 GMT-07:00');
+  await expect(page.locator('#human')).toHaveValue('Monday, July 1, 2024 18:04:56.789 GMT+05:30');
+  await expect(page.locator('#source-human-hint')).toContainText('America/Los_Angeles');
+  await expect(page.locator('#human-hint')).toContainText('Asia/Kolkata');
+  await expect(page.locator('#source-rfc2822')).toHaveValue('Mon, 01 Jul 2024 05:34:56 -0700');
+  await expect(page.locator('#rfc2822')).toHaveValue('Mon, 01 Jul 2024 18:04:56 +0530');
+  await page.locator('[data-copy="source-human"]').click();
+  expect(await page.evaluate(() => (window as any).__copied)).toBe('Monday, July 1, 2024 05:34:56.789 GMT-07:00');
+  await page.locator('[data-copy="source-rfc2822"]').click();
+  expect(await page.evaluate(() => (window as any).__copied)).toBe('Mon, 01 Jul 2024 05:34:56 -0700');
+  await page.locator('#swap-zones-btn').click();
+  await expect(page.locator('#source-human-hint')).toContainText('Asia/Kolkata');
+  await expect(page.locator('#human-hint')).toContainText('America/Los_Angeles');
+  await expect(page.locator('#unix-ms')).toHaveValue('1719837296789');
+  await page.evaluate(() => document.documentElement.classList.add('dark'));
+  await distinctBackground(); await distinctCards();
+  await page.locator('#unix-ms').fill('bad');
+  for (const id of ['source-human', 'source-rfc2822', 'human', 'source-iso8601', 'target-datepicker']) await expect(page.locator('#' + id)).toHaveValue('');
+  await expect(page.locator('[data-copy="source-human"]')).toBeDisabled();
+  await page.locator('#source-timezone').selectOption('UTC');
+  await expect(page.locator('#source-human-hint')).toContainText('UTC');
+});
 test('source picker and target dates without offsets use their own zones with milliseconds', async ({ page }) => {
   await page.goto('/datetime-converter/'); await page.locator('#source-timezone').selectOption('Asia/Kathmandu');
   await page.locator('#datepicker').fill('2024-01-01T09:00:00.025');
