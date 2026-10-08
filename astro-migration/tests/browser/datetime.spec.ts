@@ -85,24 +85,25 @@ test('source fields stay in the left card, target fields in the right, and epoch
   await page.locator('#source-timezone').selectOption('UTC');
   await expect(page.locator('#source-human-hint')).toContainText('UTC');
 });
-test('source picker and target dates without offsets use their own zones with milliseconds', async ({ page }) => {
+test('source picker updates read-only target dates in the selected zone with milliseconds', async ({ page }) => {
   await page.goto('/datetime-converter/'); await page.locator('#source-timezone').selectOption('Asia/Kathmandu');
   await page.locator('#datepicker').fill('2024-01-01T09:00:00.025');
   await expect(page.locator('#unix-ms')).toHaveValue(String(Date.parse('2024-01-01T03:15:00.025Z')));
   await expect(page.locator('#source-iso8601')).toHaveValue('2024-01-01T09:00:00.025+05:45');
   await expect(page.locator('#iso8601')).toHaveValue('2024-01-01T03:15:00.025Z');
   await page.locator('#timezone').selectOption('Asia/Kathmandu');
-  await page.locator('#iso8601').fill('2024-07-01T09:00:05.321');
+  await page.locator('#datepicker').fill('2024-07-01T09:00:05.321');
   await expect(page.locator('#datepicker')).toHaveValue('2024-07-01T09:00:05.321');
-  await page.locator('#human').fill('January 1, 2024 12:00:00 AM');
-  await expect(page.locator('#iso8601')).toHaveValue('2024-01-01T00:00:00.000+05:45');
-  await page.locator('#rfc2822').fill('Mon, 01 Jan 2024 05:30:00 +0530');
-  await expect(page.locator('#iso8601')).toHaveValue('2024-01-01T05:45:00.000+05:45');
+  await expect(page.locator('#iso8601')).toHaveValue('2024-07-01T09:00:05.321+05:45');
+  await expect(page.locator('#human')).toHaveValue('Monday, July 1, 2024 09:00:05.321 GMT+05:45');
+  await expect(page.locator('#rfc2822')).toHaveValue('Mon, 01 Jul 2024 09:00:05 +0545');
+  await expect(page.locator('#target-times input:not([readonly])')).toHaveCount(0);
+  await expect(page.locator('#timezone')).toBeEditable();
 });
 test('visible field badges and styling distinguish editable controls from selectable read-only results', async ({ page }) => {
   await page.goto('/datetime-converter/');
-  const editable = ['unix-sec', 'unix-ms', 'source-timezone', 'timezone', 'datepicker', 'iso8601', 'human', 'rfc2822'];
-  const readonly = ['source-iso8601', 'source-human', 'source-rfc2822', 'target-datepicker'];
+  const editable = ['unix-sec', 'unix-ms', 'source-timezone', 'timezone', 'datepicker', 'source-iso8601', 'source-human', 'source-rfc2822'];
+  const readonly = ['target-datepicker', 'iso8601', 'human', 'rfc2822'];
   for (const id of editable) {
     await expect(page.locator('#' + id + '-mode')).toHaveText('Editable');
     await expect(page.locator('#' + id + '-mode')).toBeVisible();
@@ -117,18 +118,18 @@ test('visible field badges and styling distinguish editable controls from select
     await expect(page.locator('#' + id)).toHaveAttribute('aria-describedby', new RegExp(id + '-mode'));
   }
   const distinct = async () => expect(await page.evaluate(() => {
-    const input = getComputedStyle(document.querySelector('#datepicker')!), output = getComputedStyle(document.querySelector('#source-human')!);
+    const input = getComputedStyle(document.querySelector('#datepicker')!), output = getComputedStyle(document.querySelector('#human')!);
     return input.backgroundColor !== output.backgroundColor && input.borderStyle === 'solid' && output.borderStyle === 'dashed' && output.opacity === '1';
   })).toBeTruthy();
   await distinct();
   await page.locator('#unix-ms').fill('1704067200123');
-  await page.locator('#source-human').focus(); await page.locator('#source-human').press('x');
-  await expect(page.locator('#source-human')).toHaveValue('Sunday, December 31, 2023 16:00:00.123 GMT-08:00');
-  const selected = await page.locator('#source-human').evaluate((node: HTMLInputElement) => {
+  await page.locator('#human').focus(); await page.locator('#human').press('x');
+  await expect(page.locator('#human')).toHaveValue('Monday, January 1, 2024 00:00:00.123 GMT+00:00');
+  const selected = await page.locator('#human').evaluate((node: HTMLInputElement) => {
     node.select(); return node.value.slice(node.selectionStart!, node.selectionEnd!);
   });
-  expect(selected).toBe('Sunday, December 31, 2023 16:00:00.123 GMT-08:00');
-  await page.locator('[data-copy="source-human"]').click(); expect(await page.evaluate(() => (window as any).__copied)).toBe(selected);
+  expect(selected).toBe('Monday, January 1, 2024 00:00:00.123 GMT+00:00');
+  await page.locator('[data-copy="human"]').click(); expect(await page.evaluate(() => (window as any).__copied)).toBe(selected);
   await page.evaluate(() => document.documentElement.classList.add('dark')); await distinct();
   await page.locator('#source-timezone').selectOption('America/New_York'); await page.locator('#datepicker').fill('2024-11-03T01:30');
   await expect(page.locator('#dst-occurrence-mode')).toBeVisible(); await expect(page.locator('#dst-occurrence-mode')).toHaveText('Editable');
@@ -156,18 +157,81 @@ test('source-zone edits reinterpret entered wall time; target edits and swap pre
   await page.locator('#source-timezone').selectOption('UTC');
   await expect(page.locator('#unix-ms')).toHaveValue('1704078900123');
   await expect(page.locator('#target-datepicker')).toHaveAttribute('readonly', '');
-  await expect(page.locator('#source-iso8601')).toHaveAttribute('readonly', '');
+  await expect(page.locator('#source-iso8601')).toBeEditable();
 });
-test('explicit ISO offsets identify their own instant and normalize to selected zone on commit', async ({ page }) => {
+test('pasted source ISO with an explicit offset preserves the instant and normalizes in the source zone', async ({ page }) => {
   await page.goto('/datetime-converter/'); await page.locator('#timezone').selectOption('America/New_York');
-  await page.locator('#iso8601').fill('2024-07-01T09:00:00.123+05:30');
+  await page.locator('#source-iso8601').fill('2024-07-01T09:00:00.123+05:30');
   await expect(page.locator('#unix-ms')).toHaveValue(String(Date.parse('2024-07-01T03:30:00.123Z')));
-  await page.locator('#iso8601').blur();
+  await expect(page.locator('#iso8601')).toHaveValue('2024-06-30T23:30:00.123-04:00');
+  await page.locator('#source-iso8601').blur();
+  await expect(page.locator('#source-iso8601')).toHaveValue('2024-06-30T20:30:00.123-07:00');
+  await page.locator('#source-timezone').selectOption('UTC');
+  await expect(page.locator('#unix-ms')).toHaveValue(String(Date.parse('2024-07-01T03:30:00.123Z')));
+  await expect(page.locator('#source-iso8601')).toHaveValue('2024-07-01T03:30:00.123Z');
+});
+test('source ISO and human dates without offsets use the source zone; source RFC accepts explicit offsets', async ({ page }) => {
+  await page.goto('/datetime-converter/'); await page.locator('#source-timezone').selectOption('Asia/Kolkata');
+  await page.locator('#source-iso8601').fill('2024-01-01T09:00:00.025');
+  await expect(page.locator('#iso8601')).toHaveValue('2024-01-01T03:30:00.025Z');
+  await page.locator('#source-timezone').selectOption('Asia/Kathmandu');
+  await expect(page.locator('#datepicker')).toHaveValue('2024-01-01T09:00:00.025');
+  await expect(page.locator('#iso8601')).toHaveValue('2024-01-01T03:15:00.025Z');
+  await page.locator('#source-human').fill('January 1, 2024 12:00:00.321 AM');
+  await expect(page.locator('#iso8601')).toHaveValue('2023-12-31T18:15:00.321Z');
+  await page.locator('#source-rfc2822').fill('Mon, 01 Jan 2024 05:30:00 +0530');
+  await expect(page.locator('#iso8601')).toHaveValue('2024-01-01T00:00:00.000Z');
+  await page.locator('#source-rfc2822').blur();
+  await expect(page.locator('#source-rfc2822')).toHaveValue('Mon, 01 Jan 2024 05:45:00 +0545');
+});
+test('source ISO handles DST errors and repeated times, including share restoration', async ({ page }) => {
+  await page.goto('/datetime-converter/'); await page.locator('#source-timezone').selectOption('America/New_York');
+  await page.locator('#source-iso8601').fill('2024-03-10T02:30');
+  await expect(page.locator('#source-iso8601')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('#iso8601')).toHaveValue('');
+  await page.locator('#source-timezone').selectOption('UTC');
+  await expect(page.locator('#iso8601')).toHaveValue('2024-03-10T02:30:00.000Z');
+  await page.locator('#source-timezone').selectOption('America/New_York');
+  await page.locator('#source-iso8601').fill('2024-11-03T01:30');
+  await expect(page.locator('#dst-choice')).toBeVisible();
+  await page.locator('#dst-occurrence').selectOption('1730615400000');
+  await page.locator('#timezone').selectOption('Asia/Kolkata');
+  await expect(page.locator('#dst-occurrence')).toHaveValue('1730615400000');
+  await expect(page.locator('#iso8601')).toHaveValue('2024-11-03T12:00:00.000+05:30');
+  await page.locator('#share-time-btn').click(); await page.locator('#share-url-btn').click();
+  const url = await page.evaluate(() => (window as any).__copied);
+  expect(JSON.parse(LZString.decompressFromEncodedURIComponent(url.split('#lz:')[1])!).d.sourceWall).toBe(true);
+  await page.goto('/about/'); await page.goto(url);
+  await expect(page.locator('#source-iso8601')).toHaveValue('2024-11-03T01:30:00.000-05:00');
+  await expect(page.locator('#iso8601')).toHaveValue('2024-11-03T12:00:00.000+05:30');
+  await expect(page.locator('#source-iso8601')).toBeEditable();
+  await expect(page.locator('#iso8601')).not.toBeEditable();
+  await page.locator('#source-timezone').selectOption('UTC');
+  await expect(page.locator('#iso8601')).toHaveValue('2024-11-03T07:00:00.000+05:30');
+});
+test('target text dates cannot be edited but remain selectable and copyable without changing the source', async ({ page }) => {
+  await page.goto('/datetime-converter/'); await page.locator('#timezone').selectOption('America/New_York');
+  const ms = String(Date.parse('2024-07-01T03:30:00.123Z'));
+  await page.locator('#unix-ms').fill(ms);
+  const source = await page.locator('#datepicker').inputValue();
+  for (const id of ['iso8601', 'human', 'rfc2822']) {
+    const field = page.locator('#' + id), value = await field.inputValue();
+    await expect(field).not.toBeEditable(); await expect(field).toBeEnabled();
+    await field.focus(); await field.press('x'); await expect(field).toHaveValue(value);
+    expect(await field.evaluate((node: HTMLInputElement) => {
+      node.select(); return node.value.slice(node.selectionStart!, node.selectionEnd!);
+    })).toBe(value);
+    await field.dispatchEvent('change');
+    await page.locator('[data-copy="' + id + '"]').click();
+    expect(await page.evaluate(() => (window as any).__copied)).toBe(value);
+    await expect(page.locator('#unix-ms')).toHaveValue(ms);
+    await expect(page.locator('#datepicker')).toHaveValue(source);
+  }
   await expect(page.locator('#iso8601')).toHaveValue('2024-06-30T23:30:00.123-04:00');
   await expect(page.locator('#target-datepicker')).toHaveValue('2024-06-30T23:30:00.123');
   await expect(page.locator('#datepicker')).toHaveValue('2024-06-30T20:30:00.123');
   await page.locator('#source-timezone').selectOption('UTC');
-  await expect(page.locator('#unix-ms')).toHaveValue(String(Date.parse('2024-07-01T03:30:00.123Z')));
+  await expect(page.locator('#unix-ms')).toHaveValue(ms);
 });
 test('DST gaps clear stale results and overlaps let users select either exact instant', async ({ page }) => {
   await page.goto('/datetime-converter/'); await page.locator('#source-timezone').selectOption('America/New_York');
@@ -198,19 +262,21 @@ test('a source DST gap can be corrected by changing the source zone, not the tar
   await expect(page.locator('#iso8601')).toHaveValue('2024-03-10T02:30:00.000Z');
   await expect(page.locator('#source-iso8601')).toHaveValue('2024-03-10T02:30:00.000Z');
 });
-test('ambiguous editable target time uses target offsets and stops showing choices after target changes', async ({ page }) => {
+test('conversion to a repeated target time displays the correct offset without asking for an occurrence', async ({ page }) => {
   await page.goto('/datetime-converter/'); await page.locator('#timezone').selectOption('America/New_York');
-  await page.locator('#iso8601').fill('2024-11-03T01:30');
-  await expect(page.locator('#dst-choice')).toBeVisible();
-  await page.locator('#dst-occurrence').selectOption('1730615400000');
+  await page.locator('#unix-ms').fill('1730611800000');
+  await expect(page.locator('#iso8601')).toHaveValue('2024-11-03T01:30:00.000-04:00');
+  await expect(page.locator('#dst-choice')).toBeHidden();
+  await page.locator('#unix-ms').fill('1730615400000');
+  await expect(page.locator('#iso8601')).toHaveValue('2024-11-03T01:30:00.000-05:00');
   await expect(page.locator('#datepicker')).toHaveValue('2024-11-02T23:30');
   await page.locator('#timezone').selectOption('UTC');
   await expect(page.locator('#iso8601')).toHaveValue('2024-11-03T06:30:00.000Z');
   await expect(page.locator('#dst-choice')).toBeHidden();
 });
-test('malformed, rollover and out-of-range input never produce plausible stale outputs', async ({ page }) => {
+test('malformed, rollover and out-of-range input never produces plausible stale outputs', async ({ page }) => {
   await page.goto('/datetime-converter/');
-  for (const [id, text] of [['unix-sec', '123oops'], ['unix-ms', '99999999999999999'], ['iso8601', '2024-02-30T12:00Z']]) {
+  for (const [id, text] of [['unix-sec', '123oops'], ['unix-ms', '99999999999999999'], ['source-iso8601', '2024-02-30T12:00Z'], ['source-human', 'February 30, 2024 12:00 AM'], ['source-rfc2822', '30 Feb 2024 00:00:00 +0000']]) {
     await page.locator('#' + id).fill(text); await expect(page.locator('#error-box')).toBeVisible();
     await expect(page.locator('#share-time-btn')).toBeDisabled(); await expect(page.locator('#datepicker')).toHaveValue('');
     await expect(page.locator('#swap-zones-btn')).toBeDisabled();

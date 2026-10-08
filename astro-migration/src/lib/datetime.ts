@@ -1,6 +1,6 @@
 export type DateTimeField = 'unix-sec' | 'unix-ms' | 'iso8601' | 'human' | 'datepicker' | 'rfc2822';
 type WallTime = { year: number; month: number; day: number; hour: number; minute: number; second: number; millisecond: number };
-export type ParsedTime = { instant: number; candidates: number[] };
+export type ParsedTime = { instant: number; candidates: number[]; wallTime: boolean };
 const pad = (n: number, width = 2) => String(n).padStart(width, '0');
 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const fullMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -86,7 +86,7 @@ function parseOffset(text: string): number {
 }
 function resolveWall(wall: WallTime, zone: string, offset?: string): ParsedTime {
   const nominal = utcWall(checkedWall(wall));
-  if (offset) return { instant: checkedInstant(nominal - parseOffset(offset) * 60_000), candidates: [] };
+  if (offset) return { instant: checkedInstant(nominal - parseOffset(offset) * 60_000), candidates: [], wallTime: false };
   // Sample both sides of a clock change, then accept only exact wall-clock
   // round trips. This detects gaps and overlaps without the browser's local zone.
   const offsets = new Set([offsetMinutes(nominal, zone)]);
@@ -99,7 +99,7 @@ function resolveWall(wall: WallTime, zone: string, offset?: string): ParsedTime 
     return Object.keys(wall).every(key => wall[key as keyof WallTime] === actual[key as keyof WallTime]);
   }).sort((a, b) => a - b);
   if (!candidates.length) throw new Error(`This local time does not exist in ${zone} because the clock jumps forward. Choose a time before or after the jump.`);
-  return { instant: checkedInstant(candidates[0]), candidates: candidates.length > 1 ? candidates : [] };
+  return { instant: checkedInstant(candidates[0]), candidates: candidates.length > 1 ? candidates : [], wallTime: true };
 }
 export function parseDateInput(field: DateTimeField, input: string, zone: string): ParsedTime {
   const text = input.trim();
@@ -109,7 +109,7 @@ export function parseDateInput(field: DateTimeField, input: string, zone: string
     const match = text.match(field === 'unix-sec' ? /^([+-]?)(\d{1,17})(?:\.(\d{1,3}))?$/ : /^([+-]?)(\d{1,17})$/);
     if (!match) throw new Error(field === 'unix-sec' ? 'Enter epoch seconds, optionally with up to three decimal places.' : 'Enter an integer Unix timestamp in milliseconds.');
     const ms = (BigInt(match[2]) * (field === 'unix-sec' ? 1000n : 1n) + BigInt((match[3] || '').padEnd(3, '0') || '0')) * (match[1] === '-' ? -1n : 1n);
-    return { instant: checkedInstant(Number(ms)), candidates: [] };
+    return { instant: checkedInstant(Number(ms)), candidates: [], wallTime: false };
   }
   if (field === 'datepicker' || field === 'iso8601' || /^\d{4}-/.test(text)) {
     const match = text.match(/^(\d{4})-(\d{2})-(\d{2})(?:[Tt ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?)?([Zz]|[+-]\d{2}:?\d{2})?$/);

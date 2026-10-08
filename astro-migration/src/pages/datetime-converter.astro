@@ -4,21 +4,21 @@ const faqs = [
   { question: 'How do I convert Unix epoch seconds or milliseconds to a date?', answer: 'Enter either value in the timezone-independent Unix timestamp section to update both sides instantly. Epoch seconds can include up to three decimal places. A Unix timestamp identifies the same instant worldwide; it belongs to neither the source nor target timezone.' },
   { question: 'How do I convert between a source and target timezone?', answer: 'Choose the source timezone and enter its local date and time. Choose a target timezone to see the converted clock time and ISO 8601 offset alongside the source. Your browser’s timezone is the source default; UTC is the target default. Changing the target preserves the instant. Changing the source after entering a local date reinterprets that clock time. Swap zones reverses the view without changing the instant.' },
   { question: 'How do I get ISO 8601 with a timezone offset?', answer: 'Choose a target timezone such as America/New_York or Asia/Kolkata. Both sides show ISO 8601 with their offsets for the selected date, including daylight saving time. UTC uses Z; other zones show a numeric offset such as -04:00 or +05:30.' },
-  { question: 'Which timezone is used when I enter a date without an offset?', answer: 'The source date and time uses the source timezone. Editable target ISO, readable date and RFC fields use the target timezone when no offset is supplied. A date with Z or a numeric offset identifies its own instant. Epoch timestamps and current-time snapshots also identify absolute instants, so changing either timezone only changes their display.' },
+  { question: 'Which timezone is used when I enter a date without an offset?', answer: 'The editable source date, ISO 8601, human-readable and RFC 2822 fields use the source timezone when no offset is supplied. Z or a numeric offset identifies its own instant. Target dates are read-only results in the selected target timezone; change the target timezone to convert the same instant. Epoch timestamps and current-time snapshots are also absolute instants.' },
   { question: 'What happens during a daylight-saving clock change?', answer: 'A skipped local time is rejected instead of silently shifted. A repeated local time shows a first/second occurrence selector with the two offsets. This converter supports millisecond precision and calendar years 0001–9999, not leap seconds or historical seconds-based timezone offsets.' },
   { question: 'Can I share the converted timestamp?', answer: 'Share time preserves the exact milliseconds and both source and target timezones, including a snapshot of current time. Opening the link reproduces the same moment rather than recalculating now. Conversion runs in your browser; sharing is optional.' },
 ];
 const sourceFields = [
   { id: 'datepicker', label: 'Source date & time', type: 'datetime-local', placeholder: '', hint: 'Enter the local clock time in the source timezone.', readonly: false },
-  { id: 'source-iso8601', label: 'Source ISO 8601 with offset', type: 'text', placeholder: '', hint: 'Source date, time and its daylight-saving-aware offset.', readonly: true },
-  { id: 'source-human', label: 'Source human-readable date', type: 'text', placeholder: '', hint: 'Local time with its UTC offset.', readonly: true, zone: 'source' },
-  { id: 'source-rfc2822', label: 'Source RFC 2822 date', type: 'text', placeholder: '', hint: 'Email-style source date; whole-second precision.', readonly: true },
+  { id: 'source-iso8601', label: 'Source ISO 8601 with offset', type: 'text', placeholder: '2024-01-01T09:00:00.000+05:30', hint: 'Paste ISO 8601. Without an offset, this uses the source zone.', readonly: false },
+  { id: 'source-human', label: 'Source human-readable date', type: 'text', placeholder: 'January 1, 2024 9:00:00 AM', hint: 'Enter a local time, optionally with a UTC offset.', readonly: false, zone: 'source' },
+  { id: 'source-rfc2822', label: 'Source RFC 2822 date', type: 'text', placeholder: 'Mon, 01 Jan 2024 09:00:00 +0530', hint: 'Paste an email-style date; whole-second precision.', readonly: false },
 ];
 const targetFields = [
   { id: 'target-datepicker', label: 'Converted date & time', type: 'datetime-local', placeholder: '', hint: 'The same moment in the target timezone.', readonly: true },
-  { id: 'iso8601', label: 'Target ISO 8601 with offset', type: 'text', placeholder: '2024-01-01T05:30:00.000+05:30', hint: 'Editable. Without an offset, this uses the target zone.' },
-  { id: 'human', label: 'Target human-readable date', type: 'text', placeholder: 'January 1, 2024 12:00:00 AM', hint: 'Editable local time with its UTC offset.', zone: 'target' },
-  { id: 'rfc2822', label: 'Target RFC 2822 date', type: 'text', placeholder: 'Mon, 01 Jan 2024 00:00:00 +0000', hint: 'Email-style target date; whole-second precision.' },
+  { id: 'iso8601', label: 'Target ISO 8601 with offset', type: 'text', placeholder: '2024-01-01T05:30:00.000+05:30', hint: 'Converted date, time and its daylight-saving-aware offset.', readonly: true },
+  { id: 'human', label: 'Target human-readable date', type: 'text', placeholder: 'January 1, 2024 12:00:00 AM', hint: 'Converted local time with its UTC offset.', readonly: true, zone: 'target' },
+  { id: 'rfc2822', label: 'Target RFC 2822 date', type: 'text', placeholder: 'Mon, 01 Jan 2024 00:00:00 +0000', hint: 'Email-style target date; whole-second precision.', readonly: true },
 ];
 const epochFields = [
   { id: 'unix-sec', label: 'Unix timestamp · seconds', type: 'text', placeholder: '1704067200', hint: 'Fractional seconds preserve milliseconds.', readonly: false, zone: undefined },

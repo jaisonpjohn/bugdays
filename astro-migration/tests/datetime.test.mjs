@@ -29,6 +29,14 @@ test('explicit ISO and RFC offsets override the selected input zone', () => {
   assert.equal(parse('iso8601', '2024-01-01T09:00:00Z', 'Asia/Kolkata').instant, at('2024-01-01T09:00:00Z'));
   assert.equal(parse('rfc2822', 'Mon, 01 Jan 2024 09:00:00 +0530', 'UTC').instant, at('2024-01-01T03:30:00Z'));
 });
+test('parsing distinguishes source wall times from explicit-offset dates and epochs', () => {
+  for (const [field, text] of [['iso8601', '2024-01-01T09:00'], ['datepicker', '2024-01-01T09:00'], ['human', 'January 1, 2024 9:00 AM'], ['rfc2822', '01 Jan 2024 09:00:00']]) {
+    assert.equal(parse(field, text, 'Asia/Kolkata').wallTime, true);
+  }
+  for (const [field, text] of [['iso8601', '2024-01-01T09:00Z'], ['iso8601', '2024-01-01T09:00+0530'], ['human', 'January 1, 2024 9:00 AM GMT+05:30'], ['rfc2822', '01 Jan 2024 09:00:00 +0530'], ['unix-sec', '0'], ['unix-ms', '0']]) {
+    assert.equal(parse(field, text, 'Asia/Kolkata').wallTime, false);
+  }
+});
 test('offsets follow the date and daylight-saving transition', () => {
   assert.equal(formatsForInstant(at('2024-01-01T00:00Z'), 'America/New_York').offset, '-05:00');
   assert.equal(formatsForInstant(at('2024-07-01T00:00Z'), 'America/New_York').offset, '-04:00');

@@ -9,12 +9,13 @@ function init() {
   const lifetime = new AbortController(), signal = lifetime.signal;
   const fields = ['unix-sec', 'unix-ms', 'iso8601', 'human', 'datepicker', 'rfc2822'] as const;
   const el = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
-  const inputs = Object.fromEntries(fields.map(id => [id, el<HTMLInputElement>(id)])) as Record<DateTimeField, HTMLInputElement>;
+  const inputs = Object.fromEntries(fields.map(id => [id, el<HTMLInputElement>(['iso8601', 'human', 'rfc2822'].includes(id) ? `source-${id}` : id)])) as Record<DateTimeField, HTMLInputElement>;
+  const targetFields = ['iso8601', 'human', 'rfc2822'] as const;
+  const outputs = Object.fromEntries(targetFields.map(id => [id, el<HTMLInputElement>(id)])) as Record<typeof targetFields[number], HTMLInputElement>;
   // Keep the published timezone share key as the target/display timezone.
   const zone = el<HTMLSelectElement>('timezone'), sourceZone = el<HTMLSelectElement>('source-timezone');
   const occurrence = el<HTMLSelectElement>('dst-occurrence');
-  const sourceIso = el<HTMLInputElement>('source-iso8601'), targetDate = el<HTMLInputElement>('target-datepicker');
-  const sourceHuman = el<HTMLInputElement>('source-human'), sourceRfc = el<HTMLInputElement>('source-rfc2822');
+  const targetDate = el<HTMLInputElement>('target-datepicker');
   const local = browserTimeZone();
   const zones = timeZones(local);
   for (const select of [sourceZone, zone]) for (const value of [local, ...zones.filter(z => z !== local)]) {
@@ -25,7 +26,7 @@ function init() {
   sourceZone.value = local; zone.value = 'UTC';
   el('local-zone').textContent = `Your timezone: ${local}`;
   let instant: number | null = null, pending: DateTimeField | null = null;
-  let sourceWall = false, occurrenceField: DateTimeField | null = null;
+  let sourceWall = false;
   let candidates: number[] = [];
   const status = (text: string) => { el('datetime-status').textContent = text; };
   function zoneLabels() {
@@ -42,12 +43,12 @@ function init() {
     el('error-box').classList.add('hidden'); fields.forEach(field => inputs[field].removeAttribute('aria-invalid'));
   }
   function resetOccurrences() {
-    candidates = []; occurrenceField = null; occurrence.replaceChildren(); el('dst-choice').classList.add('hidden');
+    candidates = []; occurrence.replaceChildren(); el('dst-choice').classList.add('hidden');
   }
   function clear(source?: DateTimeField) {
     instant = null; resetOccurrences();
     fields.forEach(field => { if (field !== source) inputs[field].value = ''; });
-    sourceIso.value = ''; targetDate.value = ''; sourceHuman.value = ''; sourceRfc.value = '';
+    targetFields.forEach(field => { outputs[field].value = ''; }); targetDate.value = '';
     for (const id of ['source-offset', 'zone-offset']) el(id).textContent = 'UTC offset depends on the date';
     zoneLabels(); enabled();
   }
@@ -63,22 +64,20 @@ function init() {
     // leaves a mixture of values representing different moments.
     const values = formatsForInstant(ms, zone.value), sourceValues = formatsForInstant(ms, sourceZone.value);
     instant = ms; hideError();
-    fields.forEach(field => { if (field !== source) inputs[field].value = field === 'datepicker' ? sourceValues[field] : values[field]; });
-    sourceIso.value = sourceValues.iso8601; targetDate.value = values.datepicker;
-    sourceHuman.value = sourceValues.human; sourceRfc.value = sourceValues.rfc2822;
+    fields.forEach(field => { if (field !== source) inputs[field].value = sourceValues[field]; });
+    targetFields.forEach(field => { outputs[field].value = values[field]; }); targetDate.value = values.datepicker;
     zoneLabels();
     el('source-offset').textContent = `UTC offset ${sourceValues.offset}`;
     el('zone-offset').textContent = `UTC offset ${values.offset}`;
     status('All fields represent the same moment. Conversion stays in your browser.');
     ShareManager.setLastAction('convert'); enabled();
   }
-  function showOccurrences(result: ParsedTime, field: DateTimeField) {
-    occurrenceField = field;
+  function showOccurrences(result: ParsedTime) {
     candidates = result.candidates; occurrence.replaceChildren();
     el('dst-choice').classList.toggle('hidden', candidates.length < 2);
     candidates.forEach((ms, index) => {
       const option = document.createElement('option'); option.value = String(ms);
-      option.textContent = `${index === 0 ? 'First' : 'Second'} occurrence · ${formatsForInstant(ms, field === 'datepicker' ? sourceZone.value : zone.value).offset}`;
+      option.textContent = `${index === 0 ? 'First' : 'Second'} occurrence · ${formatsForInstant(ms, sourceZone.value).offset}`;
       occurrence.append(option);
     });
   }
@@ -87,22 +86,30 @@ function init() {
     sourceWall = field === 'datepicker';
     if (!inputs[field].value.trim()) { clear(field); hideError(); status('Enter a time or choose Use current time.'); return; }
     try {
-      const result = parseDateInput(field, inputs[field].value, field === 'datepicker' ? sourceZone.value : zone.value);
+      const result = parseDateInput(field, inputs[field].value, sourceZone.value);
+      sourceWall = result.wallTime;
       const choice = candidates.includes(instant!) && result.candidates.includes(instant!) ? instant! : result.instant;
-      render(choice, normalize ? undefined : field); showOccurrences(result, field); occurrence.value = String(choice);
+      render(choice, normalize ? undefined : field); showOccurrences(result); occurrence.value = String(choice);
     } catch (error) { fail(error, field); }
   }
   for (const field of fields) {
+    if (inputs[field].readOnly) continue;
     inputs[field].addEventListener('input', () => convert(field), { signal });
     // Keep the typed value and caret while editing; normalize it on commit.
-    inputs[field].addEventListener('change', () => convert(field, true), { signal });
+    inputs[field].addEventListener('change', () => {
+      // Another control may have rendered a normalized value before this field
+      // blurs. Do not treat that programmatic value as a new explicit-offset edit
+      // or truncate the instant by reparsing the whole-second RFC display.
+      if (instant !== null && inputs[field].value === formatsForInstant(instant, sourceZone.value)[field]) render(instant);
+      else convert(field, true);
+    }, { signal });
   }
   zone.addEventListener('change', () => {
     zoneLabels();
     if (instant !== null) {
-      try { render(instant); if (occurrenceField !== 'datepicker') resetOccurrences(); }
+      try { render(instant); }
       catch (error) { fail(error); }
-    } else if (pending && ['iso8601', 'human', 'rfc2822'].includes(pending)) convert(pending, true);
+    }
   }, { signal });
   sourceZone.addEventListener('change', () => {
     zoneLabels();
@@ -110,6 +117,7 @@ function init() {
     // Epochs, offset-bearing dates and "now" are absolute instants instead.
     if (sourceWall) convert('datepicker', true);
     else if (instant !== null) { try { render(instant); } catch (error) { fail(error); } }
+    else if (pending) convert(pending, true);
   }, { signal });
   el('swap-zones-btn').addEventListener('click', () => {
     if (instant === null) return;
@@ -155,7 +163,7 @@ function init() {
         render(parseDateInput(field, String(text), value).instant);
         sourceWall = data.sourceWall === true;
         if (sourceWall) {
-          pending = 'datepicker'; showOccurrences(parseDateInput('datepicker', inputs.datepicker.value, source), 'datepicker');
+          pending = 'datepicker'; showOccurrences(parseDateInput('datepicker', inputs.datepicker.value, source));
           occurrence.value = String(instant);
         }
       } catch (error) { fail(error); }
