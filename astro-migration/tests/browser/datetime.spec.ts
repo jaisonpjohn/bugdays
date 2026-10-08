@@ -40,6 +40,8 @@ test('source fields stay left, target fields stay right, and both epochs stay in
   await page.goto('/datetime-converter/');
   const global = page.locator('#epoch-values');
   await expect(global).toContainText('Timezone-independent');
+  await expect(global).toContainText('Seconds or milliseconds since January 1, 1970 at 00:00:00 UTC.');
+  await expect(global).not.toContainText('Same instant. Same values in every timezone.');
   await expect(global.locator('#unix-sec')).toHaveCount(1); await expect(global.locator('#unix-ms')).toHaveCount(1);
   await expect(page.locator('#zoned-times #unix-sec')).toHaveCount(0);
   await expect(page.locator('#zoned-times #unix-ms')).toHaveCount(0);
