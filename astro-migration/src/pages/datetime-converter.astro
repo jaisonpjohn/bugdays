@@ -1,301 +1,84 @@
 ---
 import Layout from '../layouts/Layout.astro';
+const faqs = [
+  { question: 'How do I convert Unix epoch seconds or milliseconds to a date?', answer: 'Enter either timestamp to update the ISO 8601 date, readable date, date picker, and RFC 2822 value instantly. Epoch seconds can include up to three decimal places. Unix timestamps identify an instant and do not change when you select another timezone.' },
+  { question: 'How do I get ISO 8601 with a timezone offset?', answer: 'Choose a timezone such as America/New_York or Asia/Kolkata. The ISO 8601 value uses that zone’s offset for the selected date, including daylight saving time. UTC uses Z; other zones show a numeric offset such as -04:00 or +05:30.' },
+  { question: 'Which timezone is used when I enter a date without an offset?', answer: 'Dates without an explicit offset use the selected timezone, which starts as your browser’s local zone. A date with Z or a numeric offset identifies its own instant and is then displayed in the selected zone. Changing zones preserves that instant.' },
+  { question: 'What happens during a daylight-saving clock change?', answer: 'A skipped local time is rejected instead of silently shifted. A repeated local time shows a first/second occurrence selector with the two offsets. This converter supports millisecond precision and calendar years 0001–9999, not leap seconds or historical seconds-based timezone offsets.' },
+  { question: 'Can I share the converted timestamp?', answer: 'Share time preserves the exact milliseconds and selected timezone, including a snapshot of current time. Opening the link reproduces the same moment rather than recalculating now. Conversion runs in your browser; sharing is optional.' },
+];
+const fields = [
+  { id: 'datepicker', label: 'Date & time in selected zone', type: 'datetime-local', placeholder: '', hint: 'Enter a wall-clock time in the timezone above.' },
+  { id: 'iso8601', label: 'ISO 8601 with timezone offset', type: 'text', placeholder: '2024-01-01T05:30:00.000+05:30', hint: 'Z means UTC. An explicit offset identifies the moment.' },
+  { id: 'unix-sec', label: 'Unix timestamp · seconds', type: 'text', placeholder: '1704067200', hint: 'Fractional seconds preserve milliseconds.' },
+  { id: 'unix-ms', label: 'Unix timestamp · milliseconds', type: 'text', placeholder: '1704067200000', hint: 'The exact moment, independent of timezone.' },
+  { id: 'human', label: 'Human-readable date', type: 'text', placeholder: 'January 1, 2024 12:00:00 AM', hint: 'English date and time, with an explicit GMT offset.' },
+  { id: 'rfc2822', label: 'RFC 2822 date', type: 'text', placeholder: 'Mon, 01 Jan 2024 00:00:00 +0000', hint: 'Email-style date; this format has whole-second precision.' },
+];
+const jsonLd = [
+  { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Unix Timestamp & Timezone Converter', url: 'https://bugdays.com/datetime-converter/', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) },
+];
 ---
-
 <Layout
-  title="DateTime Converter - Unix Timestamp & ISO 8601"
-  description="Convert between Unix timestamps, ISO 8601, and human-readable dates. Support for milliseconds, timezone conversion, and relative time. Free online datetime converter."
-  keywords="Unix timestamp converter, epoch converter, ISO 8601 converter, datetime converter, timestamp to date, date to timestamp, Unix time converter"
-  breadcrumb={[{ name: "Converters", href: "/converter-tools/" }, { name: "DateTime Converter" }]}
-  toolId="datetime-converter"
+  title="Unix Timestamp Converter — Epoch & ISO 8601 Timezones"
+  description="Convert epoch seconds or milliseconds to ISO 8601 with the correct timezone offset. Enter local dates, handle daylight saving, and share the exact moment."
+  keywords="Unix timestamp converter, epoch converter, timestamp to date, date to timestamp, ISO 8601 timezone offset, milliseconds to date, timezone converter"
+  breadcrumb={[{ name: 'Converters', href: '/converter-tools/' }, { name: 'DateTime Converter' }]}
+  toolId="datetime-converter" jsonLd={jsonLd} image="/og/datetime-converter.png" imageAlt="One Unix timestamp displayed in UTC, New York, and Kolkata with correct ISO 8601 offsets"
 >
   <div class="max-w-6xl mx-auto">
-    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">DateTime Converter</h1>
-
-    <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4 mb-4">
-      <div class="flex flex-wrap gap-3 mb-4">
-        <button id="now-btn" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
-          Use Current Time
-        </button>
-        <button id="clear-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-          Clear
-        </button>
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Unix Timestamp &amp; Timezone Converter</h1>
+    <p class="mt-2 mb-4 text-sm text-slate-600 dark:text-slate-300">Epoch, ISO 8601, and local time — one moment, kept in sync. Your timezone is the default.</p>
+    <section id="datetime-workspace" aria-label="Date and timestamp converter" class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 overflow-hidden">
+      <div class="flex flex-wrap items-end gap-3 border-b border-slate-200 p-4 dark:border-slate-700">
+        <div class="min-w-0 flex-1 basis-64">
+          <label for="timezone" class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Timezone for entered and displayed dates</label>
+          <select id="timezone" data-share-key="timezone" aria-describedby="zone-offset" class="datetime-input"></select>
+          <p id="zone-offset" class="mt-1 text-xs text-slate-500 dark:text-slate-400">UTC offset depends on the date</p>
+        </div>
+        <div class="flex flex-wrap gap-2 pb-5">
+          <button id="now-btn" data-share-action="convert" class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Use current time</button>
+          <button id="clear-btn" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-200">Clear</button>
+          <button id="share-time-btn" class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40">Share time ↗</button>
+        </div>
       </div>
-
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Timezone</label>
-        <select id="timezone" data-share-key="timezone" class="w-full md:w-auto p-2 border border-gray-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-          <option value="UTC">UTC</option>
-          <option value="America/New_York">America/New_York (EST/EDT)</option>
-          <option value="America/Chicago">America/Chicago (CST/CDT)</option>
-          <option value="America/Denver">America/Denver (MST/MDT)</option>
-          <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
-          <option value="Europe/London">Europe/London (GMT/BST)</option>
-          <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
-          <option value="Europe/Berlin">Europe/Berlin (CET/CEST)</option>
-          <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
-          <option value="Asia/Shanghai">Asia/Shanghai (CST)</option>
-          <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-          <option value="Asia/Dubai">Asia/Dubai (GST)</option>
-          <option value="Australia/Sydney">Australia/Sydney (AEST/AEDT)</option>
-          <option value="Pacific/Auckland">Pacific/Auckland (NZST/NZDT)</option>
-        </select>
+      <p class="px-4 pt-3 text-xs text-slate-500 dark:text-slate-400">Changing the timezone keeps the same moment. Dates entered without an offset use the selected zone.</p>
+      <div id="error-box" role="alert" class="hidden mx-4 mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"></div>
+      <div id="dst-choice" class="hidden mx-4 mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+        <label for="dst-occurrence" class="block mb-2">The clock repeats this local time. Choose which occurrence you mean:</label>
+        <select id="dst-occurrence" class="datetime-input"></select>
       </div>
-    </div>
-
-    <div class="grid md:grid-cols-2 gap-4">
-      <!-- Unix Timestamp -->
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Unix Timestamp (seconds)</label>
-        <input
-          type="text"
-          id="unix-sec"
-          data-share-key="unixSec"
-          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="e.g., 1704067200"
-        />
+      <div class="grid md:grid-cols-2 gap-x-5 gap-y-4 p-4">
+        {fields.map(field => <div class="min-w-0">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <label for={field.id} class="text-sm font-semibold text-slate-700 dark:text-slate-200">{field.label}</label>
+            <button data-copy={field.id} aria-label={`Copy ${field.label}`} class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-40">Copy</button>
+          </div>
+          <input id={field.id} type={field.type} step={field.type === 'datetime-local' ? '0.001' : undefined} data-share-key={field.id === 'unix-sec' ? 'unixSec' : undefined} placeholder={field.placeholder} aria-describedby={`${field.id}-hint`} autocomplete="off" spellcheck="false" class="datetime-input font-mono" />
+          <p id={`${field.id}-hint`} class="mt-1 text-xs text-slate-500 dark:text-slate-400">{field.hint}</p>
+        </div>)}
       </div>
-
-      <!-- Unix Timestamp (milliseconds) -->
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Unix Timestamp (milliseconds)</label>
-        <input
-          type="text"
-          id="unix-ms"
-          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="e.g., 1704067200000"
-        />
+      <div class="flex flex-wrap justify-between gap-2 border-t border-slate-200 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+        <p id="datetime-status" role="status">All fields represent the same moment.</p><p id="local-zone"></p>
       </div>
-
-      <!-- ISO 8601 -->
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">ISO 8601</label>
-        <input
-          type="text"
-          id="iso8601"
-          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="e.g., 2024-01-01T00:00:00Z"
-        />
-      </div>
-
-      <!-- Human Readable -->
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Human Readable</label>
-        <input
-          type="text"
-          id="human"
-          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="e.g., January 1, 2024 12:00:00 AM"
-        />
-      </div>
-
-      <!-- Date Picker -->
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Date Picker</label>
-        <input
-          type="datetime-local"
-          id="datepicker"
-          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-        />
-      </div>
-
-      <!-- RFC 2822 -->
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">RFC 2822</label>
-        <input
-          type="text"
-          id="rfc2822"
-          class="w-full p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-          placeholder="e.g., Mon, 01 Jan 2024 00:00:00 +0000"
-        />
-      </div>
-    </div>
-
-    <div id="error-box" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
-
-    <div class="mt-8">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online DateTime Converter</h2>
-      <p class="text-gray-600 dark:text-slate-300">
-        Convert between Unix timestamps (seconds/milliseconds), ISO 8601, RFC 2822, and human-readable date formats.
-        Select a timezone to see the date/time in different regions. All conversions happen instantly in your browser.
-      </p>
-    </div>
+    </section>
+    <section class="mt-6 text-sm text-slate-600 dark:text-slate-300">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">Convert epoch timestamps with the right timezone offset</h2>
+      <p>Unix time counts seconds or milliseconds since 1970-01-01T00:00:00Z. The timestamp stays the same in every timezone; its clock time and ISO 8601 offset change. For example, <code>1704067200</code> is <code>2024-01-01T00:00:00.000Z</code> in UTC and <code>2024-01-01T05:30:00.000+05:30</code> in Asia/Kolkata.</p>
+      <p class="mt-2">Paste a timestamp, enter a local date, or choose current time. Every other field updates immediately, with millisecond precision where the format allows it. <a href="/guides/epoch-iso8601-timezone-offset/" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Try the timezone and daylight-saving examples ↗</a></p>
+    </section>
+    <section class="mt-5 text-sm text-slate-600 dark:text-slate-300" aria-label="Frequently asked questions">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">Timestamp conversion questions</h2>
+      {faqs.map(f => <details class="border-b border-slate-200 py-3 dark:border-slate-700"><summary class="font-semibold cursor-pointer text-slate-700 dark:text-slate-200">{f.question}</summary><p class="mt-2">{f.answer}</p></details>)}
+      <p class="mt-4">Related: <a href="/cron-parser/" class="text-indigo-600 dark:text-indigo-400 hover:underline">Cron Parser</a> · <a href="/json-formatter/" class="text-indigo-600 dark:text-indigo-400 hover:underline">JSON Formatter</a> · <a href="/kafka-client/" class="text-indigo-600 dark:text-indigo-400 hover:underline">Kafka message browser</a></p>
+    </section>
   </div>
 </Layout>
-
-<script>
-  import { ShareManager } from '../lib/share';
-
-  const unixSec = document.getElementById('unix-sec') as HTMLInputElement;
-  const unixMs = document.getElementById('unix-ms') as HTMLInputElement;
-  const iso8601 = document.getElementById('iso8601') as HTMLInputElement;
-  const human = document.getElementById('human') as HTMLInputElement;
-  const datepicker = document.getElementById('datepicker') as HTMLInputElement;
-  const rfc2822 = document.getElementById('rfc2822') as HTMLInputElement;
-  const timezone = document.getElementById('timezone') as HTMLSelectElement;
-  const errorBox = document.getElementById('error-box');
-
-  let updating = false;
-
-  function showError(msg: string) {
-    errorBox.textContent = msg;
-    errorBox.classList.remove('hidden');
-  }
-
-  function hideError() {
-    errorBox.classList.add('hidden');
-  }
-
-  function updateAllFromDate(date: Date, source: string) {
-    if (updating || isNaN(date.getTime())) return;
-    updating = true;
-    hideError();
-
-    const tz = timezone.value;
-    const ms = date.getTime();
-
-    if (source !== 'unix-sec') unixSec.value = Math.floor(ms / 1000).toString();
-    if (source !== 'unix-ms') unixMs.value = ms.toString();
-    if (source !== 'iso8601') iso8601.value = date.toISOString();
-    if (source !== 'rfc2822') rfc2822.value = date.toUTCString();
-    if (source !== 'human') {
-      human.value = date.toLocaleString('en-US', {
-        timeZone: tz,
-        dateStyle: 'full',
-        timeStyle: 'long'
-      });
-    }
-    if (source !== 'datepicker') {
-      // Format for datetime-local input in selected timezone
-      const localDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-      const year = localDate.getFullYear();
-      const month = String(localDate.getMonth() + 1).padStart(2, '0');
-      const day = String(localDate.getDate()).padStart(2, '0');
-      const hours = String(localDate.getHours()).padStart(2, '0');
-      const minutes = String(localDate.getMinutes()).padStart(2, '0');
-      datepicker.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-    }
-
-    updating = false;
-  }
-
-  unixSec.addEventListener('input', () => {
-    const val = unixSec.value.trim();
-    if (!val) return;
-    const num = parseInt(val, 10);
-    if (isNaN(num)) {
-      showError('Invalid Unix timestamp');
-      return;
-    }
-    updateAllFromDate(new Date(num * 1000), 'unix-sec');
-  });
-
-  unixMs.addEventListener('input', () => {
-    const val = unixMs.value.trim();
-    if (!val) return;
-    const num = parseInt(val, 10);
-    if (isNaN(num)) {
-      showError('Invalid Unix timestamp');
-      return;
-    }
-    updateAllFromDate(new Date(num), 'unix-ms');
-  });
-
-  iso8601.addEventListener('input', () => {
-    const val = iso8601.value.trim();
-    if (!val) return;
-    const date = new Date(val);
-    if (isNaN(date.getTime())) {
-      showError('Invalid ISO 8601 date');
-      return;
-    }
-    updateAllFromDate(date, 'iso8601');
-  });
-
-  human.addEventListener('input', () => {
-    const val = human.value.trim();
-    if (!val) return;
-    const date = new Date(val);
-    if (isNaN(date.getTime())) {
-      showError('Invalid date format');
-      return;
-    }
-    updateAllFromDate(date, 'human');
-  });
-
-  rfc2822.addEventListener('input', () => {
-    const val = rfc2822.value.trim();
-    if (!val) return;
-    const date = new Date(val);
-    if (isNaN(date.getTime())) {
-      showError('Invalid RFC 2822 date');
-      return;
-    }
-    updateAllFromDate(date, 'rfc2822');
-  });
-
-  datepicker.addEventListener('input', () => {
-    const val = datepicker.value;
-    if (!val) return;
-    // Parse the datetime-local value in the selected timezone
-    const tz = timezone.value;
-    const date = new Date(val);
-    if (isNaN(date.getTime())) {
-      showError('Invalid date');
-      return;
-    }
-    updateAllFromDate(date, 'datepicker');
-  });
-
-  timezone.addEventListener('change', () => {
-    // Re-update human readable and datepicker with current timestamp
-    const val = unixMs.value.trim();
-    if (val) {
-      const num = parseInt(val, 10);
-      if (!isNaN(num)) {
-        const date = new Date(num);
-        const tz = timezone.value;
-        human.value = date.toLocaleString('en-US', {
-          timeZone: tz,
-          dateStyle: 'full',
-          timeStyle: 'long'
-        });
-        // Update datepicker
-        const localDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
-        const year = localDate.getFullYear();
-        const month = String(localDate.getMonth() + 1).padStart(2, '0');
-        const day = String(localDate.getDate()).padStart(2, '0');
-        const hours = String(localDate.getHours()).padStart(2, '0');
-        const minutes = String(localDate.getMinutes()).padStart(2, '0');
-        datepicker.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-      }
-    }
-  });
-
-  document.getElementById('now-btn').addEventListener('click', () => {
-    updateAllFromDate(new Date(), 'now');
-  });
-
-  document.getElementById('clear-btn').addEventListener('click', () => {
-    unixSec.value = '';
-    unixMs.value = '';
-    iso8601.value = '';
-    human.value = '';
-    datepicker.value = '';
-    rfc2822.value = '';
-    hideError();
-  });
-
-  ShareManager.register({
-    tool: 'datetime-converter',
-    afterLoad: () => {
-      const val = unixSec.value.trim();
-      if (val) {
-        const num = parseInt(val, 10);
-        if (!isNaN(num)) {
-          updateAllFromDate(new Date(num * 1000), 'unix-sec');
-        }
-      }
-    }
-  });
-</script>
+<script>import '../lib/datetime-ui.ts';</script>
+<style>
+  .datetime-input { width:100%; min-width:0; border:1px solid #cbd5e1; border-radius:.5rem; padding:.6rem .7rem; font-size:.8125rem; background:white; color:#0f172a; }
+  .datetime-input:focus { outline:2px solid #6366f1; outline-offset:1px; }
+  button:focus-visible, summary:focus-visible { outline:2px solid #6366f1; outline-offset:2px; }
+  :global(.dark) .datetime-input { border-color:#475569; background:#0f172a; color:#e2e8f0; color-scheme:dark; }
+</style>

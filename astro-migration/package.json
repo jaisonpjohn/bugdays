@@ -3,6 +3,8 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
+    "test:datetime": "node --test tests/datetime.test.mjs",
+    "test:datetime-seo": "node scripts/check-datetime-seo.mjs",
     "test:json-diff": "node --test tests/json-diff.test.mjs",
     "test:json-formatter": "node --test tests/json-formatter.test.mjs",
     "test:soap-body": "node --test tests/soap-body.test.mjs",

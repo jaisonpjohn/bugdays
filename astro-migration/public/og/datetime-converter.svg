@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">One instant. The right timezone.</title><desc id="desc">Epoch 1704067200 displayed as ISO 8601 in UTC, New York and Kolkata.</desc>
+  <rect width="1280" height="720" fill="#0f172a"/><rect x="50" y="48" width="1180" height="624" rx="28" fill="#1e293b" stroke="#334155"/>
+  <g font-family="system-ui, sans-serif"><text x="90" y="108" fill="#a5b4fc" font-size="22" font-weight="700">BUG DAYS · UNIX TIMESTAMP CONVERTER</text><text x="90" y="179" fill="#f8fafc" font-size="44" font-weight="750">One instant. The right timezone.</text><text x="90" y="224" fill="#cbd5e1" font-size="23">Epoch seconds: 1704067200</text>
+  <g font-family="ui-monospace, SFMono-Regular, monospace" font-size="25"><rect x="90" y="266" width="1100" height="95" rx="14" fill="#0f172a"/><text x="115" y="302" fill="#94a3b8" font-size="18">UTC</text><text x="115" y="337" fill="#e2e8f0">2024-01-01T00:00:00.000<tspan fill="#a5b4fc">Z</tspan></text>
+  <rect x="90" y="377" width="1100" height="95" rx="14" fill="#0f172a"/><text x="115" y="413" fill="#94a3b8" font-size="18">America/New_York</text><text x="115" y="448" fill="#e2e8f0">2023-12-31T19:00:00.000<tspan fill="#a5b4fc">-05:00</tspan></text>
+  <rect x="90" y="488" width="1100" height="95" rx="14" fill="#0f172a"/><text x="115" y="524" fill="#94a3b8" font-size="18">Asia/Kolkata</text><text x="115" y="559" fill="#e2e8f0">2024-01-01T05:30:00.000<tspan fill="#a5b4fc">+05:30</tspan></text></g>
+  <text x="90" y="627" fill="#cbd5e1" font-size="22">Local conversion · Exact milliseconds · Share the moment ↗</text></g>
+</svg>
