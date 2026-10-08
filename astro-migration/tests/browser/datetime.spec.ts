@@ -36,7 +36,7 @@ test('source defaults to local and target to UTC; absolute instants synchronize 
   expect(ms).toBeGreaterThanOrEqual(before - 1000); expect(ms).toBeLessThanOrEqual(Date.now() + 1000);
   expect(Date.parse(await page.locator('#iso8601').inputValue())).toBe(ms);
 });
-test('source fields stay in the left card, target fields in the right, and epochs stay global', async ({ page }) => {
+test('source fields stay left, target fields stay right, and both epochs stay in one compact left-aligned group', async ({ page }) => {
   await page.goto('/datetime-converter/');
   const global = page.locator('#epoch-values');
   await expect(global).toContainText('Timezone-independent');
@@ -52,6 +52,19 @@ test('source fields stay in the left card, target fields in the right, and epoch
     await expect(page.locator('#source-times #' + id)).toHaveCount(0);
   }
   const left = (await page.locator('#source-times').boundingBox())!, right = (await page.locator('#target-times').boundingBox())!;
+  const epochs = (await global.boundingBox())!, seconds = (await page.locator('#unix-sec').boundingBox())!, milliseconds = (await page.locator('#unix-ms').boundingBox())!;
+  expect(epochs.x).toBeCloseTo(left.x, 0); expect(epochs.width).toBeCloseTo(left.width, 0);
+  expect(seconds.x).toBeGreaterThan(epochs.x); expect(milliseconds.x).toBeGreaterThan(epochs.x);
+  expect(seconds.x + seconds.width).toBeLessThan(epochs.x + epochs.width);
+  expect(milliseconds.x + milliseconds.width).toBeLessThan(epochs.x + epochs.width);
+  if (page.viewportSize()!.width >= 768) {
+    expect(milliseconds.x + milliseconds.width).toBeLessThan(right.x);
+    expect(milliseconds.x).toBeGreaterThan(seconds.x + seconds.width); expect(milliseconds.y).toBeCloseTo(seconds.y, 0);
+  } else {
+    expect(milliseconds.x).toBeCloseTo(seconds.x, 0); expect(milliseconds.y).toBeGreaterThan(seconds.y + seconds.height);
+  }
+  await expect(page.locator('#unix-sec')).toHaveAccessibleName('Unix timestamps Seconds');
+  await expect(page.locator('#unix-ms')).toHaveAccessibleName('Unix timestamps Milliseconds');
   if (page.viewportSize()!.width >= 768) expect(right.x).toBeGreaterThan(left.x + left.width);
   else expect(right.y).toBeGreaterThan(left.y + left.height);
   const distinctCards = async () => expect(await page.evaluate(() => {
