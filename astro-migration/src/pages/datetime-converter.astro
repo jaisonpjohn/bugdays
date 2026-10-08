@@ -2,18 +2,21 @@
 import Layout from '../layouts/Layout.astro';
 const faqs = [
   { question: 'How do I convert Unix epoch seconds or milliseconds to a date?', answer: 'Enter either timestamp to update the ISO 8601 date, readable date, date picker, and RFC 2822 value instantly. Epoch seconds can include up to three decimal places. Unix timestamps identify an instant and do not change when you select another timezone.' },
-  { question: 'How do I get ISO 8601 with a timezone offset?', answer: 'Choose a timezone such as America/New_York or Asia/Kolkata. The ISO 8601 value uses that zone’s offset for the selected date, including daylight saving time. UTC uses Z; other zones show a numeric offset such as -04:00 or +05:30.' },
-  { question: 'Which timezone is used when I enter a date without an offset?', answer: 'Dates without an explicit offset use the selected timezone, which starts as your browser’s local zone. A date with Z or a numeric offset identifies its own instant and is then displayed in the selected zone. Changing zones preserves that instant.' },
+  { question: 'How do I convert between a source and target timezone?', answer: 'Choose the source timezone and enter its local date and time. Choose a target timezone to see the converted clock time and ISO 8601 offset alongside the source. Your browser’s timezone is the source default; UTC is the target default. Changing the target preserves the instant. Changing the source after entering a local date reinterprets that clock time. Swap zones reverses the view without changing the instant.' },
+  { question: 'How do I get ISO 8601 with a timezone offset?', answer: 'Choose a target timezone such as America/New_York or Asia/Kolkata. Both sides show ISO 8601 with their offsets for the selected date, including daylight saving time. UTC uses Z; other zones show a numeric offset such as -04:00 or +05:30.' },
+  { question: 'Which timezone is used when I enter a date without an offset?', answer: 'The source date and time uses the source timezone. Editable target ISO, readable date and RFC fields use the target timezone when no offset is supplied. A date with Z or a numeric offset identifies its own instant. Epoch timestamps and current-time snapshots also identify absolute instants, so changing either timezone only changes their display.' },
   { question: 'What happens during a daylight-saving clock change?', answer: 'A skipped local time is rejected instead of silently shifted. A repeated local time shows a first/second occurrence selector with the two offsets. This converter supports millisecond precision and calendar years 0001–9999, not leap seconds or historical seconds-based timezone offsets.' },
-  { question: 'Can I share the converted timestamp?', answer: 'Share time preserves the exact milliseconds and selected timezone, including a snapshot of current time. Opening the link reproduces the same moment rather than recalculating now. Conversion runs in your browser; sharing is optional.' },
+  { question: 'Can I share the converted timestamp?', answer: 'Share time preserves the exact milliseconds and both source and target timezones, including a snapshot of current time. Opening the link reproduces the same moment rather than recalculating now. Conversion runs in your browser; sharing is optional.' },
 ];
 const fields = [
-  { id: 'datepicker', label: 'Date & time in selected zone', type: 'datetime-local', placeholder: '', hint: 'Enter a wall-clock time in the timezone above.' },
-  { id: 'iso8601', label: 'ISO 8601 with timezone offset', type: 'text', placeholder: '2024-01-01T05:30:00.000+05:30', hint: 'Z means UTC. An explicit offset identifies the moment.' },
+  { id: 'datepicker', label: 'Source date & time', type: 'datetime-local', placeholder: '', hint: 'Enter the local clock time in the source timezone.', readonly: false },
+  { id: 'target-datepicker', label: 'Converted date & time', type: 'datetime-local', placeholder: '', hint: 'The same moment in the target timezone.', readonly: true },
+  { id: 'source-iso8601', label: 'Source ISO 8601 with offset', type: 'text', placeholder: '', hint: 'Source date, time and its daylight-saving-aware offset.', readonly: true },
+  { id: 'iso8601', label: 'Target ISO 8601 with offset', type: 'text', placeholder: '2024-01-01T05:30:00.000+05:30', hint: 'Editable. Without an offset, this uses the target zone.' },
   { id: 'unix-sec', label: 'Unix timestamp · seconds', type: 'text', placeholder: '1704067200', hint: 'Fractional seconds preserve milliseconds.' },
   { id: 'unix-ms', label: 'Unix timestamp · milliseconds', type: 'text', placeholder: '1704067200000', hint: 'The exact moment, independent of timezone.' },
-  { id: 'human', label: 'Human-readable date', type: 'text', placeholder: 'January 1, 2024 12:00:00 AM', hint: 'English date and time, with an explicit GMT offset.' },
-  { id: 'rfc2822', label: 'RFC 2822 date', type: 'text', placeholder: 'Mon, 01 Jan 2024 00:00:00 +0000', hint: 'Email-style date; this format has whole-second precision.' },
+  { id: 'human', label: 'Target human-readable date', type: 'text', placeholder: 'January 1, 2024 12:00:00 AM', hint: 'English date and time in the target zone, with a GMT offset.' },
+  { id: 'rfc2822', label: 'Target RFC 2822 date', type: 'text', placeholder: 'Mon, 01 Jan 2024 00:00:00 +0000', hint: 'Email-style target date; whole-second precision.' },
 ];
 const jsonLd = [
   { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Unix Timestamp & Timezone Converter', url: 'https://bugdays.com/datetime-converter/', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } },
@@ -21,29 +24,37 @@ const jsonLd = [
 ];
 ---
 <Layout
-  title="Unix Timestamp Converter — Epoch & ISO 8601 Timezones"
-  description="Convert epoch seconds or milliseconds to ISO 8601 with the correct timezone offset. Enter local dates, handle daylight saving, and share the exact moment."
-  keywords="Unix timestamp converter, epoch converter, timestamp to date, date to timestamp, ISO 8601 timezone offset, milliseconds to date, timezone converter"
+  title="Unix Timestamp & Timezone Converter — Epoch to ISO 8601"
+  description="Convert Unix seconds or milliseconds to ISO 8601, or local time between source and target timezones. See both offsets, handle DST, and share the exact moment."
+  keywords="Unix timestamp converter, epoch converter, timestamp to date, date to timestamp, ISO 8601 timezone offset, milliseconds to date, timezone converter, source target timezone, local time to UTC"
   breadcrumb={[{ name: 'Converters', href: '/converter-tools/' }, { name: 'DateTime Converter' }]}
   toolId="datetime-converter" jsonLd={jsonLd} image="/og/datetime-converter.png" imageAlt="One Unix timestamp displayed in UTC, New York, and Kolkata with correct ISO 8601 offsets"
 >
   <div class="max-w-6xl mx-auto">
     <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Unix Timestamp &amp; Timezone Converter</h1>
-    <p class="mt-2 mb-4 text-sm text-slate-600 dark:text-slate-300">Epoch, ISO 8601, and local time — one moment, kept in sync. Your timezone is the default.</p>
+    <p class="mt-2 mb-4 text-sm text-slate-600 dark:text-slate-300">Convert timestamps or local time between timezones. See both sides, with the right ISO 8601 offsets.</p>
     <section id="datetime-workspace" aria-label="Date and timestamp converter" class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800 overflow-hidden">
-      <div class="flex flex-wrap items-end gap-3 border-b border-slate-200 p-4 dark:border-slate-700">
-        <div class="min-w-0 flex-1 basis-64">
-          <label for="timezone" class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Timezone for entered and displayed dates</label>
-          <select id="timezone" data-share-key="timezone" aria-describedby="zone-offset" class="datetime-input"></select>
-          <p id="zone-offset" class="mt-1 text-xs text-slate-500 dark:text-slate-400">UTC offset depends on the date</p>
+      <div class="border-b border-slate-200 p-4 dark:border-slate-700">
+        <div class="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3">
+          <div class="min-w-0">
+            <label for="source-timezone" class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">From · source timezone</label>
+            <select id="source-timezone" data-share-key="sourceTimezone" aria-describedby="source-offset" class="datetime-input"></select>
+            <p id="source-offset" class="mt-1 text-xs text-slate-500 dark:text-slate-400">UTC offset depends on the date</p>
+          </div>
+          <button id="swap-zones-btn" aria-label="Swap source and target timezones" title="Swap zones, keeping the same moment" class="justify-self-start sm:justify-self-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-indigo-600 dark:border-slate-600 dark:text-indigo-400 disabled:opacity-40">⇄ <span class="sm:sr-only">Swap zones</span></button>
+          <div class="min-w-0">
+            <label for="timezone" class="block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">To · target timezone</label>
+            <select id="timezone" data-share-key="timezone" aria-describedby="zone-offset" class="datetime-input"></select>
+            <p id="zone-offset" class="mt-1 text-xs text-slate-500 dark:text-slate-400">UTC offset depends on the date</p>
+          </div>
         </div>
-        <div class="flex flex-wrap gap-2 pb-5">
+        <div class="flex flex-wrap gap-2 mt-3">
           <button id="now-btn" data-share-action="convert" class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Use current time</button>
           <button id="clear-btn" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-600 dark:border-slate-600 dark:text-slate-200">Clear</button>
-          <button id="share-time-btn" class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40">Share time ↗</button>
+          <button id="share-time-btn" class="ml-auto rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-40">Share time ↗</button>
         </div>
       </div>
-      <p class="px-4 pt-3 text-xs text-slate-500 dark:text-slate-400">Changing the timezone keeps the same moment. Dates entered without an offset use the selected zone.</p>
+      <p class="px-4 pt-3 text-xs text-slate-500 dark:text-slate-400">Enter a source local time, or paste a timestamp below. Changing the target keeps the same moment.</p>
       <div id="error-box" role="alert" class="hidden mx-4 mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"></div>
       <div id="dst-choice" class="hidden mx-4 mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
         <label for="dst-occurrence" class="block mb-2">The clock repeats this local time. Choose which occurrence you mean:</label>
@@ -55,7 +66,7 @@ const jsonLd = [
             <label for={field.id} class="text-sm font-semibold text-slate-700 dark:text-slate-200">{field.label}</label>
             <button data-copy={field.id} aria-label={`Copy ${field.label}`} class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline disabled:opacity-40">Copy</button>
           </div>
-          <input id={field.id} type={field.type} step={field.type === 'datetime-local' ? '0.001' : undefined} data-share-key={field.id === 'unix-sec' ? 'unixSec' : undefined} placeholder={field.placeholder} aria-describedby={`${field.id}-hint`} autocomplete="off" spellcheck="false" class="datetime-input font-mono" />
+          <input id={field.id} type={field.type} readonly={field.readonly} step={field.type === 'datetime-local' ? '0.001' : undefined} data-share-key={field.id === 'unix-sec' ? 'unixSec' : undefined} placeholder={field.placeholder} aria-describedby={`${field.id}-hint`} autocomplete="off" spellcheck="false" class="datetime-input font-mono" />
           <p id={`${field.id}-hint`} class="mt-1 text-xs text-slate-500 dark:text-slate-400">{field.hint}</p>
         </div>)}
       </div>
@@ -66,7 +77,7 @@ const jsonLd = [
     <section class="mt-6 text-sm text-slate-600 dark:text-slate-300">
       <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">Convert epoch timestamps with the right timezone offset</h2>
       <p>Unix time counts seconds or milliseconds since 1970-01-01T00:00:00Z. The timestamp stays the same in every timezone; its clock time and ISO 8601 offset change. For example, <code>1704067200</code> is <code>2024-01-01T00:00:00.000Z</code> in UTC and <code>2024-01-01T05:30:00.000+05:30</code> in Asia/Kolkata.</p>
-      <p class="mt-2">Paste a timestamp, enter a local date, or choose current time. Every other field updates immediately, with millisecond precision where the format allows it. <a href="/guides/epoch-iso8601-timezone-offset/" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Try the timezone and daylight-saving examples ↗</a></p>
+      <p class="mt-2">To convert local time to UTC or another timezone, choose the source timezone, enter its date and time, then select the target timezone. Both local dates and ISO 8601 offsets stay visible. Changing the source after entering a local time recalculates the instant; changing the target only changes its display. Paste an epoch timestamp or choose current time to work from an absolute instant instead. <a href="/guides/epoch-iso8601-timezone-offset/" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Try the source-to-target and daylight-saving examples ↗</a></p>
     </section>
     <section class="mt-5 text-sm text-slate-600 dark:text-slate-300" aria-label="Frequently asked questions">
       <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">Timestamp conversion questions</h2>

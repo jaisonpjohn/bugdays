@@ -125,7 +125,7 @@ export const toolGroups: ToolGroup[] = [
     href: "/converter-tools/",
     icon: "arrows",
     items: [
-      { name: "DateTime", href: "/datetime-converter/", description: "Unix timestamps & ISO 8601 with timezone offsets", keywords: ["epoch converter", "unix timestamp", "timestamp to date", "date to timestamp", "iso 8601", "timezone offset", "milliseconds", "utc", "daylight saving"] },
+      { name: "DateTime", href: "/datetime-converter/", description: "Unix timestamps, source/target timezones & ISO 8601 offsets", keywords: ["epoch converter", "unix timestamp", "timestamp to date", "date to timestamp", "iso 8601", "timezone converter", "source target timezone", "local time to utc", "timezone offset", "milliseconds", "utc", "daylight saving"] },
       { name: "Color", href: "/color-converter/", description: "HEX, RGB, HSL conversion", keywords: ["hex", "rgb", "hsl", "picker"] },
       { name: "Protobuf", href: "/protobuf-converter/", description: "Decode & convert Protobuf", keywords: ["proto", "protocol buffers", "grpc"] },
       { name: "Avro", href: "/avro-converter/", description: "Decode & convert Avro", keywords: ["schema", "kafka"] },

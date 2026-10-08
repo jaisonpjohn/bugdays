@@ -21,7 +21,7 @@ export const guides: Guide[] = [
     title: 'Convert Epoch to ISO 8601 with the Correct Timezone Offset',
     shortTitle: 'Convert timestamps without timezone surprises',
     description: 'Convert Unix seconds or milliseconds to ISO 8601, interpret dates in an IANA timezone, handle daylight-saving gaps and overlaps, and share the exact moment.',
-    topic: 'Unix timestamp and timezone conversion', published: '2026-10-07', updated: '2026-10-07', readingMinutes: 5,
+    topic: 'Unix timestamp and timezone conversion', published: '2026-10-07', updated: '2026-10-08', readingMinutes: 6,
     image: '/og/datetime-converter.png', artImage: '/og/datetime-converter.svg', imageAlt: 'One Unix timestamp displayed in UTC, New York, and Kolkata with correct ISO 8601 offsets',
     toolHref: '/datetime-converter/', toolName: 'Unix Timestamp & Timezone Converter',
   },

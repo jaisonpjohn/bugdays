@@ -3,9 +3,9 @@ import GuideLayout from '../../layouts/GuideLayout.astro';
 import { guideBySlug } from '../../lib/guides.ts';
 import LZString from 'lz-string';
 const guide = guideBySlug('epoch-iso8601-timezone-offset');
-const example = (unixMs: string, timezone: string) => `/datetime-converter/#lz:${LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'datetime-converter', a: 'convert', d: { unixMs, timezone } }))}`;
+const example = (unixMs: string, timezone: string, sourceTimezone = 'UTC', sourceWall = false) => `/datetime-converter/#lz:${LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'datetime-converter', a: 'convert', d: { unixMs, timezone, sourceTimezone, ...(sourceWall ? { sourceWall: true } : {}) } }))}`;
 ---
-<GuideLayout guide={guide} keywords="epoch to ISO 8601, Unix timestamp converter timezone, timestamp milliseconds, date to epoch, ISO 8601 offset, daylight saving ambiguous time">
+<GuideLayout guide={guide} keywords="epoch to ISO 8601, Unix timestamp converter timezone, source target timezone converter, local time to UTC, timestamp milliseconds, date to epoch, ISO 8601 offset, daylight saving ambiguous time">
   <p>A timestamp in a log and a date in a support ticket can describe the same event but look hours apart. The useful question is not just “what time is this?” It is “which moment, and in which timezone?”</p>
   <h2>One epoch timestamp, three ISO 8601 dates</h2>
   <p>Unix seconds <code>1704067200</code> and Unix milliseconds <code>1704067200000</code> identify the same instant. Changing the display timezone does not change either number.</p>
@@ -13,20 +13,24 @@ const example = (unixMs: string, timezone: string) => `/datetime-converter/#lz:$
 America/New_York    2023-12-31T19:00:00.000-05:00
 Asia/Kolkata        2024-01-01T05:30:00.000+05:30`}</code></pre>
   <p><a class="datetime-example inline-block rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white" href={example('1704067200000', 'Asia/Kolkata')}>Open the epoch-to-ISO example ↗</a></p>
-  <p>Select New York, UTC, or your own timezone. ISO 8601, the date picker, the readable date, and RFC 2822 update together. The numeric offset applies to that date, not merely the current offset in that region.</p>
-  <h2>Enter a local date in the timezone where it happened</h2>
-  <p>Choose the timezone first, then enter the date and time. The converter starts in your browser’s timezone. A wall-clock value such as <code>2024-01-01T09:00:00</code> uses the selected zone; it does not quietly use the machine’s zone instead.</p>
-  <p>An explicit ISO offset overrides that assumption: <code>2024-01-01T09:00:00+05:30</code> identifies <code>2024-01-01T03:30:00Z</code>. You can display the same moment in another zone afterwards. <a href="https://www.rfc-editor.org/rfc/rfc3339#section-5.6">RFC 3339’s Internet timestamp profile</a> describes the familiar date-time-plus-offset form. The <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/datetime-local">HTML datetime-local picker itself has no timezone</a>; this tool supplies that interpretation explicitly.</p>
+  <p>Select New York, UTC, or your own target timezone. Target ISO 8601, converted local time, the readable date, and RFC 2822 update together, while the source stays visible. The numeric offset applies to that date, not merely the current offset in that region.</p>
+  <h2>Convert local time between source and target timezones</h2>
+  <p>Choose <strong>From · source timezone</strong>, enter the source date and time, then choose <strong>To · target timezone</strong>. The source defaults to your browser’s timezone and the target defaults to UTC. For example, 09:00 in Asia/Kolkata on January 1, 2024 becomes 03:30 UTC, or 22:30 the previous evening in New York:</p>
+  <pre><code>{`Source: Asia/Kolkata      2024-01-01T09:00:00.000+05:30
+Target: America/New_York  2023-12-31T22:30:00.000-05:00
+Epoch milliseconds:      1704079800000`}</code></pre>
+  <p><a class="source-target-example" href={example('1704079800000', 'America/New_York', 'Asia/Kolkata', true)}>Open the Kolkata-to-New-York example ↗</a>. Change the target to UTC to see 03:30 without changing the instant. Change the source to another zone to reinterpret the entered 09:00 local time. Swap zones reverses the view while preserving the instant.</p>
+  <p>The source date picker is interpreted in the source timezone. Target ISO, readable date and RFC inputs use the target timezone if no offset is supplied. An explicit ISO offset identifies its own instant: <code>2024-01-01T09:00:00+05:30</code> identifies <code>2024-01-01T03:30:00Z</code> regardless of either selector. Epoch timestamps and current-time snapshots also remain fixed when either zone changes. <a href="https://www.rfc-editor.org/rfc/rfc3339#section-5.6">RFC 3339’s Internet timestamp profile</a> describes the familiar date-time-plus-offset form. The <a href="https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/input/datetime-local">HTML datetime-local picker itself has no timezone</a>; this tool supplies that interpretation explicitly.</p>
   <h2>Seconds versus milliseconds: avoid the thousandfold error</h2>
   <p>Use the labeled seconds and milliseconds fields rather than guessing from a number’s length. JavaScript’s Date constructor takes milliseconds; many APIs and database timestamps use seconds. Fractional seconds are supported to millisecond precision: <code>1704067200.123</code> becomes <code>1704067200123</code>. RFC 2822 output has whole-second precision, so use ISO 8601 or the millisecond field when copying an exact instant.</p>
   <h2>Daylight saving: a local time can happen zero or two times</h2>
   <p>In New York, <code>2024-03-10T02:30:00</code> never happened: the clock jumped from 01:59 to 03:00. The converter rejects that input instead of moving it silently.</p>
-  <p>On November 3, 2024, 01:30 happened twice. Enter <code>2024-11-03T01:30:00</code> with America/New_York selected, then use the first/second occurrence selector:</p>
+  <p>On November 3, 2024, 01:30 happened twice. Select America/New_York as the source, enter <code>2024-11-03T01:30:00</code>, then use the first/second occurrence selector:</p>
   <pre><code>{`First:   2024-11-03T01:30:00.000-04:00 = 2024-11-03T05:30:00Z
 Second:  2024-11-03T01:30:00.000-05:00 = 2024-11-03T06:30:00Z`}</code></pre>
-  <p><a href={example('1730615400000', 'America/New_York')}>Inspect the second occurrence ↗</a>. Timezone rules come from your browser’s timezone database. This converter does not model leap seconds or historical offsets containing seconds; it reports those limitations rather than producing a misleading ISO value.</p>
+  <p><a href={example('1730615400000', 'UTC', 'America/New_York', true)}>Inspect the second occurrence ↗</a>. Both source and target stay visible, so the repeated local clock time is distinguishable by its offset and UTC instant. Timezone rules come from your browser’s timezone database. This converter does not model leap seconds or historical offsets containing seconds; it reports those limitations rather than producing a misleading ISO value.</p>
   <h2>Share the time, not a screenshot of the clock</h2>
-  <p>Choose Share time to send the exact timestamp and selected timezone. Use current time captures a snapshot; the shared link does not calculate a new “now” when opened. Embedded links hold the state in their URL fragment. Optional stored short links use the site’s sharing service; conversion itself never uploads the entered date.</p>
+  <p>Choose Share time to send the exact timestamp and both source and target timezones. The Kolkata-to-New-York link above opens a complete conversion that the recipient can inspect and edit. Use current time captures a snapshot; the shared link does not calculate a new “now” when opened. Embedded links hold the state in their URL fragment. Optional stored short links use the site’s sharing service; conversion itself never uploads the entered date.</p>
   <p>For scheduled jobs, check <a href="/cron-parser/">Cron Parser</a> and the <a href="/guides/cron-expression-next-run-timezone/">cron timezone guide</a>. For a Kafka incident window, use the converted epoch milliseconds in the <a href="/kafka-client/">Kafka message browser</a>. If the timestamp came from an API payload, inspect the original in <a href="/json-formatter/">JSON Formatter</a> before changing its representation.</p>
   <a slot="related" href="/guides/cron-expression-next-run-timezone/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong class="block">Cron schedules and timezone assumptions</strong><span class="text-sm">Find the next run without mixing up local and server time.</span></a>
 </GuideLayout>
