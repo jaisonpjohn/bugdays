@@ -99,6 +99,41 @@ test('source picker and target dates without offsets use their own zones with mi
   await page.locator('#rfc2822').fill('Mon, 01 Jan 2024 05:30:00 +0530');
   await expect(page.locator('#iso8601')).toHaveValue('2024-01-01T05:45:00.000+05:45');
 });
+test('visible field badges and styling distinguish editable controls from selectable read-only results', async ({ page }) => {
+  await page.goto('/datetime-converter/');
+  const editable = ['unix-sec', 'unix-ms', 'source-timezone', 'timezone', 'datepicker', 'iso8601', 'human', 'rfc2822'];
+  const readonly = ['source-iso8601', 'source-human', 'source-rfc2822', 'target-datepicker'];
+  for (const id of editable) {
+    await expect(page.locator('#' + id + '-mode')).toHaveText('Editable');
+    await expect(page.locator('#' + id + '-mode')).toBeVisible();
+    await expect(page.locator('#' + id)).toBeEditable();
+    await expect(page.locator('#' + id)).toHaveAttribute('aria-describedby', new RegExp(id + '-mode'));
+  }
+  for (const id of readonly) {
+    await expect(page.locator('#' + id + '-mode')).toHaveText('Read-only');
+    await expect(page.locator('#' + id + '-mode')).toBeVisible();
+    await expect(page.locator('#' + id)).not.toBeEditable();
+    await expect(page.locator('#' + id)).toBeEnabled();
+    await expect(page.locator('#' + id)).toHaveAttribute('aria-describedby', new RegExp(id + '-mode'));
+  }
+  const distinct = async () => expect(await page.evaluate(() => {
+    const input = getComputedStyle(document.querySelector('#datepicker')!), output = getComputedStyle(document.querySelector('#source-human')!);
+    return input.backgroundColor !== output.backgroundColor && input.borderStyle === 'solid' && output.borderStyle === 'dashed' && output.opacity === '1';
+  })).toBeTruthy();
+  await distinct();
+  await page.locator('#unix-ms').fill('1704067200123');
+  await page.locator('#source-human').focus(); await page.locator('#source-human').press('x');
+  await expect(page.locator('#source-human')).toHaveValue('Sunday, December 31, 2023 16:00:00.123 GMT-08:00');
+  const selected = await page.locator('#source-human').evaluate((node: HTMLInputElement) => {
+    node.select(); return node.value.slice(node.selectionStart!, node.selectionEnd!);
+  });
+  expect(selected).toBe('Sunday, December 31, 2023 16:00:00.123 GMT-08:00');
+  await page.locator('[data-copy="source-human"]').click(); expect(await page.evaluate(() => (window as any).__copied)).toBe(selected);
+  await page.evaluate(() => document.documentElement.classList.add('dark')); await distinct();
+  await page.locator('#source-timezone').selectOption('America/New_York'); await page.locator('#datepicker').fill('2024-11-03T01:30');
+  await expect(page.locator('#dst-occurrence-mode')).toBeVisible(); await expect(page.locator('#dst-occurrence-mode')).toHaveText('Editable');
+  await page.locator('#dst-occurrence').selectOption('1730615400000'); await expect(page.locator('#unix-ms')).toHaveValue('1730615400000');
+});
 test('source-zone edits reinterpret entered wall time; target edits and swap preserve the instant', async ({ page }) => {
   await page.goto('/datetime-converter/');
   await page.locator('#source-timezone').selectOption('Asia/Kolkata');
