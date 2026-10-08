@@ -61,9 +61,15 @@ test('source fields stay left, target fields stay right, and both epochs stay in
   expect(milliseconds.x + milliseconds.width).toBeLessThan(epochs.x + epochs.width);
   if (page.viewportSize()!.width >= 768) {
     expect(milliseconds.x + milliseconds.width).toBeLessThan(right.x);
-    expect(milliseconds.x).toBeGreaterThan(seconds.x + seconds.width); expect(milliseconds.y).toBeCloseTo(seconds.y, 0);
+    expect(milliseconds.x - seconds.x - seconds.width).toBeGreaterThanOrEqual(24);
+    expect(milliseconds.y).toBeCloseTo(seconds.y, 0);
   } else {
     expect(milliseconds.x).toBeCloseTo(seconds.x, 0); expect(milliseconds.y).toBeGreaterThan(seconds.y + seconds.height);
+  }
+  for (const id of ['unix-sec', 'unix-ms']) {
+    const label = (await page.locator('#' + id + '-label').boundingBox())!, badge = (await page.locator('#' + id + '-mode').boundingBox())!, copy = (await page.locator('[data-copy="' + id + '"]').boundingBox())!;
+    expect(copy.y + copy.height / 2).toBeCloseTo(label.y + label.height / 2, 0);
+    expect(badge.y + badge.height / 2).toBeCloseTo(label.y + label.height / 2, 0);
   }
   await expect(page.locator('#unix-sec')).toHaveAccessibleName('Unix timestamps Seconds');
   await expect(page.locator('#unix-ms')).toHaveAccessibleName('Unix timestamps Milliseconds');
