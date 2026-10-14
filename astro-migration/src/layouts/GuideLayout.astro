@@ -116,7 +116,10 @@ const jsonLd = [{
   .guide-body ul { list-style: disc; }
   .guide-body ol { list-style: decimal; }
   .guide-body li + li { margin-top: .45rem; }
-  .guide-body a { color: #4f46e5; text-decoration: underline; text-underline-offset: 2px; }
+  /* Ordinary prose links must not override explicit white-text action links. */
+  .guide-body a:not(.text-white) { color: #4f46e5; text-decoration: underline; text-underline-offset: 2px; }
+  .guide-body a.text-white { text-decoration: none; }
+  .guide-body a.text-white:focus-visible { outline: 2px solid #6366f1; outline-offset: 3px; }
   .guide-body strong { color: #1e293b; font-weight: 700; }
   .guide-body code { border-radius: .3rem; background: #f1f5f9; padding: .12rem .3rem; color: #334155; font-size: .88em; }
   .guide-body pre { margin-top: 1rem; overflow-x: auto; border-radius: .65rem; background: #020617; padding: 1rem; color: #e2e8f0; font-size: .82rem; line-height: 1.65; }
@@ -129,7 +132,7 @@ const jsonLd = [{
   .guide-body .guide-note p { margin-top: 0; color: #1e3a8a; }
   .dark .guide-body h2, .dark .guide-body h3, .dark .guide-body strong { color: #f1f5f9; }
   .dark .guide-body p, .dark .guide-body ul, .dark .guide-body ol { color: #cbd5e1; }
-  .dark .guide-body a { color: #a5b4fc; }
+  .dark .guide-body a:not(.text-white) { color: #a5b4fc; }
   .dark .guide-body code { background: #0f172a; color: #e2e8f0; }
   .dark .guide-body blockquote { background: rgba(49, 46, 129, .28); color: #e2e8f0; }
   .dark .guide-body th, .dark .guide-body td { border-color: #475569; }
