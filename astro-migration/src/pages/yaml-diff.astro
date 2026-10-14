@@ -1,477 +1,102 @@
 ---
 import Layout from '../layouts/Layout.astro';
-
-const jsonLd = [
-  {
-    "@context": "https://schema.org",
-    "@type": "WebApplication",
-    "name": "YAML Diff - Compare YAML Online",
-    "description": "Free online YAML diff tool. Compare two YAML files and find differences instantly with color-coded highlighting.",
-    "url": "https://bugdays.com/yaml-diff",
-    "applicationCategory": "DeveloperApplication",
-    "operatingSystem": "Any",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
-    },
-    "featureList": ["YAML comparison", "Semantic diff", "Deep object comparison", "Color-coded diff"]
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "How do I compare two YAML files?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Paste your original YAML in the left panel and modified YAML in the right panel, then click Compare. The tool highlights added, removed, and modified values."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Does YAML key order matter when comparing?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "By default, key order is ignored for comparison. YAML is typically order-independent for mappings."
-        }
-      }
-    ]
-  }
+import YamlEditor from '../components/YamlEditor.astro';
+const faqs=[
+  {question:'How do I compare two YAML files online?',answer:'Paste or open an original and modified YAML file, then choose Compare YAML. The semantic diff lists added, removed and modified values by exact pointer. Select a change to copy its resolved value or jump to its source line. Comments, indentation and mapping key order are ignored.'},
+  {question:'Can I compare multi-document Kubernetes manifests?',answer:'Yes. Document position compares YAML streams in their original order. Kubernetes resource matching pairs documents by apiVersion, kind, metadata.namespace and metadata.name even when reordered. Missing namespaces remain unspecified; the tool does not assume your cluster namespace. Duplicate resource identities are rejected.'},
+  {question:'Can I ignore list order or match containers by name?',answer:'Choose positional matching, ignore list order, or match records by a unique field such as name. Unordered lists retain duplicate counts. Lists with that field are matched by identity; lists without it remain positional. Partially populated or duplicate identities are rejected. The report includes original and modified source positions and the number of keyed lists.'},
+  {question:'Does YAML Diff support aliases and large numeric IDs?',answer:'Anchors, aliases and merge keys are compared by resolved values. Circular aliases and oversized expansions are rejected. Integers and decimal tokens are compared without JavaScript rounding; numerically equivalent values such as 1 and 1.0 match. Quoted numeric strings remain distinct from numbers.'},
+  {question:'Can I ignore generated Kubernetes fields?',answer:'Ignore generated fields excludes metadata.managedFields, metadata.resourceVersion, metadata.uid, metadata.creationTimestamp and the top-level status field. Custom ignore rules accept exact pointers per document or field names at every depth. Filtering is not redaction: shared links still contain the complete original inputs.'},
+  {question:'Are my files uploaded, and can I share or export a YAML comparison?',answer:'Files are read and compared locally in your browser. Share comparison offers an embedded URL fragment or an optional stored short link that explicitly uploads the shared state. Both retain inputs and comparison settings. JSON and TXT reports include all changes, not just the search-filtered view. Anyone with a share link can read its contents.'},
+  {question:'Which YAML syntax and file sizes are supported?',answer:'The tool uses YAML 1.2 core types plus merge-key support. Unknown or non-core tags, YAML 1.1 directives, duplicate keys and non-string mapping keys produce errors rather than misleading comparisons. Each input supports 5 MiB, 250 documents, 100,000 resolved nodes and 100 levels of nesting. A comparison supports 5,000 changes. This is not Kubernetes schema validation or a live-cluster diff.'},
 ];
+const jsonLd=[{'@context':'https://schema.org','@type':'WebApplication',name:'YAML Diff and Kubernetes Manifest Compare',url:'https://bugdays.com/yaml-diff/',applicationCategory:'DeveloperApplication',operatingSystem:'Any',offers:{'@type':'Offer',price:'0',priceCurrency:'USD'},featureList:['Multi-document YAML comparison','Kubernetes resource matching','Exact numeric values','Anchors and merge keys','List identity and order controls','Source-line navigation','Shareable settings','Local file imports and report exports']},{'@context':'https://schema.org','@type':'FAQPage',mainEntity:faqs.map(f=>({'@type':'Question',name:f.question,acceptedAnswer:{'@type':'Answer',text:f.answer}}))}];
 ---
-
-<Layout
-  title="YAML Diff Online - Compare YAML Files, Find Differences"
-  description="Free YAML diff tool to compare two YAML files online. Find differences instantly with semantic comparison. Color-coded highlighting shows added, removed, and changed values. Compare Kubernetes configs, Docker Compose files."
-  keywords="YAML diff, YAML compare, YAML comparison, compare YAML online, diff YAML, YAML diff checker, Kubernetes config diff, Docker Compose compare"
-  breadcrumb={[{ name: "YAML Tools", href: "/yaml-tools/" }, { name: "YAML Diff" }]}
-  toolId="yaml-diff"
-  jsonLd={jsonLd}
->
-  <div class="max-w-6xl mx-auto">
-    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">YAML Diff - Compare YAML Online</h1>
-
-    <div class="grid md:grid-cols-2 gap-4 mb-4">
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Original YAML</label>
-        <textarea
-          id="yaml1"
-          data-share-key="yaml1"
-          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-          placeholder="server:
-  host: localhost
-  port: 8080"
-        ></textarea>
+<Layout title="YAML Diff — Compare Files & Kubernetes Manifests"
+  description="Compare YAML files by value, not formatting. Match Kubernetes resources and lists by name, ignore generated fields, inspect source lines, export and share your diff."
+  keywords="YAML diff, YAML compare, compare YAML files online, semantic YAML diff, Kubernetes manifest diff, YAML diff ignore key order, compare Helm values, Docker Compose diff, YAML multi document comparison"
+  image="/og/yaml-diff.png" imageAlt="Reordered Kubernetes YAML resources reveal only a replica count and image change"
+  toolId="yaml-diff" breadcrumb={[{name:'YAML Tools',href:'/yaml-tools/'},{name:'YAML Diff'}]} jsonLd={jsonLd}>
+  <div id="yaml-workspace" class="max-w-6xl mx-auto min-w-0">
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">YAML Diff — Compare YAML Files</h1>
+    <p class="mt-1 mb-4 text-sm text-slate-600 dark:text-slate-300">Find config changes without formatting noise. Compare local files, inspect exact values, and share a diff your teammate can reopen.</p>
+    <section class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" aria-label="YAML comparison workspace">
+      <div class="flex flex-wrap items-center gap-2 p-4 border-b border-slate-200 dark:border-slate-700">
+        <button id="compare-btn" data-share-action="compare" class="yd-button yd-primary">Compare YAML</button>
+        <button id="sample-btn" class="yd-button">Load example</button><button id="format-btn" class="yd-button">Format both</button><button id="swap-btn" class="yd-button">Swap</button><button id="clear-btn" class="yd-button">Clear</button><button id="cancel-btn" class="yd-button" hidden>Cancel</button>
+        <button id="share-comparison" class="yd-button yd-primary sm:ml-auto">Share comparison ↗</button>
       </div>
-
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Modified YAML</label>
-        <textarea
-          id="yaml2"
-          data-share-key="yaml2"
-          class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-          placeholder="server:
-  host: production.example.com
-  port: 443"
-        ></textarea>
+      <div class="grid md:grid-cols-2 gap-4 p-4">
+        {['Original','Modified'].map((label,index)=><div class="min-w-0">
+          <div class="flex items-center justify-between mb-2 gap-3"><label for={`yaml${index+1}`} class="text-sm font-semibold">{label} YAML</label><button id={`yaml${index+1}-open`} class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Open file</button></div>
+          <input id={`yaml${index+1}-file`} aria-label={`Open ${label.toLowerCase()} YAML file`} type="file" accept=".yaml,.yml,.txt,application/yaml,text/yaml,text/plain" hidden />
+          <YamlEditor id={`yaml${index+1}`} label={`${label} YAML`} />
+          <p id={`yaml${index+1}-count`} class="mt-1 text-xs text-slate-500 dark:text-slate-400">Drop a local UTF-8 file here.</p>
+        </div>)}
       </div>
-    </div>
-
-    <div class="flex flex-wrap gap-3 mb-4">
-      <button id="compare-btn" data-share-action="compare" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium">
-        Compare YAML
-      </button>
-      <button id="format-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-        Format Both
-      </button>
-      <button id="clear-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-        Clear
-      </button>
-      <button id="swap-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-        Swap
-      </button>
-      <button id="sample-btn" class="px-6 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 transition-colors font-medium">
-        Load Sample
-      </button>
-    </div>
-
-    <div id="error-box" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800"></div>
-
-    <div id="stats" class="hidden mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800"></div>
-
-    <!-- Diff Results -->
-    <div id="results" class="hidden">
-      <div class="grid md:grid-cols-2 gap-4 mb-4">
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-          <div class="flex items-center justify-between mb-2">
-            <label class="text-sm font-medium text-gray-700 dark:text-slate-200">Original</label>
-            <div class="flex gap-2 text-xs">
-              <span class="px-2 py-0.5 bg-red-200 text-red-800 rounded border border-red-400">removed</span>
-              <span class="px-2 py-0.5 bg-purple-200 text-purple-800 rounded border border-purple-400">changed</span>
-            </div>
+      <div class="px-4 pb-4">
+        <div class="flex flex-wrap items-center gap-x-5 gap-y-3 text-sm">
+          <label class="flex items-center gap-2" for="document-mode">Match documents <select id="document-mode" class="yd-input" data-share-key="documents"><option value="position">By position</option><option value="kubernetes">Kubernetes resource</option></select></label>
+          <label class="inline-flex items-center gap-2"><input id="ignore-generated" type="checkbox" data-share-key="ignoreGenerated" class="accent-indigo-600" />Ignore generated fields</label>
+          <label class="inline-flex items-center gap-2"><input id="auto-compare" type="checkbox" data-share-key="autoCompare" class="accent-indigo-600" />Auto-compare</label>
+        </div>
+        <details id="yaml-advanced" class="mt-3 rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-700">
+          <summary class="cursor-pointer font-semibold">List matching &amp; ignored fields</summary>
+          <div class="grid md:grid-cols-2 gap-4 mt-3">
+            <div><label for="array-mode" class="block font-medium mb-1">Lists / sequences</label><select id="array-mode" data-share-key="arrays" class="yd-input w-full"><option value="position">Compare by position</option><option value="unordered">Ignore order (keep duplicate counts)</option><option value="key">Match records by field</option></select><label for="array-key" class="block font-medium mt-3 mb-1">Unique field <span class="font-normal text-slate-500 dark:text-slate-400">for matching record lists</span></label><input id="array-key" data-share-key="arrayKey" value="name" maxlength="200" class="yd-input w-full" /><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">For example, match containers by name. Lists without this field stay positional; partial or duplicate identities fail.</p></div>
+            <div><label for="ignored-paths" class="block font-medium mb-1">Ignore field names or exact pointers</label><textarea id="ignored-paths" data-share-key="ignoredPaths" rows="3" maxlength="100100" class="yd-input w-full font-mono" placeholder="/metadata/annotations&#10;lastUpdated"></textarea><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">One pointer per line, relative to each document. Field names apply at every depth. Use ~1 for a slash and ~0 for a tilde. These rules do not remove data from shares.</p></div>
           </div>
-          <div id="diff-left" class="font-mono text-sm overflow-auto max-h-[500px] border border-gray-200 dark:border-slate-700 rounded bg-gray-50 dark:bg-slate-900 p-2"></div>
-        </div>
-        <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-          <div class="flex items-center justify-between mb-2">
-            <label class="text-sm font-medium text-gray-700 dark:text-slate-200">Modified</label>
-            <div class="flex gap-2 text-xs">
-              <span class="px-2 py-0.5 bg-green-200 text-green-800 rounded border border-green-400">added</span>
-              <span class="px-2 py-0.5 bg-purple-200 text-purple-800 rounded border border-purple-400">changed</span>
-            </div>
+        </details>
+        <details class="mt-3 text-sm"><summary class="cursor-pointer font-semibold text-slate-600 dark:text-slate-300">Find in source files</summary>
+          <div class="flex flex-wrap items-center gap-2 mt-2"><label for="find-query" class="sr-only">Find text in source</label><input id="find-query" type="search" class="yd-input min-w-0 flex-1" placeholder="Find a key or value…" /><select id="find-side" class="yd-input" aria-label="Search source"><option value="0">Original</option><option value="1">Modified</option></select><button id="find-previous" class="yd-button" aria-label="Previous source match">↑</button><button id="find-next" class="yd-button" aria-label="Next source match">↓</button><span id="find-count" class="text-xs text-slate-500 dark:text-slate-400" aria-live="polite"></span></div>
+        </details>
+      </div>
+      <div id="error-box" hidden role="alert" class="mx-4 mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"><span id="error-text"></span><button id="error-jump" class="yd-button ml-2" hidden>Jump to error</button></div>
+      <p id="yaml-status" role="status" class="px-4 pb-3 text-xs text-slate-500 dark:text-slate-400">Local processing · 5 MiB per file · YAML 1.2 core + merge keys</p>
+      <section id="results" hidden class="border-t border-slate-200 bg-slate-50/70 rounded-b-xl p-4 dark:border-slate-700 dark:bg-slate-900/30" aria-label="YAML comparison results">
+        <div class="flex flex-wrap items-center gap-3 mb-2"><h2 class="text-base font-semibold mr-auto">Changes</h2><button id="copy-report" class="yd-button">Copy report</button><button id="download-json" class="yd-button">JSON ↓</button><button id="download-txt" class="yd-button">TXT ↓</button></div>
+        <p id="stats" hidden class="text-xs text-slate-600 dark:text-slate-300 mb-3" aria-live="polite"></p>
+        <div class="flex flex-wrap gap-2 mb-3"><label class="sr-only" for="change-filter">Filter change type</label><select id="change-filter" class="yd-input"><option value="all">All changes</option><option value="added">Added</option><option value="removed">Removed</option><option value="modified">Modified</option></select><label class="sr-only" for="change-search">Search changes</label><input id="change-search" type="search" class="yd-input min-w-0 flex-1" placeholder="Filter paths or values…" /></div>
+        <div id="changes-list" class="space-y-2 max-h-64 overflow-y-auto"></div>
+        <div class="flex flex-wrap items-center gap-2 my-3"><p id="change-count" class="text-xs text-slate-500 dark:text-slate-400 mr-auto" aria-live="polite"></p><button id="previous-page" class="yd-button">Previous 50</button><button id="next-page" class="yd-button">Next 50</button></div>
+        <section id="selected-change" hidden aria-label="Selected changed value">
+          <div class="flex flex-wrap items-center gap-2 mb-2"><code id="selected-path" class="min-w-0 break-all text-sm font-semibold mr-auto"></code><button id="copy-path" class="yd-button">Copy pointer</button></div>
+          <div class="grid md:grid-cols-2 gap-4">
+            {['old','new'].map((prefix,index)=><div class:list={['min-w-0 rounded-lg border p-3',index===0?'border-red-200 bg-red-50/50 dark:border-red-900 dark:bg-red-950/20':'border-green-200 bg-green-50/50 dark:border-green-900 dark:bg-green-950/20']}>
+              <div class="flex flex-wrap gap-2 items-center mb-1"><h3 class="font-semibold text-sm mr-auto">{index===0?'Original value':'Modified value'}</h3><button id={`${prefix}-jump`} class="yd-button">Jump to source</button><button id={`${prefix}-copy`} class="yd-button">Copy</button></div>
+              <p id={`${prefix}-location`} class="text-xs text-slate-500 dark:text-slate-400 mb-2"></p><pre id={`${prefix}-value`} class="whitespace-pre-wrap break-all text-xs font-mono max-h-48 overflow-y-auto"></pre>
+            </div>)}
           </div>
-          <div id="diff-right" class="font-mono text-sm overflow-auto max-h-[500px] border border-gray-200 dark:border-slate-700 rounded bg-gray-50 dark:bg-slate-900 p-2"></div>
-        </div>
-      </div>
-
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-3">Changes Report</label>
-        <div id="changes-list" class="space-y-2 max-h-80 overflow-auto"></div>
-      </div>
-    </div>
-
-    <div class="mt-8 space-y-6">
-      <div>
-        <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Free Online YAML Diff & Comparison Tool</h2>
-        <p class="text-gray-600 dark:text-slate-300 mb-4">
-          Compare two YAML files and instantly find all differences. This YAML diff checker parses YAML to objects
-          and performs semantic comparison to identify added, removed, and modified values. Perfect for
-          comparing Kubernetes manifests, Docker Compose files, Ansible playbooks, or any YAML configuration.
-        </p>
-      </div>
-
-      <div class="grid md:grid-cols-3 gap-4 text-sm">
-        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Semantic Comparison</h3>
-          <p class="text-gray-600 dark:text-slate-300">Compares parsed YAML structure, not just text. Finds real differences even with formatting changes.</p>
-        </div>
-        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">Color-Coded Diff</h3>
-          <p class="text-gray-600 dark:text-slate-300">Green for added, red for removed, purple for changed. See exactly what's different.</p>
-        </div>
-        <div class="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-lg">
-          <h3 class="font-semibold text-gray-800 dark:text-slate-100 mb-2">DevOps Ready</h3>
-          <p class="text-gray-600 dark:text-slate-300">Compare Kubernetes configs, Helm values, Docker Compose, and CI/CD pipelines.</p>
-        </div>
-      </div>
-    </div>
+          <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Resolved values are shown as YAML flow values; aliases and merges may point to the alias in your original source. Downloads include every change, not just filtered rows.</p>
+        </section>
+      </section>
+    </section>
+    <section class="mt-6 text-sm text-slate-600 dark:text-slate-300 space-y-3">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Compare YAML values, not reordered lines</h2>
+      <p>A semantic YAML diff compares parsed mappings, lists and scalars. Moving a mapping key, changing indentation or editing a comment does not alter its resolved value. List order still matters by default: reordering a command’s arguments can change behavior. Use unordered matching only for lists whose order is irrelevant, or pair object records by a unique field to inspect changes inside a reordered container list.</p>
+      <h3 class="font-semibold text-slate-900 dark:text-white">Kubernetes, Helm values and Docker Compose</h3>
+      <p>YAML files may contain several documents separated by <code>---</code>. Match Kubernetes manifests by resource identity to avoid comparing a Deployment to a ConfigMap just because their positions changed. Namespace is part of that identity; omitted and explicit namespaces are not assumed equivalent. For Helm, compare rendered manifests or values files. This tool does not evaluate templates, contact a cluster, apply changes, or validate the Kubernetes API schema.</p>
+      <p>Ignore generated fields removes noise from resource versions, timestamps, managed fields and top-level status. It does not automatically ignore annotations or labels: those may change application behavior. Exact integers and decimals stay distinguishable, while quoted numeric strings remain strings. Duplicate mapping keys, circular aliases and unsupported tags fail explicitly instead of producing a reassuring but ambiguous diff.</p>
+      <p><a href="/guides/compare-kubernetes-yaml-ignore-order/" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Try a two-change Kubernetes example with reordered resources and containers ↗</a></p>
+      <p>Related: <a href="/yaml-formatter/" class="text-indigo-600 dark:text-indigo-400 hover:underline">YAML Viewer</a> · <a href="/yaml-json-converter/" class="text-indigo-600 dark:text-indigo-400 hover:underline">YAML ↔ JSON</a> · <a href="/json-diff/" class="text-indigo-600 dark:text-indigo-400 hover:underline">JSON Diff</a> · <a href="/text-diff/" class="text-indigo-600 dark:text-indigo-400 hover:underline">Text Diff for comments and line changes</a></p>
+    </section>
+    <section class="mt-5 text-sm text-slate-600 dark:text-slate-300" aria-label="Frequently asked questions"><h2 class="text-lg font-semibold mb-2 text-slate-900 dark:text-white">YAML comparison questions</h2>{faqs.map(f=><details class="border-b border-slate-200 py-3 dark:border-slate-700"><summary class="font-semibold cursor-pointer">{f.question}</summary><p class="mt-2">{f.answer}</p></details>)}</section>
   </div>
 </Layout>
-
-<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
-
-<script>
-  import { ShareManager } from '../lib/share';
-
-  const yaml1Input = document.getElementById('yaml1') as HTMLTextAreaElement;
-  const yaml2Input = document.getElementById('yaml2') as HTMLTextAreaElement;
-  const diffLeft = document.getElementById('diff-left');
-  const diffRight = document.getElementById('diff-right');
-  const changesList = document.getElementById('changes-list');
-  const results = document.getElementById('results');
-  const stats = document.getElementById('stats');
-  const errorBox = document.getElementById('error-box');
-
-  ShareManager.register({
-    tool: 'yaml-diff',
-    actions: {
-      compare: () => document.getElementById('compare-btn')?.click(),
-    }
-  });
-
-  const sample1 = `# Kubernetes Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: web-app
-  labels:
-    app: web
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: web
-  template:
-    spec:
-      containers:
-        - name: web
-          image: nginx:1.19
-          ports:
-            - containerPort: 80
-          resources:
-            limits:
-              memory: "128Mi"
-              cpu: "500m"`;
-
-  const sample2 = `# Kubernetes Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: web-app
-  labels:
-    app: web
-    environment: production
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: web
-  template:
-    spec:
-      containers:
-        - name: web
-          image: nginx:1.21
-          ports:
-            - containerPort: 80
-          resources:
-            limits:
-              memory: "256Mi"
-              cpu: "1000m"`;
-
-  function showError(msg: string) {
-    errorBox.textContent = msg;
-    errorBox.classList.remove('hidden');
-    results.classList.add('hidden');
-    stats.classList.add('hidden');
-  }
-
-  function hideError() {
-    errorBox.classList.add('hidden');
-  }
-
-  function escapeHtml(text: string): string {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  interface Change {
-    type: 'added' | 'removed' | 'modified';
-    path: string;
-    oldValue?: any;
-    newValue?: any;
-  }
-
-  function findChanges(obj1: any, obj2: any, path: string = ''): Change[] {
-    const changes: Change[] = [];
-
-    if (obj1 === obj2) return changes;
-    if (obj1 === null && obj2 !== null) {
-      return [{ type: 'modified', path: path || '(root)', oldValue: null, newValue: obj2 }];
-    }
-    if (obj1 !== null && obj2 === null) {
-      return [{ type: 'modified', path: path || '(root)', oldValue: obj1, newValue: null }];
-    }
-
-    if (typeof obj1 !== 'object' || typeof obj2 !== 'object') {
-      if (obj1 !== obj2) {
-        changes.push({ type: 'modified', path: path || '(root)', oldValue: obj1, newValue: obj2 });
-      }
-      return changes;
-    }
-
-    if (Array.isArray(obj1) && Array.isArray(obj2)) {
-      const maxLen = Math.max(obj1.length, obj2.length);
-      for (let i = 0; i < maxLen; i++) {
-        const itemPath = path ? `${path}[${i}]` : `[${i}]`;
-        if (i >= obj1.length) {
-          changes.push({ type: 'added', path: itemPath, newValue: obj2[i] });
-        } else if (i >= obj2.length) {
-          changes.push({ type: 'removed', path: itemPath, oldValue: obj1[i] });
-        } else {
-          changes.push(...findChanges(obj1[i], obj2[i], itemPath));
-        }
-      }
-      return changes;
-    }
-
-    if (Array.isArray(obj1) !== Array.isArray(obj2)) {
-      changes.push({ type: 'modified', path: path || '(root)', oldValue: obj1, newValue: obj2 });
-      return changes;
-    }
-
-    const keys1 = new Set(Object.keys(obj1));
-    const keys2 = new Set(Object.keys(obj2));
-
-    for (const key of keys1) {
-      if (!keys2.has(key)) {
-        const keyPath = path ? `${path}.${key}` : key;
-        changes.push({ type: 'removed', path: keyPath, oldValue: obj1[key] });
-      }
-    }
-
-    for (const key of keys2) {
-      if (!keys1.has(key)) {
-        const keyPath = path ? `${path}.${key}` : key;
-        changes.push({ type: 'added', path: keyPath, newValue: obj2[key] });
-      }
-    }
-
-    for (const key of keys1) {
-      if (keys2.has(key)) {
-        const keyPath = path ? `${path}.${key}` : key;
-        changes.push(...findChanges(obj1[key], obj2[key], keyPath));
-      }
-    }
-
-    return changes;
-  }
-
-  function renderYamlWithHighlights(yamlStr: string, obj: any, changes: Change[], isOriginal: boolean): string {
-    const changedPaths = new Map<string, Change>();
-    changes.forEach(c => changedPaths.set(c.path, c));
-
-    // Convert back to YAML for display
-    const jsYaml = (window as any).jsyaml;
-    const prettyYaml = jsYaml.dump(obj, { indent: 2, lineWidth: -1 });
-
-    // Simple line-by-line highlighting based on changes
-    const lines = prettyYaml.split('\n');
-    const highlightedLines = lines.map(line => {
-      const escapedLine = escapeHtml(line);
-
-      // Check if any change path matches this line
-      for (const [path, change] of changedPaths) {
-        const keyMatch = path.split('.').pop() || path;
-        if (line.includes(keyMatch + ':') || line.includes('- ' + keyMatch)) {
-          if (change.type === 'added' && !isOriginal) {
-            return `<span style="background-color: #bbf7d0; color: #14532d; display: block;">${escapedLine}</span>`;
-          } else if (change.type === 'removed' && isOriginal) {
-            return `<span style="background-color: #fecaca; color: #7f1d1d; display: block;">${escapedLine}</span>`;
-          } else if (change.type === 'modified') {
-            return `<span style="background-color: #e9d5ff; color: #581c87; display: block;">${escapedLine}</span>`;
-          }
-        }
-      }
-      return escapedLine;
-    });
-
-    return '<pre class="whitespace-pre-wrap text-sm">' + highlightedLines.join('\n') + '</pre>';
-  }
-
-  function compare() {
-    hideError();
-
-    const str1 = yaml1Input.value.trim();
-    const str2 = yaml2Input.value.trim();
-
-    if (!str1 || !str2) {
-      showError('Please enter YAML in both fields');
-      return;
-    }
-
-    const jsYaml = (window as any).jsyaml;
-    let obj1: any, obj2: any;
-
-    try {
-      obj1 = jsYaml.load(str1);
-    } catch (e) {
-      showError('Invalid YAML in left panel: ' + (e as Error).message);
-      return;
-    }
-    try {
-      obj2 = jsYaml.load(str2);
-    } catch (e) {
-      showError('Invalid YAML in right panel: ' + (e as Error).message);
-      return;
-    }
-
-    const changes = findChanges(obj1, obj2);
-
-    const added = changes.filter(c => c.type === 'added').length;
-    const removed = changes.filter(c => c.type === 'removed').length;
-    const modified = changes.filter(c => c.type === 'modified').length;
-
-    if (changes.length === 0) {
-      stats.innerHTML = '✓ <strong>No differences</strong> - YAML documents are equal';
-      stats.className = 'mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800';
-    } else {
-      const parts = [];
-      if (added > 0) parts.push(`<span class="text-green-700 font-medium">+${added} added</span>`);
-      if (removed > 0) parts.push(`<span class="text-red-700 font-medium">-${removed} removed</span>`);
-      if (modified > 0) parts.push(`<span class="text-purple-700 font-medium">~${modified} changed</span>`);
-      stats.innerHTML = `Found <strong>${changes.length} difference${changes.length !== 1 ? 's' : ''}</strong>: ${parts.join(', ')}`;
-      stats.className = 'mb-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-gray-800';
-    }
-    stats.classList.remove('hidden');
-
-    diffLeft.innerHTML = renderYamlWithHighlights(str1, obj1, changes, true);
-    diffRight.innerHTML = renderYamlWithHighlights(str2, obj2, changes, false);
-
-    if (changes.length === 0) {
-      changesList.innerHTML = '<div class="text-gray-500 dark:text-slate-400 text-sm">No differences</div>';
-    } else {
-      const formatVal = (v: any) => {
-        const s = JSON.stringify(v);
-        return s && s.length > 80 ? s.slice(0, 80) + '...' : s;
-      };
-
-      changesList.innerHTML = changes.map(c => {
-        const bgStyle = c.type === 'added' ? 'background-color: #f0fdf4; border-left: 4px solid #22c55e;' :
-                        c.type === 'removed' ? 'background-color: #fef2f2; border-left: 4px solid #ef4444;' :
-                        'background-color: #faf5ff; border-left: 4px solid #a855f7;';
-        const icon = c.type === 'added' ? '+' : c.type === 'removed' ? '-' : '~';
-        const iconColor = c.type === 'added' ? 'color: #16a34a;' : c.type === 'removed' ? 'color: #dc2626;' : 'color: #9333ea;';
-
-        let content = `<span style="${iconColor} font-weight: bold; margin-right: 0.5rem;">${icon}</span>`;
-        content += `<code class="text-indigo-700">${escapeHtml(c.path)}</code>`;
-
-        if (c.type === 'added') {
-          content += `<span class="text-gray-500 mx-2">=</span><span class="text-green-700">${escapeHtml(formatVal(c.newValue))}</span>`;
-        } else if (c.type === 'removed') {
-          content += `<span class="text-gray-500 mx-2">was</span><span class="text-red-700">${escapeHtml(formatVal(c.oldValue))}</span>`;
-        } else {
-          content += `<span class="text-gray-500 mx-2">changed from</span><span class="text-red-700">${escapeHtml(formatVal(c.oldValue))}</span>`;
-          content += `<span class="text-gray-500 mx-2">→</span><span class="text-green-700">${escapeHtml(formatVal(c.newValue))}</span>`;
-        }
-        return `<div class="p-3 rounded-lg font-mono text-sm leading-relaxed mb-2" style="${bgStyle}">${content}</div>`;
-      }).join('');
-    }
-
-    results.classList.remove('hidden');
-
-    diffLeft.onscroll = () => { diffRight.scrollTop = diffLeft.scrollTop; };
-    diffRight.onscroll = () => { diffLeft.scrollTop = diffRight.scrollTop; };
-  }
-
-  document.getElementById('compare-btn').addEventListener('click', compare);
-
-  document.getElementById('format-btn').addEventListener('click', () => {
-    const jsYaml = (window as any).jsyaml;
-    try {
-      if (yaml1Input.value.trim()) {
-        const obj = jsYaml.load(yaml1Input.value);
-        yaml1Input.value = jsYaml.dump(obj, { indent: 2 });
-      }
-    } catch {}
-    try {
-      if (yaml2Input.value.trim()) {
-        const obj = jsYaml.load(yaml2Input.value);
-        yaml2Input.value = jsYaml.dump(obj, { indent: 2 });
-      }
-    } catch {}
-  });
-
-  document.getElementById('clear-btn').addEventListener('click', () => {
-    yaml1Input.value = '';
-    yaml2Input.value = '';
-    results.classList.add('hidden');
-    stats.classList.add('hidden');
-    hideError();
-  });
-
-  document.getElementById('swap-btn').addEventListener('click', () => {
-    const temp = yaml1Input.value;
-    yaml1Input.value = yaml2Input.value;
-    yaml2Input.value = temp;
-    if (!results.classList.contains('hidden')) compare();
-  });
-
-  document.getElementById('sample-btn').addEventListener('click', () => {
-    yaml1Input.value = sample1;
-    yaml2Input.value = sample2;
-    hideError();
-  });
-</script>
+<script>import '../lib/yaml-diff-ui.ts';</script>
+<style>
+  .yd-button {display:inline-flex;align-items:center;justify-content:center;gap:.4rem;border:1px solid #cbd5e1;border-radius:.5rem;padding:.5rem .7rem;background:white;color:#334155;font-size:.8125rem;font-weight:600;}
+  .yd-button:hover {border-color:#818cf8;} .yd-button:disabled,.yd-input:disabled {opacity:.45;cursor:not-allowed;} .yd-primary {background:#4f46e5;border-color:#4f46e5;color:white;}
+  .yd-button[hidden] {display:none;} .yd-input {border:1px solid #cbd5e1;border-radius:.5rem;padding:.5rem .6rem;background:white;color:#334155;font-size:.8125rem;}
+  #change-search {flex:1 1 13rem;} #find-query {flex:1 1 12rem;}
+  :global(.yaml-change) {display:flex;gap:.75rem;align-items:start;width:100%;padding:.6rem .75rem;text-align:left;border:1px solid #e2e8f0;border-left-width:3px;border-radius:.5rem;background:white;font-size:.8125rem;}
+  :global(.yaml-change code) {min-width:0;overflow-wrap:anywhere;} :global(.yaml-badge) {flex-shrink:0;font-size:.6875rem;font-weight:600;}
+  :global(.yaml-added) {border-left-color:#16a34a;} :global(.yaml-removed) {border-left-color:#dc2626;} :global(.yaml-modified) {border-left-color:#9333ea;}
+  :global(.yaml-change[aria-pressed="true"]) {background:#eef2ff;outline:1px solid #818cf8;outline-offset:-1px;}
+  :global(.yaml-drop) {outline:2px solid #6366f1;outline-offset:-2px;}
+  button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible {outline:2px solid #6366f1;outline-offset:2px;}
+  :global(.dark) .yd-button,:global(.dark) .yd-input {background:#1e293b;border-color:#475569;color:#e2e8f0;}
+  :global(.dark) .yd-primary {background:#4f46e5;border-color:#6366f1;color:white;}
+  :global(.dark .yaml-change) {background:#1e293b;border-top-color:#475569;border-right-color:#475569;border-bottom-color:#475569;}
+  :global(.dark .yaml-change[aria-pressed="true"]) {background:#312e81;}
+</style>

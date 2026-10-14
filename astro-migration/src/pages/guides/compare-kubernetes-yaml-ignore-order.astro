@@ -1,0 +1,43 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+import { yamlExampleLeft, yamlExampleRight, yamlExampleOptions } from '../../lib/yaml-diff-examples.ts';
+import LZString from 'lz-string';
+const guide=guideBySlug('compare-kubernetes-yaml-ignore-order');
+const example='/yaml-diff/#lz:'+LZString.compressToEncodedURIComponent(JSON.stringify({v:1,t:'yaml-diff',a:'compare',d:{yaml1:yamlExampleLeft,yaml2:yamlExampleRight,...yamlExampleOptions}}));
+---
+<GuideLayout guide={guide} keywords="compare Kubernetes YAML, YAML diff ignore order, compare YAML files online, Kubernetes manifest diff, Helm values diff, compare containers by name, multi document YAML">
+  <p>A deployment review should make a changed image or replica count obvious. A reordered document stream, a moved container, and a fresh resourceVersion can turn that review into pages of line differences. Start by deciding what identifies a resource and which ordering changes matter.</p>
+  <h2>Try a YAML comparison with exactly two deployment changes</h2>
+  <p><a class="yaml-guide-example inline-block rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white" href={example}>Open the two-change Kubernetes example ↗</a></p>
+  <p>This public-safe example opens <a href="/yaml-diff/">YAML Diff</a> with a ConfigMap and a Deployment on both sides. The modified file reverses document order, moves the web container behind the metrics container, updates a generated resource version, and makes two operational edits.</p>
+  <div class="table-scroll"><table><thead><tr><th>Change</th><th>Original</th><th>Modified</th></tr></thead><tbody><tr><td><code>/spec/replicas</code></td><td>2</td><td>3</td></tr><tr><td>web container image</td><td>example/web:1.0</td><td>example/web:2.0</td></tr></tbody></table></div>
+  <p>The unchanged ConfigMap and metrics container do not generate extra changes. Select either finding to inspect the resolved values. The image finding points to container index 0 in the original file and index 1 in the modified file: field matching follows its name, not position. Jump to source opens the corresponding line in the complete input.</p>
+  <h2>Match multi-document YAML by resource, not position</h2>
+  <p>A YAML stream can contain documents separated by <code>---</code>. By position is useful when document order deliberately identifies each configuration. Kubernetes resource matching uses <code>apiVersion</code>, <code>kind</code>, <code>metadata.namespace</code> and <code>metadata.name</code> instead. It pairs reordered resources and reports added or removed resources as whole-document changes.</p>
+  <p>Every document needs that identity; duplicates are rejected. An omitted namespace and an explicit namespace are different here. The browser does not know your current kubectl namespace, so it will not silently substitute <code>default</code>. Normalize that deliberately if the files should describe the same namespace.</p>
+  <h2>Match containers by name, but keep command arguments ordered</h2>
+  <p>Under List matching &amp; ignored fields, select Match records by field and use <code>name</code>. Named containers and environment variables can then be paired even when reordered. Lists without that field, such as unnamed ports or scalar command arguments, remain positional. Partially populated or repeated identities are errors, not invitations to guess. The results count how many lists used field matching.</p>
+  <p>Ignore order is separate: it compares whole list values as a multiset, retaining duplicate counts. Use it for truly unordered lists, not <code>command</code>, <code>args</code>, ordered routing rules or task sequences. Changing an identity itself produces an addition and removal rather than a change inside the old record.</p>
+  <h2>Ignore generated fields precisely</h2>
+  <p>Ignore generated fields excludes these paths relative to each document:</p>
+  <pre><code>{`/metadata/managedFields
+/metadata/resourceVersion
+/metadata/uid
+/metadata/creationTimestamp
+/status`}</code></pre>
+  <p>Labels, annotations, selectors and application configuration are not automatically ignored. They can change behavior. Add an exact pointer to deliberately exclude one, such as <code>/metadata/annotations/example.com~1lastUpdated</code>. Use <code>~1</code> for a slash and <code>~0</code> for a tilde. A bare field name applies at every depth, so prefer an exact pointer when only one location should be skipped.</p>
+  <h2>Render Helm templates before comparing manifests</h2>
+  <p>YAML Diff reads YAML; it does not execute Helm templates. Use <a href="https://helm.sh/docs/helm/helm_template/">helm template</a> to render the same chart with the two intended values files, then open the resulting files locally:</p>
+  <pre><code>{`helm template web ./chart -f values-old.yaml > old.yaml
+helm template web ./chart -f values-new.yaml > new.yaml`}</code></pre>
+  <p>For values files themselves, positional document matching is usually enough. Mapping key order and comments do not affect comparison. Use <a href="/text-diff/">Text Diff</a> when you need to review comments, formatting or line movements.</p>
+  <h2>What a browser YAML diff does not tell you</h2>
+  <p>This is a local comparison, not Kubernetes API validation. It cannot tell you whether an image exists, a Deployment is healthy, or an admission controller would change it. <a href="https://kubernetes.io/docs/reference/kubectl/generated/kubectl_diff/">kubectl diff</a> has a different purpose: comparing supplied configuration with what applying it would produce in a cluster. Use that workflow when live cluster behavior is the question.</p>
+  <p>YAML Diff uses <a href="https://yaml.org/spec/1.2.2/">YAML 1.2 core types</a> plus merge keys. Anchors and aliases resolve to their values. Large integers and precise decimals stay distinguishable, and a quoted number remains a string. Unsupported tags, YAML 1.1 directives, duplicate keys and cyclic aliases produce errors. Format both verifies that formatting preserves resolved values, comments and anchors; errors leave both inputs untouched.</p>
+  <h2>Share a reproducible review, or keep a complete report</h2>
+  <p>Share comparison retains both inputs and all matching settings. An embedded link carries the state in the URL fragment; an optional stored short link explicitly uploads it. Anyone with the link can read it. Ignored fields are not redacted, and Kubernetes Secret values are not safe to share merely because they are Base64-encoded. Use synthetic or reviewed inputs for public questions.</p>
+  <p>JSON and TXT reports contain all findings, rules and source locations—not just search-filtered rows. JSON represents values as YAML text so exact digits survive export. Copy an individual resolved value or pointer when a full report is unnecessary. Files, comparison and formatting run locally in your browser; no signup or local bridge is needed.</p>
+  <a slot="related" href="/json-diff/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong class="block">Compare API responses by ID</strong><span class="text-sm">Use JSON Diff for exact JSON numbers and JSON Patch exports.</span></a>
+  <a slot="related" href="/yaml-tools/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong class="block">Explore YAML tools</strong><span class="text-sm">Inspect or convert YAML after reviewing changes.</span></a>
+</GuideLayout>

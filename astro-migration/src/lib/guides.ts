@@ -17,6 +17,15 @@ export interface Guide {
 
 export const guides: Guide[] = [
   {
+    slug: 'compare-kubernetes-yaml-ignore-order',
+    title: 'Compare Kubernetes YAML: Ignore Order Noise and Find Real Changes',
+    shortTitle: 'Compare Kubernetes YAML without order noise',
+    description: 'Compare multi-document YAML by resource identity, match containers by name, ignore generated fields, and share a runnable two-change Kubernetes example.',
+    topic: 'YAML and Kubernetes configuration comparison', published: '2026-10-14', updated: '2026-10-14', readingMinutes: 7,
+    image: '/og/yaml-diff.png', artImage: '/og/yaml-diff.svg', imageAlt: 'Reordered Kubernetes manifests reveal only the replica count and web image changes',
+    toolHref: '/yaml-diff/', toolName: 'YAML Diff',
+  },
+  {
     slug: 'compare-two-lists-find-missing-items',
     title: 'Compare Two Lists: Find Missing Items, Matches and Duplicates',
     shortTitle: 'Find what is missing between two lists',

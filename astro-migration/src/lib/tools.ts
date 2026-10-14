@@ -55,7 +55,7 @@ export const toolGroups: ToolGroup[] = [
     icon: "document",
     items: [
       { name: "YAML Viewer", href: "/yaml-formatter/", description: "View, format & validate YAML", keywords: ["yml", "prettify", "validate"] },
-      { name: "YAML Diff", href: "/yaml-diff/", description: "Compare two YAML documents", keywords: ["yml", "compare"] },
+      { name: "YAML Diff", href: "/yaml-diff/", description: "Compare files and Kubernetes resources; share exact changes", keywords: ["yml", "yaml compare", "Kubernetes", "manifests", "multi document", "ignore order", "Helm values", "Docker Compose", "containers", "aliases"] },
       { name: "YAML ↔ JSON", href: "/yaml-json-converter/", description: "Convert YAML to JSON and back", keywords: ["yml", "convert"] },
     ]
   },

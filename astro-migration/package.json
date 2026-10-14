@@ -3,6 +3,8 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
+    "test:yaml-diff": "node --test tests/yaml-diff.test.mjs",
+    "test:yaml-diff-seo": "node scripts/check-yaml-diff-seo.mjs",
     "test:list-compare": "node --test tests/list-compare.test.mjs",
     "test:list-compare-seo": "node scripts/check-list-compare-seo.mjs",
     "test:datetime": "node --test tests/datetime.test.mjs",
@@ -58,7 +60,8 @@
     "smol-toml": "^1.6.0",
     "sql-formatter": "15.9.0",
     "svgo": "^4.0.0",
-    "tailwindcss": "^4.1.18"
+    "tailwindcss": "^4.1.18",
+    "yaml": "2.9.1"
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",

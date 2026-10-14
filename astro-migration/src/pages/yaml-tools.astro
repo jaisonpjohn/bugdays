@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 
 const tools = [
   { name: 'YAML Viewer', href: '/yaml-formatter/', description: 'Interactive tree view with collapsible nodes, path extraction, and validation' },
-  { name: 'YAML Diff', href: '/yaml-diff/', description: 'Compare YAML files with semantic diff and visual highlighting' },
+  { name: 'YAML Diff', href: '/yaml-diff/', description: 'Compare files and Kubernetes resources; match lists by name, inspect source lines and share changes' },
   { name: 'YAML ↔ JSON', href: '/yaml-json-converter/', description: 'Bidirectional conversion between YAML and JSON formats' },
 ];
 ---
@@ -31,6 +31,7 @@ const tools = [
     </div>
 
     <div class="mt-8 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+      <p class="mb-3 text-sm"><a href="/guides/compare-kubernetes-yaml-ignore-order/" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Worked guide: compare Kubernetes YAML without order noise ↗</a></p>
       <h2 class="text-lg font-semibold text-gray-800 dark:text-slate-100 mb-2">About YAML Tools</h2>
       <p class="text-gray-600 dark:text-slate-300 text-sm mb-3">
         YAML (YAML Ain't Markup Language) is a human-readable data serialization format widely used in DevOps and
