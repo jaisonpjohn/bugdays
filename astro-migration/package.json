@@ -3,6 +3,8 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
+    "test:list-compare": "node --test tests/list-compare.test.mjs",
+    "test:list-compare-seo": "node scripts/check-list-compare-seo.mjs",
     "test:datetime": "node --test tests/datetime.test.mjs",
     "test:datetime-seo": "node scripts/check-datetime-seo.mjs",
     "test:json-diff": "node --test tests/json-diff.test.mjs",

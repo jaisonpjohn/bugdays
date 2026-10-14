@@ -28,7 +28,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "JSON Diff", href: "/json-diff/", description: "Match arrays by ID, ignore fields & share changes", keywords: ["compare", "difference", "array order", "key order", "api response", "array id", "ignore fields", "json patch", "exact numbers"] },
       { name: "Text Diff", href: "/text-diff/", description: "Compare two texts line by line", keywords: ["compare", "difference"] },
       { name: "Join Lines", href: "/join-lines/", description: "Join lines with a delimiter", keywords: ["merge", "concatenate", "comma"] },
-      { name: "Compare Lists", href: "/list-compare/", description: "Set operations on two lists", keywords: ["intersection", "union", "difference", "set ops"] },
+      { name: "Compare Lists", href: "/list-compare/", description: "Find missing items, matches and duplicates; share and export", keywords: ["compare two lists", "list diff", "Excel columns", "missing items", "duplicates", "intersection", "union"] },
       { name: "GZip & Base64", href: "/gzip-base64/", description: "Decode Base64, hex & .gz files; compress text", keywords: ["gzip base64", "base64 gzip", "compress", "decompress", "decode", "encode", "H4sI", "gunzip", "hex", "gz file", "base64url"] },
       { name: "Schema Explorer", href: "/schema-explorer/", description: "DDL to ER diagram & data dictionary", keywords: ["erd", "database", "diagram"] },
       { name: "SOAP Client", href: "/soap-client/", description: "Generate, test & share SOAP requests; inspect faults", keywords: ["wsdl", "xml", "web service", "soapui", "ws-security", "fault"] },
@@ -103,7 +103,7 @@ export const toolGroups: ToolGroup[] = [
       { name: "Split Text", href: "/split-text/", description: "Split text by a delimiter", keywords: ["explode", "lines"] },
       { name: "Sort Lines", href: "/sort-lines/", description: "Sort lines alphabetically", keywords: ["order", "alphabetize", "reverse"] },
       { name: "Remove Dupes", href: "/remove-duplicate-lines/", description: "Remove duplicate lines", keywords: ["dedupe", "unique", "distinct"] },
-      { name: "Compare Lists", href: "/list-compare/", description: "Set operations on two lists", keywords: ["intersection", "union", "difference", "set ops"] },
+      { name: "Compare Lists", href: "/list-compare/", description: "Find missing items, matches and duplicates; share and export", keywords: ["compare two lists", "list diff", "Excel columns", "missing items", "duplicates", "intersection", "union"] },
       { name: "Text Extractor", href: "/text-extractor/", description: "Extract text from large files", keywords: ["grep", "filter", "log"] },
       { name: "Regex Tester", href: "/regex-tester/", description: "Test regular expressions", keywords: ["regexp", "pattern", "match", "grep"] },
     ]

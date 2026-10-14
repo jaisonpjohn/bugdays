@@ -17,6 +17,15 @@ export interface Guide {
 
 export const guides: Guide[] = [
   {
+    slug: 'compare-two-lists-find-missing-items',
+    title: 'Compare Two Lists: Find Missing Items, Matches and Duplicates',
+    shortTitle: 'Find what is missing between two lists',
+    description: 'Compare spreadsheet columns or exported IDs, distinguish shared items from duplicates, handle case and spaces, and share a runnable inventory example.',
+    topic: 'List comparison and spreadsheet reconciliation', published: '2026-10-14', updated: '2026-10-14', readingMinutes: 5,
+    image: '/og/list-compare.png', artImage: '/og/list-compare.svg', imageAlt: 'Two SKU lists with one common item, missing items on each side and a repeated SKU',
+    toolHref: '/list-compare/', toolName: 'List Compare',
+  },
+  {
     slug: 'epoch-iso8601-timezone-offset',
     title: 'Convert Epoch to ISO 8601 with the Correct Timezone Offset',
     shortTitle: 'Convert timestamps without timezone surprises',

@@ -1,0 +1,40 @@
+---
+import GuideLayout from '../../layouts/GuideLayout.astro';
+import { guideBySlug } from '../../lib/guides.ts';
+import LZString from 'lz-string';
+const guide = guideBySlug('compare-two-lists-find-missing-items');
+const a = 'SKU-100\nSKU-101\nSKU-102\nSKU-102', b = 'SKU-101\nSKU-103\nSKU-104';
+const example = '/list-compare/#lz:' + LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'list-compare', a: 'diffAB', d: { setA: a, setB: b, ignoreCase: false, trimSpaces: true, order: 'input', view: 'diffAB' } }));
+---
+<GuideLayout guide={guide} keywords="compare two lists find missing items, compare Excel columns, list differences, common items, duplicate values, compare lists ignore case">
+  <p>You have an inventory export and a list of products enabled in another system. Which SKUs are missing? Comparing row positions gives noisy results when the exports use different orders. A list comparison checks whether each value exists anywhere in the other list.</p>
+  <h2>Try a reproducible inventory comparison</h2>
+  <p><a class="list-example inline-block rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white" href={example}>Open the missing-SKU example ↗</a></p>
+  <p>This synthetic example opens <a href="/list-compare/">List Compare</a> with List A as the inventory and List B as the enabled products. Only in A is selected, so the result is SKU-100 and SKU-102. Anyone opening the link can reproduce the same result and inspect every view.</p>
+  <h3>List A: inventory export</h3><pre><code>{a}</code></pre>
+  <h3>List B: enabled products</h3><pre><code>{b}</code></pre>
+  <div class="table-scroll"><table><thead><tr><th>Result</th><th>Items</th><th>Meaning</th></tr></thead><tbody>
+    <tr><td>Only in A</td><td>SKU-100, SKU-102</td><td>Inventory items missing from enabled products</td></tr>
+    <tr><td>In both</td><td>SKU-101</td><td>Present in both exports</td></tr>
+    <tr><td>Only in B</td><td>SKU-103, SKU-104</td><td>Enabled products missing from inventory</td></tr>
+    <tr><td>Duplicates in A</td><td>SKU-102</td><td>Repeated inside the inventory export</td></tr>
+  </tbody></table></div>
+  <h2>Common items are not the same as duplicate rows</h2>
+  <p>SKU-101 is shared across both lists, but occurs only once in each. SKU-102 repeats inside List A but does not appear in List B. Intersection answers “what is in both?” Duplicate views answer “what repeats within this input?” Mixing those questions can hide a data-quality problem.</p>
+  <p>List A has four nonblank items, three unique values and one extra repeated occurrence. With <strong>Dedupe results</strong> on, Only in A contains two distinct values. Turn it off to keep all three qualifying rows, including the repeated SKU-102. All unique becomes All items and combines both lists without removing repeats. This is still a membership comparison, not a subtraction of quantities: matching rows from A are kept whenever their value appears anywhere in B. The duplicate views always list each repeated value once.</p>
+  <h2>Compare two Excel or Google Sheets columns</h2>
+  <p>Copy one column into each input, one item per line. Leave out a header unless it is a value you want compared. Or open a local CSV or TSV export: under More matching &amp; file options, choose a column number (starting at 1) and optionally skip the header. Files are read in your browser, not uploaded. Skip empty files is on by default, so an empty file will not overwrite a list you already entered. To check which entries in column A are absent from column B within Excel, a typical exact-membership formula is:</p>
+  <pre><code>{`=COUNTIF($B$2:$B$100,A2)=0`}</code></pre>
+  <p>Fill the formula down next to column A. TRUE means no match in the specified B range. Excel’s <a href="https://support.microsoft.com/en-gb/excel/get-started/use-the-countif-function-in-microsoft-excel?appver=zxl160&helpid=xlmain11.chm60394&ns=excel&syslcid=2057&uilcid=2057&version=16">COUNTIF documentation</a> notes that matching is not case-sensitive and criteria can contain wildcards. List Compare matches literal strings: an asterisk is an asterisk, not a wildcard. Its default is case-sensitive, so enable Ignore case when that is your intended rule.</p>
+  <h2>Choose matching rules before interpreting a difference</h2>
+  <p>Trim spaces removes surrounding whitespace from each item by default. Turn it off if surrounding spaces are significant. Ignore case lets Apple and apple match while retaining the first spelling in the result. Neither option removes internal spaces or punctuation.</p>
+  <p>Numbers are kept as text, not parsed as JavaScript numbers. By default, the IDs 0012 and 12 remain different. <strong>Ignore leading zeros</strong> makes these match without rounding long identifiers; it applies only to digit-only values, not signed numbers, decimals or IDs such as SKU-0012. Ignore extra internal spaces makes <code>Jane  Doe</code> match <code>Jane Doe</code>. Normalize Unicode NFC matches equivalent composed and decomposed characters, such as two representations of é. These matching options preserve the original result spelling; they do not perform fuzzy matching or remove accents.</p>
+  <p>Ignore blank lines skips empty and whitespace-only rows by default. Turn it off to compare them as entries. With Trim spaces on, a whitespace-only row becomes an empty entry; with it off, the whitespace remains literal. The preview marks these entries visibly, while Copy and downloads retain their actual characters. A final newline terminates the last row rather than inventing an extra empty one.</p>
+  <p>Input order preserves the first appearance of each value. Natural ascending order places SKU-2 before SKU-10; changing the order does not change membership. Swap A and B reverses which side is considered missing while keeping both original lists available.</p>
+  <h2>Copy, export and share the result</h2>
+  <p>Copy result and TXT preserve the selected result text, including trailing empty entries when blank-line matching is enabled. CSV follows the quoting rules for commas and double quotes in <a href="https://www.rfc-editor.org/rfc/rfc4180">RFC 4180</a>. Formula-like values are prefixed with an apostrophe to keep spreadsheet software from executing them; use Copy or TXT when exact original characters are required. Report JSON includes all seven result views, source counts and matching settings. Search narrows the on-screen preview but does not narrow copied or downloaded results.</p>
+  <p>Share comparison includes both lists, matching options, result order and the selected view. An embedded link carries the state in its URL fragment without storing the lists on the server. Optional stored short links explicitly upload the shared state. Anyone with a link can read it, so remove private data before sharing. Comparing and opening UTF-8 text files happen locally.</p>
+  <p>For larger lists, comparison runs in a background worker and can be cancelled. Each input supports up to 5 MiB and 100,000 included items; CSV/TSV files support up to 100,000 data rows. Quoted commas and doubled quotes are supported. Malformed CSV or cells containing line breaks produce a clear error instead of silently splitting one value into several items. Exceeding a limit shows an error rather than returning an incomplete “match” result.</p>
+  <a slot="related" href="/text-diff/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong class="block">Compare ordered text instead</strong><span class="text-sm">Use line diffs when movement and position matter.</span></a>
+  <a slot="related" href="/join-lines/" class="rounded-lg border border-slate-200 p-4 dark:border-slate-700"><strong class="block">Use the missing items in a query</strong><span class="text-sm">Convert the result into a SQL IN clause or JSON array.</span></a>
+</GuideLayout>

@@ -1,124 +1,118 @@
 ---
 import Layout from '../layouts/Layout.astro';
+const views = [
+  { action: 'diffAB', label: 'Only in A', hint: 'Items in List A that are missing from List B.' },
+  { action: 'intersection', label: 'In both', hint: 'Rows from List A whose matching value also exists in List B.' },
+  { action: 'diffBA', label: 'Only in B', hint: 'Items in List B that are missing from List A.' },
+  { action: 'symmetric', label: 'All differences', hint: 'Items in exactly one list: Only in A plus Only in B.' },
+  { action: 'union', label: 'All unique', hint: 'Every distinct item across both lists, counted once.' },
+  { action: 'duplicatesA', label: 'Duplicates in A', hint: 'Distinct items repeated within List A under your matching rules.' },
+  { action: 'duplicatesB', label: 'Duplicates in B', hint: 'Distinct items repeated within List B under your matching rules.' },
+];
+const faqs = [
+  { question: 'How do I compare two lists to find missing items?', answer: 'Paste one item per line into List A and List B. Only in A shows values missing from B; Only in B shows values missing from A. In both shows matches. Auto-compare updates results as you edit; turn it off to compare manually.' },
+  { question: 'Can I compare two Excel or Google Sheets columns?', answer: 'Yes. Copy one column into each input, or open TXT, CSV or TSV files. CSV/TSV import reads the selected column, with an optional header skip. Paste a single column per side, not a whole spreadsheet. Copy the result or download CSV, TXT or a JSON report.' },
+  { question: 'Does list comparison ignore case, spaces and leading zeros?', answer: 'All matching rules are optional. Defaults are case-sensitive matching, trimming surrounding spaces, ignoring blank lines and deduping results. You can ignore case, collapse extra internal whitespace, normalize Unicode to NFC, or ignore leading zeros in digits-only items. Numeric IDs stay as strings, so long IDs are not rounded. Decimals, signs and embedded digits are not changed by the leading-zero option.' },
+  { question: 'How are duplicate and empty items handled?', answer: 'Dedupe results is on by default. Turn it off to preserve repeated qualifying rows; All items then concatenates both lists. Membership is not a subtraction of occurrence counts. Duplicate views always list the distinct repeated values. Turn off Ignore blank lines to include empty or whitespace-only rows; markers make them visible in the preview. Skip empty files controls whether an empty import replaces the previous input.' },
+  { question: 'Can I share a comparison without uploading my lists?', answer: 'Share comparison offers an embedded link containing both lists, the selected result and matching settings in its URL fragment. Comparison stays in your browser. Optional stored short links explicitly upload the shared data. Anyone with either link can read it, so review the lists before sharing.' },
+  { question: 'Can I compare large lists or export results?', answer: 'Comparison runs in a local background worker with cancellation, up to 5 MiB and 100,000 included items per list. Open UTF-8 files or paste lists. Copy and TXT preserve the selected result; CSV quotes cells and prefixes formula-like text with an apostrophe. JSON report includes every result view and matching rules. Search only filters the preview. Multiline CSV cells are rejected instead of being silently split.' },
+];
+const jsonLd = [
+  { '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Compare Two Lists', url: 'https://bugdays.com/list-compare/', applicationCategory: 'DeveloperApplication', operatingSystem: 'Any', offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' } },
+  { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faqs.map(f => ({ '@type': 'Question', name: f.question, acceptedAnswer: { '@type': 'Answer', text: f.answer } })) },
+];
 ---
-
-<Layout
-  title="Compare Two Lists Online - Find Differences, Common Items"
-  description="Compare two lists to find common items, differences, and unique entries. Intersection, union, and difference operations on text lists. Free online list comparison tool."
-  keywords="compare lists, list difference, find common items, list intersection, compare two lists online, diff lists, list comparison tool"
-  breadcrumb={[{ name: "Text Tools", href: "/text-tools/" }, { name: "Compare Lists" }]}
-  toolId="list-compare"
->
+<Layout title="List Compare — Find Missing Items, Matches & Duplicates"
+  description="Compare two lists or Excel columns to find missing items, common values and duplicates. Ignore case, export CSV, and share a reproducible comparison. Runs locally."
+  keywords="compare two lists online, list compare, list diff, compare Excel columns, find missing items, common items, duplicate lists, list intersection, list union"
+  breadcrumb={[{ name: 'Text Tools', href: '/text-tools/' }, { name: 'Compare Lists' }]} toolId="list-compare" jsonLd={jsonLd}
+  image="/og/list-compare.png" imageAlt="Two SKU lists compared to find missing items, a common SKU and a duplicate">
   <div class="max-w-6xl mx-auto">
-    <h1 class="text-2xl font-bold text-gray-800 dark:text-slate-100 mb-4">Compare Two Lists</h1>
-
-    <div class="grid md:grid-cols-3 gap-4">
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">List A <span id="setA-count" class="text-gray-500 dark:text-slate-400"></span></label>
-        <textarea id="setA" data-share-key="setA" class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Enter items for List A...&#10;One per line"></textarea>
+    <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Compare Two Lists Online</h1>
+    <p class="mt-2 mb-4 text-sm text-slate-600 dark:text-slate-300">Find what’s missing, what matches, and what repeats. Paste lists or spreadsheet columns—one item per line.</p>
+    <section id="list-workspace" class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" aria-label="List comparison workspace">
+      <div class="flex flex-wrap items-center gap-2 p-4 border-b border-slate-200 dark:border-slate-700">
+        <button id="compare-btn" data-share-action="compare" class="lc-button lc-primary">Compare lists</button>
+        <label class="inline-flex items-center gap-2 px-2 text-sm"><input id="auto-compare" data-share-key="autoCompare" type="checkbox" checked class="accent-indigo-600" />Auto-compare</label>
+        <button id="load-example" class="lc-button">Load example</button><button id="swap-lists" class="lc-button">Swap A ↔ B</button><button id="clear-lists" class="lc-button">Clear</button><button id="cancel-compare" class="lc-button" hidden>Cancel</button>
       </div>
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">List B <span id="setB-count" class="text-gray-500 dark:text-slate-400"></span></label>
-        <textarea id="setB" data-share-key="setB" class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm resize-none bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100" placeholder="Enter items for List B...&#10;One per line"></textarea>
+      <div class="grid md:grid-cols-2 gap-4 p-4">
+        {['A', 'B'].map(side => <div class="min-w-0">
+          <div class="flex items-center justify-between gap-3 mb-2"><label for={`set${side}`} class="text-sm font-semibold">List {side}</label><button id={`open-${side}`} class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Open TXT / CSV / TSV</button><input id={`file-${side}`} type="file" accept=".txt,.log,.csv,.tsv,text/plain,text/csv,text/tab-separated-values" class="hidden" aria-label={`Open file for List ${side}`} /></div>
+          <textarea id={`set${side}`} data-share-key={`set${side}`} class="lc-textarea" autocomplete="off" spellcheck="false" placeholder={`Paste List ${side} here…\nOne item per line`} aria-describedby={`set${side}-count`}></textarea>
+          <p id={`set${side}-count`} class="min-h-5 mt-1 text-xs text-slate-500 dark:text-slate-400"></p>
+        </div>)}
       </div>
-      <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-gray-200 dark:border-slate-700 p-4">
-        <label class="block text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Result <span id="result-label" class="text-gray-500 dark:text-slate-400"></span></label>
-        <textarea id="output" readonly class="w-full h-48 p-3 border border-gray-300 dark:border-slate-600 rounded-lg font-mono text-sm bg-gray-50 dark:bg-slate-900 resize-none text-gray-900 dark:text-slate-100" placeholder="Result..."></textarea>
+      <div class="flex flex-wrap items-center gap-x-5 gap-y-3 px-4 pb-4 text-sm">
+        <label class="inline-flex items-center gap-2"><input id="ignore-case" data-share-key="ignoreCase" type="checkbox" class="accent-indigo-600" />Ignore case</label>
+        <label class="inline-flex items-center gap-2"><input id="trim-spaces" data-share-key="trimSpaces" type="checkbox" checked class="accent-indigo-600" />Trim spaces</label>
+        <label class="inline-flex items-center gap-2" for="result-order">Result order <select id="result-order" data-share-key="order" class="lc-select"><option value="input">Input order</option><option value="ascending">Natural A → Z</option><option value="descending">Natural Z → A</option></select></label>
+        <span class="text-xs text-slate-500 dark:text-slate-400">Numbers and IDs stay as text.</span>
       </div>
-    </div>
-
-    <div class="flex flex-wrap gap-3 mt-4">
-      <button id="intersection-btn" data-share-action="intersection" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" title="Items in both lists">Common (A ∩ B)</button>
-      <button id="union-btn" data-share-action="union" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" title="All unique items combined">All Unique (A ∪ B)</button>
-      <button id="diff-ab-btn" data-share-action="diffAB" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" title="Items only in A">Only in A</button>
-      <button id="diff-ba-btn" data-share-action="diffBA" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" title="Items only in B">Only in B</button>
-      <button id="symmetric-btn" data-share-action="symmetric" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium" title="Items in exactly one list">Different (XOR)</button>
-      <button id="copy-btn" class="px-4 py-2 bg-gray-200 dark:bg-slate-600 text-gray-700 dark:text-slate-200 rounded-lg hover:bg-gray-300 dark:hover:bg-slate-500 font-medium">Copy</button>
-    </div>
-
-    <div class="mt-8">
-      <h2 class="text-xl font-semibold text-gray-800 dark:text-slate-100 mb-2">Compare Two Lists Online</h2>
-      <p class="text-gray-600 dark:text-slate-300 mb-4">
-        Find what's common between two lists, what's different, or what's unique to each list. Perfect for comparing data sets, finding missing items, or merging lists.
-      </p>
-      <div class="grid md:grid-cols-2 gap-4 text-sm">
-        <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
-          <p class="font-medium text-gray-700 dark:text-slate-200 mb-1">Common Items (Intersection)</p>
-          <p class="text-gray-500 dark:text-slate-400">Items that appear in both lists</p>
+      <details id="more-options" class="mx-4 mb-4 rounded-lg border border-slate-200 p-3 text-sm dark:border-slate-700">
+        <summary class="cursor-pointer font-semibold text-slate-700 dark:text-slate-200">More matching &amp; file options</summary>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-3 mt-4">
+          <label class="inline-flex items-center gap-2"><input id="dedupe" type="checkbox" data-share-key="dedupe" checked class="accent-indigo-600" />Dedupe results</label>
+          <label class="inline-flex items-center gap-2"><input id="ignore-blank" type="checkbox" data-share-key="ignoreBlank" checked class="accent-indigo-600" />Ignore blank lines</label>
+          <label class="inline-flex items-center gap-2" title="Digits-only items: 0012 matches 12. Signs, decimals and embedded digits stay literal."><input id="ignore-zeros" type="checkbox" data-share-key="ignoreZeros" class="accent-indigo-600" />Ignore leading zeros</label>
+          <label class="inline-flex items-center gap-2"><input id="extra-spaces" type="checkbox" data-share-key="extraSpaces" class="accent-indigo-600" />Ignore extra internal spaces</label>
+          <label class="inline-flex items-center gap-2" title="Match canonically equivalent Unicode, such as composed and decomposed accents."><input id="unicode-nfc" type="checkbox" data-share-key="unicodeNfc" class="accent-indigo-600" />Normalize Unicode (NFC)</label>
+          <label class="inline-flex items-center gap-2"><input id="skip-empty-files" type="checkbox" data-share-key="skipEmptyFiles" checked class="accent-indigo-600" />Skip empty files</label>
+          <label class="inline-flex items-center gap-2" for="csv-column">CSV/TSV column <input id="csv-column" type="number" min="1" max="1000" value="1" data-share-key="csvColumn" class="lc-select w-20" /></label>
+          <label class="inline-flex items-center gap-2"><input id="csv-header" type="checkbox" data-share-key="csvHeader" class="accent-indigo-600" />Skip CSV/TSV header row</label>
         </div>
-        <div class="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg">
-          <p class="font-medium text-gray-700 dark:text-slate-200 mb-1">Only in A / Only in B</p>
-          <p class="text-gray-500 dark:text-slate-400">Items unique to one list</p>
+        <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">Column numbers start at 1. Dedupe off preserves matching rows, not quantity differences. Blank markers are preview-only; exports keep the actual values.</p>
+      </details>
+      <p id="list-error" role="alert" hidden class="mx-4 mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"></p>
+      <section class="border-t border-slate-200 bg-slate-50/70 p-4 rounded-b-xl dark:border-slate-700 dark:bg-slate-900/30" aria-label="Comparison results">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-3"><h2 class="text-base font-semibold">Comparison results</h2><button id="share-comparison" class="lc-button lc-primary">Share comparison ↗</button></div>
+        <div class="flex flex-wrap gap-2 mb-3" role="group" aria-label="Choose result">
+          {views.map(view => <button id={`${view.action}-btn`} data-share-action={view.action} data-result-action={view.action} data-title={view.label} data-hint={view.hint} class="lc-button lc-view" aria-pressed={view.action === 'intersection'}><span id={view.action === 'union' ? 'union-label' : undefined}>{view.label}</span><span data-result-count={view.action} class="lc-count">—</span></button>)}
         </div>
-      </div>
-    </div>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-1"><label id="result-title" for="output" class="text-sm font-semibold">In both</label><span id="result-label" class="text-xs text-slate-500 dark:text-slate-400"></span></div>
+        <p id="result-hint" class="text-xs text-slate-500 dark:text-slate-400 mb-3">Items present in both lists.</p>
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <label class="sr-only" for="result-search">Search result</label><input id="result-search" class="lc-select min-w-0 flex-1" type="search" placeholder="Find an item in this result…" autocomplete="off" />
+          <button id="copy-btn" class="lc-button">Copy result</button><button id="download-txt" class="lc-button">TXT ↓</button><button id="download-csv" class="lc-button">CSV ↓</button><button id="download-json" class="lc-button">JSON report ↓</button>
+        </div>
+        <textarea id="output" readonly class="lc-textarea lc-output" aria-describedby="result-hint result-label" placeholder="Compared items appear here…" spellcheck="false"></textarea>
+        <p id="result-empty" hidden class="mt-2 text-sm text-slate-500 dark:text-slate-400"></p>
+        <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Copy, TXT and CSV include the full selected result. JSON report includes all views. Search does not narrow exports.</p>
+      </section>
+      <p id="list-status" role="status" class="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">Comparison runs in your browser. Your lists are not uploaded.</p>
+    </section>
+    <section class="mt-6 text-sm text-slate-600 dark:text-slate-300">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">Compare lists for missing items, not changed lines</h2>
+      <p>A list comparison checks whether a value appears anywhere in the other list. Reordering rows does not create a difference. Use it to reconcile exported IDs, check a URL migration, compare inventory SKUs, or find emails missing from another list. Paste one spreadsheet column per side, or import a selected column from a CSV/TSV file.</p>
+      <p class="mt-2">Only in A means missing from B. Only in B means missing from A. In both is the intersection; All unique is the union. All differences combines unmatched items. Duplicate views answer a different question: which values repeat inside each input? A value can be both shared across lists and duplicated within one list.</p>
+      <p class="mt-2">By default, matching is case-sensitive, spaces are trimmed, blank lines are ignored and results are deduped. Change those rules independently. Leading zeros are significant unless you enable Ignore leading zeros: <code>0012</code> then matches <code>12</code> without converting either ID to a number. Extra-space and Unicode controls only affect matching keys; they do not rewrite the displayed spelling. This is exact comparison, not fuzzy matching.</p>
+      <p class="mt-2"><a href="/guides/compare-two-lists-find-missing-items/" class="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">Try a worked inventory comparison and spreadsheet examples ↗</a></p>
+      <p class="mt-3">Related: <a href="/text-diff/" class="text-indigo-600 dark:text-indigo-400 hover:underline">Text Diff for ordered changes</a> · <a href="/remove-duplicate-lines/" class="text-indigo-600 dark:text-indigo-400 hover:underline">Remove duplicate lines</a> · <a href="/join-lines/" class="text-indigo-600 dark:text-indigo-400 hover:underline">Turn a result into SQL IN or JSON</a> · <a href="/csv-json-converter/" class="text-indigo-600 dark:text-indigo-400 hover:underline">CSV ↔ JSON</a></p>
+    </section>
+    <section class="mt-5 text-sm text-slate-600 dark:text-slate-300" aria-label="Frequently asked questions">
+      <h2 class="text-lg font-semibold text-slate-900 dark:text-white mb-2">List comparison questions</h2>
+      {faqs.map(f => <details class="border-b border-slate-200 py-3 dark:border-slate-700"><summary class="font-semibold cursor-pointer">{f.question}</summary><p class="mt-2">{f.answer}</p></details>)}
+    </section>
   </div>
 </Layout>
-
-<script>
-  import { ShareManager } from '../lib/share';
-
-  const setA = document.getElementById('setA') as HTMLTextAreaElement;
-  const setB = document.getElementById('setB') as HTMLTextAreaElement;
-  const output = document.getElementById('output') as HTMLTextAreaElement;
-  const resultLabel = document.getElementById('result-label');
-  const setACount = document.getElementById('setA-count');
-  const setBCount = document.getElementById('setB-count');
-
-  function toSet(text: string) {
-    return new Set(text.split('\n').map(l => l.trim()).filter(l => l));
-  }
-
-  function updateCount(textarea: HTMLTextAreaElement, label: HTMLElement | null) {
-    const count = toSet(textarea.value).size;
-    if (label) label.textContent = count > 0 ? `(${count} items)` : '';
-  }
-
-  setA.addEventListener('input', () => updateCount(setA, setACount));
-  setB.addEventListener('input', () => updateCount(setB, setBCount));
-
-  function showResult(arr: string[]) {
-    output.value = arr.join('\n');
-    if (resultLabel) resultLabel.textContent = `(${arr.length} items)`;
-  }
-
-  document.getElementById('intersection-btn')?.addEventListener('click', () => {
-    const a = toSet(setA.value), b = toSet(setB.value);
-    showResult([...a].filter(x => b.has(x)));
-  });
-
-  document.getElementById('union-btn')?.addEventListener('click', () => {
-    const a = toSet(setA.value), b = toSet(setB.value);
-    showResult([...new Set([...a, ...b])]);
-  });
-
-  document.getElementById('diff-ab-btn')?.addEventListener('click', () => {
-    const a = toSet(setA.value), b = toSet(setB.value);
-    showResult([...a].filter(x => !b.has(x)));
-  });
-
-  document.getElementById('diff-ba-btn')?.addEventListener('click', () => {
-    const a = toSet(setA.value), b = toSet(setB.value);
-    showResult([...b].filter(x => !a.has(x)));
-  });
-
-  document.getElementById('symmetric-btn')?.addEventListener('click', () => {
-    const a = toSet(setA.value), b = toSet(setB.value);
-    showResult([...a].filter(x => !b.has(x)).concat([...b].filter(x => !a.has(x))));
-  });
-
-  document.getElementById('copy-btn')?.addEventListener('click', () => {
-    navigator.clipboard.writeText(output.value);
-  });
-
-  ShareManager.register({
-    tool: 'list-compare',
-    actions: {
-      intersection: () => document.getElementById('intersection-btn')?.click(),
-      union: () => document.getElementById('union-btn')?.click(),
-      diffAB: () => document.getElementById('diff-ab-btn')?.click(),
-      diffBA: () => document.getElementById('diff-ba-btn')?.click(),
-      symmetric: () => document.getElementById('symmetric-btn')?.click()
-    }
-  });
-</script>
+<script>import '../lib/list-compare-ui.ts';</script>
+<style>
+  .lc-button { display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border:1px solid #cbd5e1; border-radius:.5rem; padding:.5rem .75rem; font-size:.8125rem; font-weight:600; background:#fff; color:#334155; }
+  .lc-button:hover { border-color:#818cf8; }
+  .lc-button:disabled { opacity:.45; cursor:not-allowed; }
+  .lc-button[hidden] { display:none; }
+  .lc-primary { background:#4f46e5; border-color:#4f46e5; color:white; }
+  .lc-view[aria-pressed="true"] { background:#eef2ff; border-color:#6366f1; color:#4338ca; }
+  .lc-count { border-radius:.25rem; background:#f1f5f9; padding:0 .35rem; font-size:.6875rem; min-width:1.25rem; }
+  .lc-textarea { display:block; width:100%; min-width:0; height:clamp(8rem,18vh,11rem); border:1px solid #cbd5e1; border-radius:.5rem; padding:.75rem; background:white; color:#0f172a; resize:vertical; font-family:ui-monospace,monospace; font-size:.8125rem; line-height:1.5; }
+  .lc-output { height:clamp(8rem,16vh,11rem); background:#f8fafc; }
+  #result-search { flex:1 1 15rem; }
+  @media (max-width:767px) { .lc-textarea { height:8rem; } }
+  .lc-select { border:1px solid #cbd5e1; border-radius:.5rem; padding:.5rem .6rem; background:white; color:#334155; font-size:.8125rem; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline:2px solid #6366f1; outline-offset:2px; }
+  :global(.dark) .lc-button, :global(.dark) .lc-select { background:#1e293b; color:#e2e8f0; border-color:#475569; }
+  :global(.dark) .lc-primary { background:#4f46e5; border-color:#6366f1; color:white; }
+  :global(.dark) .lc-view[aria-pressed="true"] { background:#312e81; border-color:#818cf8; color:#c7d2fe; }
+  :global(.dark) .lc-count { background:#334155; }
+  :global(.dark) .lc-textarea { background:#0f172a; color:#e2e8f0; border-color:#475569; }
+</style>

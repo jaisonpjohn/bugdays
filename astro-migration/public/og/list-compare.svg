@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+<title id="title">Compare two lists: missing items, matches and duplicates</title><desc id="desc">Inventory and enabled-product lists share SKU-101. SKU-100 and SKU-102 are only in inventory. SKU-102 repeats in inventory.</desc>
+<rect width="1280" height="720" fill="#f8fafc"/><rect x="48" y="48" width="1184" height="624" rx="28" fill="white" stroke="#e2e8f0"/>
+<g font-family="Arial, sans-serif"><text x="88" y="112" font-size="24" font-weight="700" fill="#4f46e5">BUG DAYS · LIST COMPARE</text>
+<text x="88" y="177" font-size="44" font-weight="700" fill="#0f172a">What’s missing? What matches?</text>
+<text x="88" y="221" font-size="23" fill="#475569">Compare exported IDs or spreadsheet columns. Share the exact result.</text>
+<rect x="88" y="264" width="325" height="280" rx="16" fill="#f8fafc" stroke="#cbd5e1"/><rect x="478" y="264" width="325" height="280" rx="16" fill="#eef2ff" stroke="#a5b4fc"/><rect x="868" y="264" width="325" height="280" rx="16" fill="#f8fafc" stroke="#cbd5e1"/>
+<text x="112" y="306" font-size="23" font-weight="700" fill="#334155">List A · Inventory</text><text x="502" y="306" font-size="23" font-weight="700" fill="#4338ca">Only in A · 2 missing</text><text x="892" y="306" font-size="23" font-weight="700" fill="#334155">List B · Enabled</text>
+<g font-family="monospace" font-size="28" fill="#0f172a"><text x="112" y="363">SKU-100</text><text x="112" y="410">SKU-101</text><text x="112" y="457">SKU-102</text><text x="112" y="504">SKU-102</text><text x="502" y="363">SKU-100</text><text x="502" y="410">SKU-102</text><text x="892" y="363">SKU-101</text><text x="892" y="410">SKU-103</text><text x="892" y="457">SKU-104</text></g>
+<path d="M429 397h33m-10-10 10 10-10 10" stroke="#6366f1" stroke-width="4" fill="none"/>
+<text x="88" y="595" font-size="23" fill="#475569">In both: SKU-101</text><text x="478" y="595" font-size="23" fill="#475569">Duplicate in A: SKU-102</text><text x="88" y="637" font-size="18" fill="#64748b">Exact matching · Case and space controls · CSV / TXT · Browser-only comparison</text></g></svg>
