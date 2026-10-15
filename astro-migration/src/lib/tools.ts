@@ -114,7 +114,7 @@ export const toolGroups: ToolGroup[] = [
     icon: "shield",
     items: [
       { name: "Hash Generator", href: "/hash-generator/", description: "MD5, SHA-1, SHA-256 & more", keywords: ["md5", "sha", "checksum", "digest"] },
-      { name: "TLS Certificate Checker", href: "/certificate-inspector/", description: "Check live chains, expiry, SANs & convert X.509", keywords: ["ssl certificate checker", "tls", "certificate chain", "expiry", "san", "sni", "hostname match", "custom port", "kafka ssl", "x509", "pem", "der", "cer", "crt", "p7b", "pkcs7", "certificate decoder"] },
+      { name: "TLS Certificate Checker", href: "/certificate-inspector/", description: "Decode, check expiry & SANs, convert PEM / DER / P7B", keywords: ["ssl certificate checker", "tls", "certificate chain", "expiry", "san", "sni", "hostname match", "custom port", "kafka ssl", "x509", "pem to der", "der to pem", "cer", "crt", "p7b", "pkcs7", "certificate decoder"] },
       { name: "JWT Decoder", href: "/jwt-decoder/", description: "Decode & inspect JWT tokens", keywords: ["token", "json web token", "claims"] },
       { name: "Password Gen", href: "/password-generator/", description: "Generate strong passwords", keywords: ["random", "secure", "passphrase"] },
       { name: "DBeaver Decrypt", href: "/dbeaver-password-decrypter/", description: "Recover credentials-config.json", keywords: ["credentials", "recover", "database"] },

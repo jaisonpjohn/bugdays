@@ -3,6 +3,8 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
+    "test:certificates": "node --test tests/certificate-inspector.test.mjs",
+    "test:certificates-seo": "node scripts/check-certificate-seo.mjs",
     "test:yaml-diff": "node --test tests/yaml-diff.test.mjs",
     "test:yaml-diff-seo": "node scripts/check-yaml-diff-seo.mjs",
     "test:list-compare": "node --test tests/list-compare.test.mjs",

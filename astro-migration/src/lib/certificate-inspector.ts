@@ -10,6 +10,8 @@ import {
 } from '@peculiar/x509';
 
 export type CertificateSourceFormat = 'pem' | 'der' | 'base64' | 'hex' | 'pkcs7';
+export const MAX_CERTIFICATE_BYTES = 5 * 1024 * 1024;
+export const MAX_CERTIFICATES = 20;
 
 export interface CertificateInput {
   certificates: X509Certificate[];
@@ -34,7 +36,7 @@ export interface CertificateReport {
   status: 'valid' | 'expired' | 'not-yet-valid';
   statusLabel: string;
   daysRemaining: number;
-  selfSigned: boolean;
+  selfSigned: boolean | null;
   signatureAlgorithm: string;
   publicKey: string;
   subjectAlternativeNames: Array<{ type: string; value: string }>;
@@ -96,17 +98,29 @@ function tryCertificateBundle(value: string | BufferSource): X509Certificate[] |
 }
 
 export function parseCertificateInput(input: string | ArrayBuffer | Uint8Array): CertificateInput {
+  const size = typeof input === 'string' ? new TextEncoder().encode(input).length : input.byteLength;
+  if (size > MAX_CERTIFICATE_BYTES) throw new Error('Use a certificate file or pasted input of 5 MiB or less.');
+  const bounded = (certificates: X509Certificate[]) => {
+    if (certificates.length > MAX_CERTIFICATES) throw new Error('Inspect at most 20 certificates at a time. Split this bundle into smaller files.');
+    return certificates;
+  };
   if (typeof input === 'string') {
     const trimmed = input.trim();
     if (!trimmed) throw new Error('Paste a certificate or choose a certificate file first.');
-    if (/-----BEGIN (?:RSA |EC |ENCRYPTED )?PRIVATE KEY-----/.test(trimmed)) {
+    if (/-----BEGIN [^-\r\n]*PRIVATE KEY-----/i.test(trimmed)) {
       throw new Error('This inspector only needs the public certificate. Remove the private key and paste the CERTIFICATE block.');
     }
 
     const certificateBlocks = trimmed.match(/-----BEGIN CERTIFICATE-----[\s\S]*?-----END CERTIFICATE-----/g);
     if (certificateBlocks?.length) {
+      if ((trimmed.match(/-----BEGIN CERTIFICATE-----/g) || []).length !== certificateBlocks.length) throw new Error('A CERTIFICATE block is incomplete. Include its matching END CERTIFICATE line.');
+      if (certificateBlocks.length > MAX_CERTIFICATES) throw new Error('Inspect at most 20 certificates at a time. Split this bundle into smaller files.');
       return {
-        certificates: certificateBlocks.map(block => new X509Certificate(block)),
+        certificates: certificateBlocks.map(block => {
+          const encoded = block.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+          assertCompleteDer(decodeDer(encoded, false));
+          return new X509Certificate(block);
+        }),
         sourceFormat: 'pem',
         sourceLabel: certificateBlocks.length > 1 ? 'PEM certificate chain' : sourceLabel('pem'),
       };
@@ -114,23 +128,54 @@ export function parseCertificateInput(input: string | ArrayBuffer | Uint8Array):
 
     if (/-----BEGIN (?:PKCS7|CMS)-----/.test(trimmed)) {
       const certificates = tryCertificateBundle(trimmed);
-      if (certificates) return { certificates, sourceFormat: 'pkcs7', sourceLabel: sourceLabel('pkcs7') };
+      if (certificates) return { certificates: bounded(certificates), sourceFormat: 'pkcs7', sourceLabel: sourceLabel('pkcs7') };
     }
 
     const compact = trimmed.replace(/\s+/g, '');
     const format: CertificateSourceFormat = /^[0-9a-f]+$/i.test(compact) && compact.length % 2 === 0 ? 'hex' : 'base64';
-    const certificate = trySingleCertificate(compact);
+    let bytes: Uint8Array<ArrayBuffer>;
+    try { bytes = decodeDer(compact, format === 'hex'); assertCompleteDer(bytes); }
+    catch { throw new Error('That does not look like a supported X.509 certificate. Try PEM, DER/CER, Base64 DER, hex DER, or PKCS#7.'); }
+    const certificate = trySingleCertificate(bytes);
     if (certificate) return { certificates: [certificate], sourceFormat: format, sourceLabel: sourceLabel(format) };
-    const certificates = tryCertificateBundle(compact);
-    if (certificates) return { certificates, sourceFormat: 'pkcs7', sourceLabel: sourceLabel('pkcs7') };
+    const certificates = tryCertificateBundle(bytes);
+    if (certificates) return { certificates: bounded(certificates), sourceFormat: 'pkcs7', sourceLabel: sourceLabel('pkcs7') };
   } else {
-    const bytes = input instanceof Uint8Array ? input : new Uint8Array(input);
+    const bytes = input instanceof Uint8Array ? Uint8Array.from(input) : new Uint8Array(input);
+    assertCompleteDer(bytes);
     const certificate = trySingleCertificate(bytes);
     if (certificate) return { certificates: [certificate], sourceFormat: 'der', sourceLabel: sourceLabel('der') };
     const certificates = tryCertificateBundle(bytes);
-    if (certificates) return { certificates, sourceFormat: 'pkcs7', sourceLabel: sourceLabel('pkcs7') };
+    if (certificates) return { certificates: bounded(certificates), sourceFormat: 'pkcs7', sourceLabel: sourceLabel('pkcs7') };
   }
   throw new Error('That does not look like a supported X.509 certificate. Try PEM, DER/CER, Base64 DER, hex DER, or PKCS#7.');
+}
+
+function decodeDer(encoded: string, hex: boolean): Uint8Array<ArrayBuffer> {
+  if (hex) return Uint8Array.from(encoded.match(/../g) || [], pair => Number.parseInt(pair, 16));
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded) || encoded.length % 4 === 1) throw new Error('Invalid Base64.');
+  return Uint8Array.from(atob(encoded), char => char.charCodeAt(0));
+}
+
+// Do not silently accept a truncated object or extra binary objects after the certificate.
+function assertCompleteDer(bytes: Uint8Array): void {
+  let length = bytes[1], header = 2;
+  if (bytes[0] !== 0x30 || length === undefined) throw new Error('Invalid DER certificate or bundle.');
+  if (length & 0x80) {
+    const count = length & 0x7f;
+    if (!count || count > 4 || bytes.length < 2 + count) throw new Error('Invalid DER length.');
+    length = 0;
+    for (let index = 0; index < count; index++) length = length * 256 + bytes[2 + index];
+    header += count;
+  }
+  if (header + length !== bytes.length) throw new Error('Incomplete DER data or extra bytes. Use one DER certificate, or a PEM / PKCS#7 bundle.');
+}
+
+function durationLabel(milliseconds: number): string {
+  if (milliseconds < 60_000) return 'less than a minute';
+  const unit = milliseconds < 3_600_000 ? 'minute' : milliseconds < 86_400_000 ? 'hour' : 'day';
+  const value = Math.ceil(milliseconds / (unit === 'minute' ? 60_000 : unit === 'hour' ? 3_600_000 : 86_400_000));
+  return `${value.toLocaleString()} ${unit}${value === 1 ? '' : 's'}`;
 }
 
 function fingerprint(buffer: ArrayBuffer): string {
@@ -183,7 +228,7 @@ export async function inspectCertificate(certificate: X509Certificate, now = new
   const startTime = certificate.notBefore.getTime();
   const endTime = certificate.notAfter.getTime();
   const status = currentTime < startTime ? 'not-yet-valid' : currentTime > endTime ? 'expired' : 'valid';
-  const daysRemaining = Math.ceil((endTime - currentTime) / 86_400_000);
+  const daysRemaining = endTime < currentTime ? -Math.ceil((currentTime - endTime) / 86_400_000) : Math.ceil((endTime - currentTime) / 86_400_000);
   const san = certificate.getExtension(SubjectAlternativeNameExtension);
   const constraints = certificate.getExtension(BasicConstraintsExtension);
   const keyUsage = certificate.getExtension(KeyUsagesExtension);
@@ -192,7 +237,7 @@ export async function inspectCertificate(certificate: X509Certificate, now = new
   const [sha1, sha256, selfSigned] = await Promise.all([
     certificate.getThumbprint('SHA-1', crypto),
     certificate.getThumbprint('SHA-256', crypto),
-    certificate.isSelfSigned(crypto).catch(() => certificate.subject === certificate.issuer),
+    certificate.isSelfSigned(crypto).catch(() => null),
   ]);
 
   return {
@@ -204,12 +249,12 @@ export async function inspectCertificate(certificate: X509Certificate, now = new
     notAfter: certificate.notAfter,
     status,
     statusLabel: status === 'expired'
-      ? `Expired ${Math.abs(daysRemaining).toLocaleString()} day${Math.abs(daysRemaining) === 1 ? '' : 's'} ago`
+      ? `Expired ${durationLabel(currentTime - endTime)} ago`
       : status === 'not-yet-valid'
-        ? `Valid in ${Math.ceil((startTime - currentTime) / 86_400_000).toLocaleString()} days`
+        ? `Valid in ${durationLabel(startTime - currentTime)}`
         : daysRemaining === 0
           ? 'Expires today'
-          : `Valid · ${daysRemaining.toLocaleString()} day${daysRemaining === 1 ? '' : 's'} remaining`,
+          : `Valid · ${durationLabel(endTime - currentTime)} remaining`,
     daysRemaining,
     selfSigned,
     signatureAlgorithm: signatureDescription(certificate),
@@ -231,8 +276,9 @@ export async function inspectCertificate(certificate: X509Certificate, now = new
   };
 }
 
-export async function inspectCertificates(certificates: X509Certificate[]): Promise<CertificateReport[]> {
-  return Promise.all(certificates.map(certificate => inspectCertificate(certificate)));
+export async function inspectCertificates(certificates: X509Certificate[], now = new Date()): Promise<CertificateReport[]> {
+  if (certificates.length > MAX_CERTIFICATES) throw new Error('Inspect at most 20 certificates at a time.');
+  return Promise.all(certificates.map(certificate => inspectCertificate(certificate, now)));
 }
 
 export function certificatePem(certificate: X509Certificate): string {

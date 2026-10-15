@@ -55,7 +55,7 @@ openssl s_client -connect mail.example.com:993 \
   -verify_return_error -showcerts</code></pre>
   <p>Use the matching <code>-starttls imap</code> or <code>-starttls ldap</code> mode for those protocols on their upgrade ports. Port numbers are conventions, not proof of configuration. Check the service’s listener settings and the <a href="https://docs.openssl.org/3.5/man1/openssl-s_client/">OpenSSL s_client reference</a>.</p>
 
-  <h2>Read SANs before the Common Name</h2>
+  <h2>Check SANs, not a Common Name fallback</h2>
   <p>Modern hostname verification uses Subject Alternative Names. For a DNS name, an exact SAN is simplest. A wildcard such as <code>*.example.com</code> covers one leftmost label such as <code>api.example.com</code>; it does not cover <code>example.com</code> or <code>v2.api.example.com</code>.</p>
   <ul>
     <li><code>DNS:api.example.com</code> matches that hostname.</li>
@@ -63,6 +63,8 @@ openssl s_client -connect mail.example.com:993 \
     <li><code>DNS:*.example.com</code> does not match <code>deep.api.example.com</code>.</li>
     <li><code>IP:10.20.4.8</code> can match a client that verifies that IP directly.</li>
   </ul>
+
+  <p>The checker uses DNS and IP SANs for identity matching and does not fall back to Common Name. These are separate identity types in <a href="https://www.rfc-editor.org/rfc/rfc9525.html">RFC 9525</a>. You can run the same SAN check against a pasted certificate without connecting to a service.</p>
 
   <h2>Check expiry across the entire chain</h2>
   <p>The leaf’s expiration date gets the most attention, but an expired intermediate can also break validation. Record the not-before and not-after dates for every presented certificate. Alert thresholds often begin at 30 days, but the right renewal margin depends on automation, change windows, and how widely a certificate is deployed.</p>
@@ -85,6 +87,7 @@ openssl x509 -in leaf.pem -noout -checkend 2592000</code></pre>
   </ul>
 
   <p>Matching issuer and subject names is a useful structural hint, not cryptographic proof: different CA certificates can share a name. Actual path validation checks signatures, constraints, usage, time, and an accepted trust anchor. Likewise, <code>-showcerts</code> displays the chain sent by the server, not a verified chain reconstructed by the client.</p>
+  <p>The report now checks signatures against supplied issuer candidates, even when a bundle is out of order. “Issuer not supplied” means the signature is unchecked, not automatically broken; leaving out a root is normal for many servers. An unsupported browser algorithm is also shown as unchecked, never as a verification pass.</p>
 
   <h2>Separate chain trust from service identity</h2>
   <p>A certificate can chain to a trusted root and still fail because the requested hostname is missing from SAN. It can cover the right hostname and still fail because an intermediate is absent. It can pass both checks and still be rejected by an application using a different trust store, Java runtime, container image, or certificate policy.</p>

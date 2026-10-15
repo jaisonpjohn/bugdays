@@ -34,14 +34,29 @@ function normalizedHost(value: string): string {
   return value.trim().replace(/^\[|\]$/g, '').replace(/\.$/, '').toLowerCase();
 }
 
+export function normalizeCertificateIdentity(value: string): string {
+  const host = normalizedHost(value);
+  const ip = parseIp(host);
+  if (ip) return ip.address;
+  if (!host || /[\s/:@?#%\\*]/.test(host) || /^[\d.]+$/.test(host)) throw new Error('Enter a hostname or IP address, not a URL, path, or wildcard.');
+  const ascii = new URL(`https://${host}`).hostname;
+  if (ascii.length > 253 || !ascii.split('.').every(label => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label))) throw new Error('Enter a valid hostname or IP address.');
+  return ascii.toLowerCase();
+}
+
 export function dnsPatternMatches(patternValue: string, hostnameValue: string): boolean {
-  const pattern = normalizedHost(patternValue);
-  const hostname = normalizedHost(hostnameValue);
-  if (pattern === hostname) return true;
-  if (!pattern.startsWith('*.')) return false;
-  const suffix = pattern.slice(2);
-  const labels = hostname.split('.');
-  return labels.length === suffix.split('.').length + 1 && hostname.endsWith(`.${suffix}`);
+  try {
+    const hostname = normalizeCertificateIdentity(hostnameValue);
+    if (parseIp(hostname)) return false;
+    const raw = normalizedHost(patternValue);
+    // Presented DNS SANs are ASCII A-labels; only a complete leftmost wildcard is permitted.
+    if (/[^\x00-\x7f]/.test(raw)) return false;
+    const wildcard = raw.startsWith('*.');
+    const pattern = normalizeCertificateIdentity(wildcard ? raw.slice(2) : raw);
+    if (parseIp(pattern)) return false;
+    if (!wildcard) return pattern === hostname;
+    return hostname.split('.').length === pattern.split('.').length + 1 && hostname.endsWith(`.${pattern}`);
+  } catch { return false; }
 }
 
 export function certificateMatchesIdentity(report: CertificateReport, identityValue: string): { matches: boolean; matched?: string } {
@@ -55,10 +70,7 @@ export function certificateMatchesIdentity(report: CertificateReport, identityVa
   const dnsNames = sans.filter(name => name.type.toLowerCase() === 'dns');
   const match = dnsNames.find(name => dnsPatternMatches(name.value, identity));
   if (match) return { matches: true, matched: match.value };
-  if (!dnsNames.length) {
-    const commonName = /(?:^|,\s*)CN=([^,]+)/i.exec(report.subject)?.[1];
-    if (commonName && dnsPatternMatches(commonName, identity)) return { matches: true, matched: commonName };
-  }
+  // RFC 9525: Common Name is display data, not a fallback TLS service identity.
   return { matches: false };
 }
 
@@ -115,25 +127,27 @@ function commonName(subject: string): string {
   return /(?:^|,\s*)CN=([^,]+)/i.exec(subject)?.[1] || subject || 'Certificate';
 }
 
-export async function checkTlsBridge(bridgeValue: string): Promise<{ version: string }> {
+export async function checkTlsBridge(bridgeValue: string, signal?: AbortSignal): Promise<{ version: string }> {
   const base = normalizeBridgeUrl(bridgeValue);
   try {
-    const response = await fetch(`${base}/api/v1/capabilities`, { cache: 'no-store' });
+    const response = await fetch(`${base}/api/v1/capabilities`, { cache: 'no-store', signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(5000)]) : AbortSignal.timeout(5000) });
     if (!response.ok) throw new Error();
     const payload = await response.json() as any;
     if (payload?.capabilities?.tlsInspection !== true) throw new Error('outdated');
     return { version: typeof payload.version === 'string' ? payload.version : 'current' };
   } catch (error) {
+    if (signal?.aborted) throw signal.reason;
     if (error instanceof Error && error.message === 'outdated') throw new Error('Holy CORS is running, but this version does not include TLS certificate inspection. Update it and retry.');
     throw new Error(`Could not reach Holy CORS at ${base}. Start or update the bridge, then retry.`);
   }
 }
 
-export async function inspectTlsService(host: string, port: number, serverName: string, bridgeValue: string): Promise<TlsInspectResult> {
+export async function inspectTlsService(host: string, port: number, serverName: string, bridgeValue: string, signal?: AbortSignal): Promise<TlsInspectResult> {
   const base = normalizeBridgeUrl(bridgeValue);
-  await checkTlsBridge(base);
+  await checkTlsBridge(base, signal);
   const response = await fetch(`${base}/api/v1/tls/inspect`, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
+    signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000),
     body: JSON.stringify({ host, port, serverName: serverName || undefined, timeoutMs: 10_000 }),
   });
   const payload = await response.json().catch(() => ({}));

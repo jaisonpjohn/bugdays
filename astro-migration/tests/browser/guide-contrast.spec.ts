@@ -1,6 +1,7 @@
 import {test,expect} from '@playwright/test';
 
 const slugs=[
+  'pem-vs-der-vs-cer-vs-p7b-certificate-formats',
   'compare-kubernetes-yaml-ignore-order',
   'compare-two-lists-find-missing-items',
   'epoch-iso8601-timezone-offset',

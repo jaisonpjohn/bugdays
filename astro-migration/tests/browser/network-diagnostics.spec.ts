@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { readFile } from 'node:fs/promises';
 import LZString from 'lz-string';
 
-const certificateSource = await readFile(new URL('../../src/pages/certificate-inspector.astro', import.meta.url), 'utf8');
+const certificateSource = await readFile(new URL('../../src/lib/certificate-sample.ts', import.meta.url), 'utf8');
 const samplePem = certificateSource.match(/const sampleCertificate = `([\s\S]*?)`;/)?.[1] || '';
 const sampleDerBase64 = samplePem.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
 

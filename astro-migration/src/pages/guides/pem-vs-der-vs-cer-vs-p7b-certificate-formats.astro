@@ -1,14 +1,23 @@
 ---
 import GuideLayout from '../../layouts/GuideLayout.astro';
 import { guideBySlug } from '../../lib/guides';
+import { sampleCertificate } from '../../lib/certificate-sample.ts';
+import LZString from 'lz-string';
 
 const guide = guideBySlug('pem-vs-der-vs-cer-vs-p7b-certificate-formats');
+const exampleHref = '/certificate-inspector/#lz:' + LZString.compressToEncodedURIComponent(JSON.stringify({ v: 1, t: 'certificate-inspector', d: { mode: 'file', certificate: sampleCertificate, identity: 'api.example.test', selectedIndex: 0 } }));
 ---
 
 <GuideLayout guide={guide} keywords="PEM vs DER, CER vs CRT, P7B certificate, PKCS7 certificate bundle, convert PEM DER OpenSSL, X.509 certificate formats, certificate file extension">
   <p>A certificate ticket often begins with an unhelpful sentence: “The vendor sent a CER, but the server needs PEM.” The extension sounds like a format, yet <code>.cer</code> and <code>.crt</code> frequently describe the role of a file rather than its actual encoding.</p>
 
   <blockquote><strong>The useful distinction:</strong> X.509 describes the certificate structure. DER is its binary encoding. PEM is Base64-encoded DER wrapped in readable header and footer lines. CER and CRT are ambiguous filename conventions. P7B is usually a certificate bundle.</blockquote>
+
+  <h2>Try a real certificate decoder and conversion round trip</h2>
+  <p>This example opens a synthetic public certificate for <code>example.test</code>. Its SANs include <code>api.example.test</code> and <code>127.0.0.1</code>. It is self-signed: the self-signature can verify without making the certificate trusted by your browser or application. No live connection or account is needed.</p>
+  <p><a href={exampleHref} class="inline-flex rounded-lg bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700">Open the certificate decoder example ↗</a></p>
+  <ol><li>Check the selected certificate’s SAN result and copy its SHA-256 fingerprint.</li><li>Download DER / CER, then reopen that file. The fingerprint and certificate details should be unchanged.</li><li>Download PKCS#7 / P7B and reopen it. A certificate-only bundle can contain this one certificate or several supplied certificates.</li><li>Export CSV or Excel for the expiry inventory, or choose <strong>Share certificate report</strong> to send a restorable public-certificate example.</li></ol>
+  <p>Changing the hostname check to <code>missing.example.test</code> should show a mismatch. That is different from the self-signed trust question: identity, dates, signatures and trust are separate findings.</p>
 
   <h2>Identify the contents before converting</h2>
   <p>Open the file in a text editor or inspect its first bytes. A PEM certificate is immediately recognizable:</p>
@@ -45,6 +54,7 @@ openssl x509 -inform DER -in certificate.der -outform PEM -out certificate.pem</
   <pre><code>openssl x509 -in certificate.pem -noout -fingerprint -sha256
 openssl x509 -inform DER -in certificate.der -noout -fingerprint -sha256</code></pre>
   <p>The SHA-256 certificate fingerprint should match because the underlying DER certificate is unchanged.</p>
+  <p>The <a href="https://docs.openssl.org/3.5/man1/openssl-x509/">OpenSSL x509 reference</a> documents the input and output encodings, fingerprint calculation and date checks. Conversion cannot extend an expiry date or add a SAN without issuing and signing a different certificate.</p>
 
   <h2>Extract certificates from a P7B bundle</h2>
   <p>A PKCS#7 bundle commonly arrives from a Windows or enterprise PKI workflow. It can carry the leaf certificate and intermediate certificates together.</p>
@@ -55,8 +65,14 @@ openssl pkcs7 -in chain.p7b -print_certs -out chain.pem
 openssl pkcs7 -inform DER -in chain.p7b -print_certs -out chain.pem</code></pre>
   <p>Inspect how many certificates were extracted and identify each subject and issuer. Bundle order is not always proof of the intended trust path, and the presence of a root certificate does not make that root trusted by a particular operating system or application.</p>
 
+  <h3>Convert a PEM chain to a certificate-only P7B</h3>
+  <pre><code>openssl crl2pkcs7 -nocrl -certfile chain.pem \
+  -outform DER -out chain.p7b</code></pre>
+  <p>This packages the supplied certificates without a CRL or private key. The <a href="https://docs.openssl.org/3.5/man1/openssl-crl2pkcs7/">OpenSSL crl2pkcs7 reference</a> describes this certificate-only structure. Packaging is not signing, and an unordered bundle is not automatically a verified trust path.</p>
+
   <h2>Certificate validity is not the same as trust</h2>
-  <p>A file decoder can establish what a certificate says: names, dates, key usage, extensions, fingerprints, and signatures within a supplied bundle. It cannot establish how a remote server presents the chain, whether hostname verification succeeds, whether revocation is enforced, or whether a specific machine trusts the root.</p>
+  <p>A file decoder can show names, dates, key usage, extensions and fingerprints. Bug Days also checks a hostname or IP against the selected certificate’s SANs and verifies signatures against supplied issuer candidates when the browser supports the algorithm. It does not fetch missing certificates or perform full path validation, revocation checking, or a trust-store lookup for file input.</p>
+  <p>A certificate’s Common Name is not a substitute for a DNS or IP Subject Alternative Name under <a href="https://www.rfc-editor.org/rfc/rfc9525.html">RFC 9525’s service-identity rules</a>. An IP address requires an IP SAN, not a DNS SAN containing the same text. A wildcard such as <code>*.example.test</code> covers one leftmost label, not the base domain or deeper subdomains.</p>
   <p>For a live endpoint, <a href="/guides/check-tls-certificate-chain-any-port/">inspect the certificate chain, expiry, SAN, and SNI from the relevant network</a>. For a local file, use the certificate inspector to answer the narrower—and still valuable—question: “What exactly is in this file?”</p>
 
   <h2>Avoid the dangerous conversion mistake</h2>
@@ -74,6 +90,6 @@ openssl pkcs7 -inform DER -in chain.p7b -print_certs -out chain.pem</code></pre>
 
   <div class="guide-note"><p><strong>Tool boundary:</strong> Bug Days inspects public certificate material locally in the browser. It intentionally does not accept PKCS#12/PFX private-key archives.</p></div>
 
-  <a slot="related" href="/guides/test-soap-api-from-wsdl-soap-11-vs-12/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Test a SOAP service</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Build a request from WSDL and interpret version errors.</span></a>
-  <a slot="related" href="/guides/read-java-thread-dump-find-deadlock/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Read a Java thread dump</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Trace monitor owners and confirm a deadlock cycle.</span></a>
+  <a slot="related" href="/guides/check-tls-certificate-chain-any-port/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Check the live TLS chain on any port</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Separate SNI, SAN coverage, expiry and device trust for HTTPS, Kafka SSL and LDAPS.</span></a>
+  <a slot="related" href="/guides/dns-lookup-public-vs-system-resolver/" class="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 hover:border-indigo-400"><strong class="block text-slate-900 dark:text-white">Verify the DNS path before TLS</strong><span class="mt-1 block text-sm text-slate-600 dark:text-slate-300">Compare public and device answers, VPN resolution and reverse DNS.</span></a>
 </GuideLayout>
