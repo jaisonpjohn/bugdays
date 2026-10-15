@@ -50,6 +50,14 @@ test('SAN checks cover IDN, IPv6, wildcard depth and never fall back to Common N
   assert.equal(certificateMatchesIdentity(await inspectCertificate(fixture.cnOnly, now), 'example.test').matches, false);
   for (const identity of ['https://example.test', '*.example.test', 'example.test/path', '0127.0.0.1', 'a..test', 'a_test', 'bad\\host']) assert.throws(() => normalizeCertificateIdentity(identity), identity);
 });
+test('real decoded IP SANs do not collapse mapped IPv6 into IPv4', async () => {
+  const mapped = await inspectCertificate(fixture.mappedLeaf, now);
+  const identity = normalizeCertificateIdentity('[::ffff:127.0.0.1]');
+  assert.equal(identity, '::ffff:127.0.0.1');
+  assert.equal(certificateMatchesIdentity(mapped, identity).matches, true);
+  assert.equal(certificateMatchesIdentity(mapped, '127.0.0.1').matches, false);
+  assert.equal(certificateMatchesIdentity(await inspectCertificate(fixture.leaf, now), identity).matches, false);
+});
 test('supplied issuer signatures verify independently of trust and certificate order', async () => {
   const reports = await inspectCertificates(fixture.chain, now);
   const analysis = await analyzeCertificateChain(reports);

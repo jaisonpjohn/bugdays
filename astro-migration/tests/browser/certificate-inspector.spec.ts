@@ -46,6 +46,8 @@ test('file chains show every expiry and verify supplied signatures without claim
   await expect(page.locator('#identity-result')).toContainText('Name mismatch');
   await page.locator('#certificate-identity').fill('[2001:db8::1]');
   await expect(page.locator('#identity-result')).toContainText('matches SAN');
+  await page.locator('#certificate-identity').fill('[::ffff:127.0.0.1]');
+  await expect(page.locator('#identity-result')).toContainText('Name mismatch');
   await page.locator('#certificate-list button').nth(1).click();
   await expect(page.locator('#certificate-heading')).toHaveText('Example Test Intermediate');
   await expect(page.locator('#identity-result')).toContainText('Name mismatch');

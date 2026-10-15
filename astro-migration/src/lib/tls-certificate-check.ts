@@ -37,7 +37,9 @@ function normalizedHost(value: string): string {
 export function normalizeCertificateIdentity(value: string): string {
   const host = normalizedHost(value);
   const ip = parseIp(host);
-  if (ip) return ip.address;
+  // The general IP helper collapses mapped IPv6 for range lookup. TLS SANs compare
+  // 4-byte IPv4 and 16-byte IPv6 identities separately, even for a mapped address.
+  if (ip) return ip.mapped ? host : ip.address;
   if (!host || /[\s/:@?#%\\*]/.test(host) || /^[\d.]+$/.test(host)) throw new Error('Enter a hostname or IP address, not a URL, path, or wildcard.');
   const ascii = new URL(`https://${host}`).hostname;
   if (ascii.length > 253 || !ascii.split('.').every(label => /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i.test(label))) throw new Error('Enter a valid hostname or IP address.');
@@ -64,7 +66,11 @@ export function certificateMatchesIdentity(report: CertificateReport, identityVa
   const ip = parseIp(identity);
   const sans = report.subjectAlternativeNames;
   if (ip) {
-    const match = sans.find(name => name.type.toLowerCase() === 'ip' && parseIp(name.value)?.address === ip.address);
+    const match = sans.find(name => {
+      if (name.type.toLowerCase() !== 'ip') return false;
+      const presented = parseIp(name.value);
+      return presented?.address === ip.address && presented?.version === ip.version && Boolean(presented?.mapped) === Boolean(ip.mapped);
+    });
     return { matches: Boolean(match), ...(match ? { matched: match.value } : {}) };
   }
   const dnsNames = sans.filter(name => name.type.toLowerCase() === 'dns');

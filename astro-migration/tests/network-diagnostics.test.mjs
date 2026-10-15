@@ -39,6 +39,14 @@ test('TLS hostname matching follows exact, wildcard, and IP SAN rules', () => {
   assert.equal(certificateMatchesIdentity(report, '10.0.0.9').matches, false);
 });
 
+test('IP SAN matching preserves the distinction between IPv4 and mapped IPv6 octets', () => {
+  const ipv4 = { subjectAlternativeNames: [{ type: 'ip', value: '127.0.0.1' }] };
+  const mapped = { subjectAlternativeNames: [{ type: 'ip', value: '::ffff:127.0.0.1' }] };
+  assert.equal(certificateMatchesIdentity(ipv4, '::ffff:127.0.0.1').matches, false);
+  assert.equal(certificateMatchesIdentity(mapped, '127.0.0.1').matches, false);
+  assert.equal(certificateMatchesIdentity(mapped, '0:0:0:0:0:ffff:7f00:1').matches, true);
+});
+
 test('TLS analysis flags a mismatched, untrusted, expiring chain', () => {
   const leaf = {
     subject: 'CN=wrong.example.com', issuer: 'CN=Example Intermediate', status: 'valid', statusLabel: 'Valid · 4 days remaining', daysRemaining: 4,

@@ -14,5 +14,6 @@ export async function certificateFixture() {
   const leaf = await X509CertificateGenerator.create(leafParams, crypto);
   const wrongIssuer = await X509CertificateGenerator.create({ subject: intermediate.subject, issuer: root.subject, publicKey: keys[3].publicKey, signingKey: keys[0].privateKey, signingAlgorithm, serialNumber: '04', ...dates, extensions: caExtensions }, crypto);
   const cnOnly = await X509CertificateGenerator.create({ ...leafParams, extensions: [], serialNumber: '05' }, crypto);
-  return { root, intermediate, leaf, wrongIssuer, cnOnly, chain: [leaf, intermediate, root] };
+  const mappedLeaf = await X509CertificateGenerator.create({ ...leafParams, extensions: [new SubjectAlternativeNameExtension([{ type: 'ip', value: '::ffff:7f00:1' }])], serialNumber: '06' }, crypto);
+  return { root, intermediate, leaf, wrongIssuer, cnOnly, mappedLeaf, chain: [leaf, intermediate, root] };
 }
