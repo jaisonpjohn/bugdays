@@ -1,4 +1,5 @@
 ---
+import StudyLink from '../components/StudyLink.astro';
 import Layout from '../layouts/Layout.astro';
 import { gzipExamples } from '../lib/gzip-examples';
 import { guides } from '../lib/guides';
@@ -155,6 +156,7 @@ const jsonLd = [{
         <div class="space-y-3">{faqs.map(([question, answer]) => (
           <details class="rounded-lg border border-gray-200 dark:border-slate-700 p-4"><summary class="cursor-pointer font-semibold text-gray-800 dark:text-slate-100">{question}</summary><p class="mt-2">{answer}</p></details>
         ))}</div>
+        <StudyLink class="mt-3" lead="Revising how compression and encodings work for a technical interview? Synapticz is an" anchor="AI quiz generator for interview prep" tail=": paste your notes on GZip, Base64 or anything else, get practice questions, and let spaced review bring them back before you forget." />
         <p class="mt-3">Decoding plain, uncompressed text? Use the <a href="/base64-encoder-decoder/" class="text-indigo-600 dark:text-indigo-400 underline">Base64 decoder</a>. For broken compressed payloads, follow the <a href="/guides/fix-base64-gzip-decode-errors/" class="text-indigo-600 dark:text-indigo-400 underline">padding, header, checksum and truncation guide</a>.</p>
       </section>
     </div>

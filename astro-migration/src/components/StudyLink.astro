@@ -1,0 +1,7 @@
+---
+// Contextual in-content link to Synapticz. Each page passes its own topic-relevant
+// sentence and anchor text; keep the wording specific to the page it sits on.
+interface Props { lead: string; anchor: string; tail: string; class?: string; }
+const { lead, anchor, tail, class: extra = '' } = Astro.props;
+---
+<p class:list={['text-sm leading-7 text-slate-600 dark:text-slate-300', extra]}>{lead} <a href="https://synapticz.com/" target="_blank" rel="noopener" class="font-medium text-indigo-600 underline underline-offset-2 dark:text-indigo-400">{anchor}</a>{tail}</p>
