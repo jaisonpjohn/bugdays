@@ -98,6 +98,7 @@ function init() {
     event.preventDefault(); input.value = link.dataset.exampleInput || ''; encoding.value = 'auto'; run('decompress');
     track('tool_used', { tool: 'gzip-base64', action: 'sample' });
   }));
+  document.getElementById('synapticz-promo')?.addEventListener('click', () => track('promo_click', { tool: 'gzip-base64', target: 'synapticz' }));
   el('gzip-use-output').addEventListener('click', () => {
     if (!result) return;
     const action = result.action === 'compress' ? 'decompress' : 'compress';

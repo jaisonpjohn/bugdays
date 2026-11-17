@@ -47,6 +47,15 @@ const jsonLd = [{
       <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">Local processing · No upload for conversion · No sign-up</p>
     </header>
 
+    <a id="synapticz-promo" href="https://synapticz.com/" target="_blank" rel="noopener" class="synapticz-promo group">
+      <span class="synapticz-badge" >🧠 Synapticz</span>
+      <span class="synapticz-copy">
+        <strong>You'll decode this payload in a second. Will you remember what you studied last week?</strong>
+        <span>Paste your notes into Synapticz and get an AI quiz in seconds. Spaced review brings it back just before you forget. Built for interview and exam prep.</span>
+      </span>
+      <span class="synapticz-cta">Quiz me on my notes <span aria-hidden="true">→</span></span>
+    </a>
+
     <div id="gzip-workspace" aria-busy="false">
       <div class="grid md:grid-cols-2 gap-4">
         <section id="gzip-input-panel" class="gzip-panel order-1" aria-labelledby="gzip-input-heading">
@@ -157,6 +166,19 @@ const jsonLd = [{
 </script>
 
 <style is:global>
+  .synapticz-promo { position: relative; display: flex; align-items: center; gap: .875rem; margin-bottom: 1rem; padding: .75rem 1rem; border-radius: 1rem; color: #fff; background: linear-gradient(100deg, #4f46e5 0%, #7c3aed 55%, #c026d3 100%); box-shadow: 0 6px 20px -8px #7c3aedb3; overflow: hidden; transition: transform .15s ease, box-shadow .15s ease; }
+  .synapticz-promo::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 35%, #ffffff38 50%, transparent 65%); transform: translateX(-100%); animation: synapticz-shine 5s ease-in-out 1.5s infinite; pointer-events: none; }
+  .synapticz-promo:hover { transform: translateY(-1px); box-shadow: 0 10px 26px -8px #7c3aedd9; }
+  .synapticz-promo:focus-visible { outline: 2px solid #6366f1; outline-offset: 3px; }
+  .synapticz-badge { flex: none; padding: .2rem .55rem; border-radius: 999px; background: #ffffff2e; font-size: .6875rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+  .synapticz-copy { flex: 1; min-width: 0; font-size: .8125rem; line-height: 1.45; color: #ede9fe; }
+  .synapticz-copy strong { display: block; font-size: .9375rem; font-weight: 700; color: #fff; }
+  .synapticz-cta { flex: none; display: inline-flex; align-items: center; gap: .35rem; min-height: 2.5rem; padding: .5rem .95rem; border-radius: .625rem; background: #fff; color: #4f46e5; font-size: .8125rem; font-weight: 700; white-space: nowrap; }
+  .synapticz-promo:hover .synapticz-cta span { transform: translateX(3px); }
+  .synapticz-cta span { transition: transform .15s ease; }
+  @keyframes synapticz-shine { 0% { transform: translateX(-100%); } 30%, 100% { transform: translateX(100%); } }
+  @media (max-width: 767px) { .synapticz-promo { flex-wrap: wrap; gap: .5rem .75rem; } .synapticz-badge { order: 1; } .synapticz-cta { order: 2; margin-left: auto; min-height: 2.25rem; } .synapticz-copy { order: 3; flex-basis: 100%; } }
+  @media (prefers-reduced-motion: reduce) { .synapticz-promo, .synapticz-cta span { transition: none; } .synapticz-promo::after { animation: none; } }
   #gzip-workspace .gzip-panel { min-width: 0; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: white; box-shadow: 0 1px 3px #0f172a08; }
   #gzip-workspace .gzip-panel[data-drag] { outline: 2px solid #6366f1; outline-offset: 2px; }
   #gzip-workspace .gzip-panel-heading { min-height: 2.6rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem; margin-bottom: .75rem; font-size: .875rem; font-weight: 650; color: #0f172a; }
